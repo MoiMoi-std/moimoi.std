@@ -55,7 +55,7 @@ export default function TodoList({ session }: { session: Session }) {
 
   return (
     <div className="w-full">
-      <h1 className="mb-12">Todo List.</h1>
+      <h1 className="mb-12">MoiMoi.std</h1>
       <form
         onSubmit={(e) => {
           e.preventDefault()
@@ -64,7 +64,7 @@ export default function TodoList({ session }: { session: Session }) {
         className="flex gap-2 my-2"
       >
         <input
-          className="rounded w-full p-2"
+          className="w-full p-2 rounded"
           type="text"
           placeholder="make coffee"
           value={newTaskText}
@@ -78,7 +78,7 @@ export default function TodoList({ session }: { session: Session }) {
         </button>
       </form>
       {!!errorText && <Alert text={errorText} />}
-      <div className="bg-white shadow overflow-hidden rounded-md">
+      <div className="overflow-hidden bg-white rounded-md shadow">
         <ul>
           {todos.map((todo) => (
             <Todo key={todo.id} todo={todo} onDelete={() => deleteTodo(todo.id)} />
@@ -110,10 +110,10 @@ const Todo = ({ todo, onDelete }: { todo: Todos; onDelete: () => void }) => {
   }
 
   return (
-    <li className="w-full block cursor-pointer hover:bg-200 focus:outline-none focus:bg-200 transition duration-150 ease-in-out">
+    <li className="block w-full transition duration-150 ease-in-out cursor-pointer hover:bg-200 focus:outline-none focus:bg-200">
       <div className="flex items-center px-4 py-4 sm:px-6">
-        <div className="min-w-0 flex-1 flex items-center">
-          <div className="text-sm leading-5 font-medium truncate">{todo.task}</div>
+        <div className="flex items-center flex-1 min-w-0">
+          <div className="text-sm font-medium leading-5 truncate">{todo.task}</div>
         </div>
         <div>
           <input
@@ -129,7 +129,7 @@ const Todo = ({ todo, onDelete }: { todo: Todos; onDelete: () => void }) => {
             e.stopPropagation()
             onDelete()
           }}
-          className="w-4 h-4 ml-2 border-2 hover:border-black rounded"
+          className="w-4 h-4 ml-2 border-2 rounded hover:border-black"
         >
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="gray">
             <path
@@ -145,7 +145,7 @@ const Todo = ({ todo, onDelete }: { todo: Todos; onDelete: () => void }) => {
 }
 
 const Alert = ({ text }: { text: string }) => (
-  <div className="rounded-md bg-red-100 p-4 my-3">
+  <div className="p-4 my-3 bg-red-100 rounded-md">
     <div className="text-sm leading-5 text-red-700">{text}</div>
   </div>
 )
