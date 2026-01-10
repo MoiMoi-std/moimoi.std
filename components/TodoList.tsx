@@ -14,10 +14,7 @@ export default function TodoList({ session }: { session: Session }) {
 
   useEffect(() => {
     const fetchTodos = async () => {
-      const { data: todos, error } = await supabase
-        .from('todos')
-        .select('*')
-        .order('id', { ascending: true })
+      const { data: todos, error } = await supabase.from('todos').select('*').order('id', { ascending: true })
 
       if (error) console.log('error', error)
       else setTodos(todos)
@@ -29,11 +26,7 @@ export default function TodoList({ session }: { session: Session }) {
   const addTodo = async (taskText: string) => {
     let task = taskText.trim()
     if (task.length) {
-      const { data: todo, error } = await supabase
-        .from('todos')
-        .insert({ task, user_id: user.id })
-        .select()
-        .single()
+      const { data: todo, error } = await supabase.from('todos').insert({ task, user_id: user.id }).select().single()
 
       if (error) {
         setErrorText(error.message)
@@ -54,31 +47,31 @@ export default function TodoList({ session }: { session: Session }) {
   }
 
   return (
-    <div className="w-full">
-      <h1 className="mb-12">MoiMoi.std</h1>
+    <div className='w-full'>
+      <h1 className='mb-12'>MoiMoi.std</h1>
       <form
         onSubmit={(e) => {
           e.preventDefault()
           addTodo(newTaskText)
         }}
-        className="flex gap-2 my-2"
+        className='flex gap-2 my-2'
       >
         <input
-          className="w-full p-2 rounded"
-          type="text"
-          placeholder="make coffee"
+          className='w-full p-2 rounded'
+          type='text'
+          placeholder='make coffee'
           value={newTaskText}
           onChange={(e) => {
             setErrorText('')
             setNewTaskText(e.target.value)
           }}
         />
-        <button className="btn-black" type="submit">
+        <button className='btn-black' type='submit'>
           Add
         </button>
       </form>
       {!!errorText && <Alert text={errorText} />}
-      <div className="overflow-hidden bg-white rounded-md shadow">
+      <div className='overflow-hidden bg-white rounded-md shadow'>
         <ul>
           {todos.map((todo) => (
             <Todo key={todo.id} todo={todo} onDelete={() => deleteTodo(todo.id)} />
@@ -110,16 +103,16 @@ const Todo = ({ todo, onDelete }: { todo: Todos; onDelete: () => void }) => {
   }
 
   return (
-    <li className="block w-full transition duration-150 ease-in-out cursor-pointer hover:bg-200 focus:outline-none focus:bg-200">
-      <div className="flex items-center px-4 py-4 sm:px-6">
-        <div className="flex items-center flex-1 min-w-0">
-          <div className="text-sm font-medium leading-5 truncate">{todo.task}</div>
+    <li className='block w-full transition duration-150 ease-in-out cursor-pointer hover:bg-200 focus:outline-none focus:bg-200'>
+      <div className='flex items-center px-4 py-4 sm:px-6'>
+        <div className='flex items-center flex-1 min-w-0'>
+          <div className='text-sm font-medium leading-5 truncate'>{todo.task}</div>
         </div>
         <div>
           <input
-            className="cursor-pointer"
+            className='cursor-pointer'
             onChange={(e) => toggle()}
-            type="checkbox"
+            type='checkbox'
             checked={isCompleted ? true : false}
           />
         </div>
@@ -129,13 +122,13 @@ const Todo = ({ todo, onDelete }: { todo: Todos; onDelete: () => void }) => {
             e.stopPropagation()
             onDelete()
           }}
-          className="w-4 h-4 ml-2 border-2 rounded hover:border-black"
+          className='w-4 h-4 ml-2 border-2 rounded hover:border-black'
         >
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="gray">
+          <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='gray'>
             <path
-              fillRule="evenodd"
-              d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-              clipRule="evenodd"
+              fillRule='evenodd'
+              d='M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z'
+              clipRule='evenodd'
             />
           </svg>
         </button>
@@ -145,7 +138,7 @@ const Todo = ({ todo, onDelete }: { todo: Todos; onDelete: () => void }) => {
 }
 
 const Alert = ({ text }: { text: string }) => (
-  <div className="p-4 my-3 bg-red-100 rounded-md">
-    <div className="text-sm leading-5 text-red-700">{text}</div>
+  <div className='p-4 my-3 bg-red-100 rounded-md'>
+    <div className='text-sm leading-5 text-red-700'>{text}</div>
   </div>
 )
