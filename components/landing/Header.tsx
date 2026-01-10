@@ -1,17 +1,18 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Menu } from 'lucide-react'
 
 export default function Header() {
   return (
     <header className='fixed top-0 z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md'>
-      <div className='container flex items-center justify-between h-16 px-4 mx-auto'>
+      <div className='container flex items-center justify-between h-16 px-8 mx-auto'>
         {/* Logo */}
-        <div className='text-2xl font-bold text-pink-600'>
-          MoiMoi<span className='text-gray-800'>.STD</span>
+        <div className='flex items-center'>
+          <img src='/image/LOGO.png' alt='MoiMoi.STD' className='h-36 w-auto translate-y-1' />
         </div>
 
         {/* Desktop Menu */}
-        <nav className='hidden gap-8 font-medium text-gray-600 md:flex'>
+        <nav className='hidden gap-12 font-medium text-gray-600 md:flex'>
           <Link href='#features' className='transition hover:text-pink-600'>
             Tính năng
           </Link>
