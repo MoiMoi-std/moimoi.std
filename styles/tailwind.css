@@ -2,6 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Font Declaration */
+@font-face {
+  font-family: 'SDK SC Web';
+  src: url('/font/SDK_SC_Web-Heavy.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Write your own custom component styles here */
 .btn-black {
   @apply border border-black bg-black text-white font-bold py-2 px-4 rounded text-center;
