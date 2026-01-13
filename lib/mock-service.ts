@@ -1,41 +1,40 @@
-
 export interface Wedding {
-  id: string;
-  host_id: string;
-  template_id: string;
+  id: string
+  host_id: string
+  template_id: string
   content: {
-    groom_name: string;
-    bride_name: string;
-    wedding_date: string;
-    wedding_time: string;
-    address: string;
-    map_url: string;
-    images: string[];
-    bank_name: string;
-    account_number: string;
-    account_name: string;
-  };
-  slug: string;
-  deployment_status: 'draft' | 'building' | 'published' | 'failed';
-  repo_branch?: string;
+    groom_name: string
+    bride_name: string
+    wedding_date: string
+    wedding_time: string
+    address: string
+    map_url: string
+    images: string[]
+    bank_name: string
+    account_number: string
+    account_name: string
+  }
+  slug: string
+  deployment_status: 'draft' | 'building' | 'published' | 'failed'
+  repo_branch?: string
 }
 
 export interface RSVP {
-  id: string;
-  wedding_id: string;
-  guest_name: string;
-  phone: string;
-  wishes: string;
-  is_attending: boolean;
-  party_size: number;
-  created_at: string;
+  id: string
+  wedding_id: string
+  guest_name: string
+  phone: string
+  wishes: string
+  is_attending: boolean
+  party_size: number
+  created_at: string
 }
 
 export interface Template {
-  id: string;
-  name: string;
-  thumbnail_url: string;
-  repo_branch: string;
+  id: string
+  name: string
+  thumbnail_url: string
+  repo_branch: string
 }
 
 const MOCK_TEMPLATES: Template[] = [
@@ -43,15 +42,15 @@ const MOCK_TEMPLATES: Template[] = [
     id: 'tpl_01',
     name: 'Vintage Theme',
     thumbnail_url: 'https://via.placeholder.com/300x200?text=Vintage',
-    repo_branch: 'theme-vintage',
+    repo_branch: 'theme-vintage'
   },
   {
     id: 'tpl_02',
     name: 'Modern Theme',
     thumbnail_url: 'https://via.placeholder.com/300x200?text=Modern',
-    repo_branch: 'theme-modern',
-  },
-];
+    repo_branch: 'theme-modern'
+  }
+]
 
 const MOCK_WEDDING: Wedding = {
   id: 'wed_123',
@@ -66,16 +65,16 @@ const MOCK_WEDDING: Wedding = {
     map_url: 'https://maps.google.com',
     images: [
       'https://via.placeholder.com/400x300?text=Wedding+1',
-      'https://via.placeholder.com/400x300?text=Wedding+2',
+      'https://via.placeholder.com/400x300?text=Wedding+2'
     ],
     bank_name: 'Vietcombank',
     account_number: '999988887777',
-    account_name: 'NGUYEN MINH TUAN',
+    account_name: 'NGUYEN MINH TUAN'
   },
   slug: 'tuan-hien',
   deployment_status: 'draft',
-  repo_branch: 'theme-vintage',
-};
+  repo_branch: 'theme-vintage'
+}
 
 const MOCK_RSVPS: RSVP[] = [
   {
@@ -86,7 +85,7 @@ const MOCK_RSVPS: RSVP[] = [
     wishes: 'Chuc mung hanh phuc!',
     is_attending: true,
     party_size: 2,
-    created_at: '2023-10-01T10:00:00Z',
+    created_at: '2023-10-01T10:00:00Z'
   },
   {
     id: 'rsvp_2',
@@ -96,52 +95,52 @@ const MOCK_RSVPS: RSVP[] = [
     wishes: '',
     is_attending: false,
     party_size: 0,
-    created_at: '2023-10-02T11:30:00Z',
-  },
-];
+    created_at: '2023-10-02T11:30:00Z'
+  }
+]
 
 export const mockService = {
   getWedding: async (): Promise<Wedding> => {
     return new Promise((resolve) => {
-      setTimeout(() => resolve({ ...MOCK_WEDDING }), 500);
-    });
+      setTimeout(() => resolve({ ...MOCK_WEDDING }), 500)
+    })
   },
 
   updateWedding: async (data: Partial<Wedding>): Promise<Wedding> => {
     return new Promise((resolve) => {
       // In a real app, we would merge data here
-      console.log('Updating wedding:', data);
-      setTimeout(() => resolve({ ...MOCK_WEDDING, ...data }), 800);
-    });
+      console.log('Updating wedding:', data)
+      setTimeout(() => resolve({ ...MOCK_WEDDING, ...data }), 800)
+    })
   },
 
   getRSVPs: async (): Promise<RSVP[]> => {
     return new Promise((resolve) => {
-      setTimeout(() => resolve([...MOCK_RSVPS]), 600);
-    });
+      setTimeout(() => resolve([...MOCK_RSVPS]), 600)
+    })
   },
 
   getTemplates: async (): Promise<Template[]> => {
     return new Promise((resolve) => {
-      setTimeout(() => resolve([...MOCK_TEMPLATES]), 400);
-    });
+      setTimeout(() => resolve([...MOCK_TEMPLATES]), 400)
+    })
   },
 
   deployWedding: async (): Promise<{ success: boolean; status: string }> => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve({ success: true, status: 'published' });
-      }, 2000);
-    });
+        resolve({ success: true, status: 'published' })
+      }, 2000)
+    })
   },
 
   exportRSVPs: async (): Promise<void> => {
     return new Promise((resolve) => {
-      console.log('Exporting RSVPs...');
+      console.log('Exporting RSVPs...')
       setTimeout(() => {
-        alert('Mock: Downloaded rsvps.xlsx');
-        resolve();
-      }, 1000);
-    });
-  },
-};
+        alert('Mock: Downloaded rsvps.xlsx')
+        resolve()
+      }, 1000)
+    })
+  }
+}
