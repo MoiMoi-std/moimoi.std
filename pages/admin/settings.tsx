@@ -64,6 +64,7 @@ const Settings = () => {
               onClick={() => setSelectedTemplateId(tpl.id)}
             >
               <div className='aspect-w-16 aspect-h-9 bg-gray-100 rounded mb-3 overflow-hidden'>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={tpl.thumbnail_url || 'https://via.placeholder.com/300x200'}
                   alt={tpl.name}

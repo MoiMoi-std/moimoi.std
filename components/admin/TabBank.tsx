@@ -65,7 +65,7 @@ const TabBank: React.FC<TabBankProps> = ({ data, onChange }) => {
           <div className='flex-shrink-0'>ℹ️</div>
           <div className='ml-3'>
             <p className='text-sm text-blue-700'>
-              In the real version, we will call VietQR API to verify the account owner's name automatically.
+              In the real version, we will call VietQR API to verify the account owner&apos;s name automatically.
             </p>
           </div>
         </div>

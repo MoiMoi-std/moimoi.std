@@ -30,6 +30,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onImagesChange }) => {
       <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
         {images.map((img, index) => (
           <div key={index} className='relative group aspect-w-4 aspect-h-3 bg-gray-100 rounded-lg overflow-hidden'>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={img} alt={`Album ${index}`} className='object-cover w-full h-full' />
             <div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center'>
               <button
@@ -61,7 +62,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onImagesChange }) => {
       </div>
 
       <p className='text-sm text-gray-500 italic'>
-        * Note: In this mock version, clicking "Add Photo" simulates a successful upload.
+        * Note: In this mock version, clicking &quot;Add Photo&quot; simulates a successful upload.
       </p>
     </div>
   )

@@ -11,44 +11,44 @@ insert into templates (name, repo_branch, thumbnail_url) values
 
 -- 3. Insert Weddings (Đám cưới giả lập)
 -- LƯU Ý: Thay 'THAY_USER_UID_CUA_BAN_VAO_DAY' bằng UID thật của bạn
-insert into weddings (host_id, template_id, slug, deployment_status, content) 
+insert into weddings (host_id, template_id, slug, deployment_status, content)
 values
 (
-    'b34c46c8-a9ef-4932-96c2-42a476d0a88b', 
-    (select id from templates where repo_branch = 'theme-vintage' limit 1),
-    'tuan-hien-wedding',
-    'published',
-    '{
-        "groom": { "name": "Minh Tuấn", "father": "Ông Tuấn Tú", "mother": "Bà Kim Chi" },
-        "bride": { "name": "Thu Hiền", "father": "Ông Văn Nam", "mother": "Bà Thị Hạnh" },
-        "event": { 
-            "date": "2024-12-25", 
-            "time": "17:30", 
-            "location": "White Palace, Phạm Văn Đồng", 
-            "map_url": "https://goo.gl/maps/..." 
-        },
-        "bank": { "bank_name": "Vietcombank", "number": "99998888", "owner": "NGUYEN MINH TUAN" },
-        "album": [
-            "https://images.unsplash.com/photo-1606800052052-a08af7148866?w=600",
-            "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600"
-        ]
-    }'::jsonb
+'b34c46c8-a9ef-4932-96c2-42a476d0a88b',
+(select id from templates where repo_branch = 'theme-vintage' limit 1),
+'tuan-hien-wedding',
+'published',
+'{
+"groom": { "name": "Minh Tuấn", "father": "Ông Tuấn Tú", "mother": "Bà Kim Chi" },
+"bride": { "name": "Thu Hiền", "father": "Ông Văn Nam", "mother": "Bà Thị Hạnh" },
+"event": {
+"date": "2024-12-25",
+"time": "17:30",
+"location": "White Palace, Phạm Văn Đồng",
+"map_url": "https://goo.gl/maps/..."
+},
+"bank": { "bank_name": "Vietcombank", "number": "99998888", "owner": "NGUYEN MINH TUAN" },
+"album": [
+"https://images.unsplash.com/photo-1606800052052-a08af7148866?w=600",
+"https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600"
+]
+}'::jsonb
 ),
 (
-    '2c3fff07-3cbd-4010-ba40-be7d3ce966dd', 
-    (select id from templates where repo_branch = 'theme-modern' limit 1),
-    'hung-lan-wedding',
-    'draft',
-    '{
-        "groom": { "name": "Quốc Hưng" },
-        "bride": { "name": "Ngọc Lan" },
-        "event": { "date": "2025-01-01", "location": "Chưa chốt" }
-    }'::jsonb
+'2c3fff07-3cbd-4010-ba40-be7d3ce966dd',
+(select id from templates where repo_branch = 'theme-modern' limit 1),
+'hung-lan-wedding',
+'draft',
+'{
+"groom": { "name": "Quốc Hưng" },
+"bride": { "name": "Ngọc Lan" },
+"event": { "date": "2025-01-01", "location": "Chưa chốt" }
+}'::jsonb
 );
 
 -- 4. Insert RSVPs (Khách mời giả lập cho đám cưới Tuấn & Hiền)
 with wedding_row as (
-    select id from weddings where slug = 'tuan-hien-wedding' limit 1
+select id from weddings where slug = 'tuan-hien-wedding' limit 1
 )
 insert into rsvps (wedding_id, guest_name, phone, wishes, is_attending, party_size) values
 ((select id from wedding_row), 'Nguyễn Văn A', '0909123456', 'Chúc mừng hai bạn!', true, 1),
@@ -62,7 +62,7 @@ insert into rsvps (wedding_id, guest_name, phone, wishes, is_attending, party_si
 
 -- Insert vài khách cho đám cưới đang Draft (Hung & Lan)
 with wedding_row_2 as (
-    select id from weddings where slug = 'hung-lan-wedding' limit 1
+select id from weddings where slug = 'hung-lan-wedding' limit 1
 )
 insert into rsvps (wedding_id, guest_name, is_attending) values
 ((select id from wedding_row_2), 'Test Guest 1', true),

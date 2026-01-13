@@ -101,7 +101,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 }
 
 export default AdminLayout
-
 ```
 
 ### components\admin\TabAlbum.tsx
@@ -177,7 +176,6 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onImagesChange }) => {
 }
 
 export default TabAlbum
-
 ```
 
 ### components\admin\TabBank.tsx
@@ -260,7 +258,6 @@ const TabBank: React.FC<TabBankProps> = ({ data, onChange }) => {
 }
 
 export default TabBank
-
 ```
 
 ### components\admin\TabInfo.tsx
@@ -360,7 +357,6 @@ const TabInfo: React.FC<TabInfoProps> = ({ data, onChange }) => {
 }
 
 export default TabInfo
-
 ```
 
 ### components\landing\Features.tsx
@@ -406,7 +402,6 @@ export default function Features() {
     </section>
   )
 }
-
 ```
 
 ### components\landing\Footer.tsx
@@ -525,7 +520,6 @@ export default function Footer() {
     </footer>
   )
 }
-
 ```
 
 ### components\landing\Header.tsx
@@ -572,7 +566,6 @@ export default function Header() {
     </header>
   )
 }
-
 ```
 
 ### components\landing\Hero.tsx
@@ -614,7 +607,6 @@ export default function Hero() {
     </section>
   )
 }
-
 ```
 
 ### components\landing\Pricing.tsx
@@ -723,7 +715,6 @@ export default function Pricing() {
     </section>
   )
 }
-
 ```
 
 ### components\landing\TemplateGallery.tsx
@@ -806,7 +797,6 @@ export default function TemplateGallery() {
     </section>
   )
 }
-
 ```
 
 ### components\TodoList.tsx
@@ -956,154 +946,149 @@ const Alert = ({ text }: { text: string }) => (
     <div className='text-sm leading-5 text-red-700'>{text}</div>
   </div>
 )
-
 ```
 
 ### lib\data-service.ts
 
 ```ts
-
-import { createClient } from '../utils/supabase/client';
-import { Database } from '../types/supabase';
+import { createClient } from '../utils/supabase/client'
+import { Database } from '../types/supabase'
 
 export interface Wedding extends Omit<Database['public']['Tables']['weddings']['Row'], 'content'> {
-    // Helper to type the JSON content
-    content: WeddingContent;
-    template?: Template; // Join result
+  // Helper to type the JSON content
+  content: WeddingContent
+  template?: Template // Join result
 }
 
-export type RSVP = Database['public']['Tables']['rsvps']['Row'];
-export type Template = Database['public']['Tables']['templates']['Row'];
+export type RSVP = Database['public']['Tables']['rsvps']['Row']
+export type Template = Database['public']['Tables']['templates']['Row']
 
 export interface WeddingContent {
-    groom_name?: string;
-    bride_name?: string;
-    wedding_date?: string;
-    wedding_time?: string;
-    address?: string;
-    map_url?: string;
-    images?: string[];
-    bank_name?: string;
-    account_number?: string;
-    account_name?: string;
-    // Allow flexible structure as JSONB
-    [key: string]: any;
+  groom_name?: string
+  bride_name?: string
+  wedding_date?: string
+  wedding_time?: string
+  address?: string
+  map_url?: string
+  images?: string[]
+  bank_name?: string
+  account_number?: string
+  account_name?: string
+  // Allow flexible structure as JSONB
+  [key: string]: any
 }
 
 // Hardcoded for demo purposes as requested in the plan
-const DEMO_HOST_ID = 'b34c46c8-a9ef-4932-96c2-42a476d0a88b';
+const DEMO_HOST_ID = 'b34c46c8-a9ef-4932-96c2-42a476d0a88b'
 
 export const dataService = {
-    supabase: createClient(),
+  supabase: createClient(),
 
-    getWedding: async (): Promise<Wedding | null> => {
-        const supabase = createClient();
-        // Fetch wedding for the demo user
-        // We join templates to get template info if needed, though mostly we just need wedding data
-        const { data, error } = await supabase
-            .from('weddings')
-            .select('*, template:templates(*)')
-            .eq('host_id', DEMO_HOST_ID)
-            .single();
+  getWedding: async (): Promise<Wedding | null> => {
+    const supabase = createClient()
+    // Fetch wedding for the demo user
+    // We join templates to get template info if needed, though mostly we just need wedding data
+    const { data, error } = await supabase
+      .from('weddings')
+      .select('*, template:templates(*)')
+      .eq('host_id', DEMO_HOST_ID)
+      .single()
 
-        if (error) {
-            console.error('Error fetching wedding:', error);
-            return null;
-        }
-
-        return {
-            ...data,
-            content: (data.content as unknown as WeddingContent) || {}
-        } as Wedding;
-    },
-
-    updateWedding: async (weddingId: string, content: WeddingContent): Promise<Wedding | null> => {
-        const supabase = createClient();
-        const { data, error } = await supabase
-            .from('weddings')
-            .update({ content: content })
-            .eq('id', weddingId)
-            .select()
-            .single();
-
-        if (error) {
-            console.error('Error updating wedding:', error);
-            throw error;
-        }
-
-        return {
-            ...data,
-            content: (data.content as unknown as WeddingContent) || {}
-        } as Wedding;
-    },
-
-    updateWeddingTemplate: async (weddingId: string, templateId: number): Promise<void> => {
-        const supabase = createClient();
-        const { error } = await supabase
-            .from('weddings')
-            .update({ template_id: templateId })
-            .eq('id', weddingId);
-
-        if (error) {
-            console.error('Error updating template:', error);
-            throw error;
-        }
-    },
-
-    getRSVPs: async (weddingId: string): Promise<RSVP[]> => {
-        const supabase = createClient();
-        const { data, error } = await supabase
-            .from('rsvps')
-            .select('*')
-            .eq('wedding_id', weddingId)
-            .order('created_at', { ascending: false });
-
-        if (error) {
-            console.error('Error fetching RSVPs:', error);
-            return [];
-        }
-        return data;
-    },
-
-    getTemplates: async (): Promise<Template[]> => {
-        const supabase = createClient();
-        const { data, error } = await supabase
-            .from('templates')
-            .select('*');
-
-        if (error) {
-            console.error('Error fetching templates:', error);
-            return [];
-        }
-        return data;
-    },
-
-    deployWedding: async (weddingId: string, templateBranch: string = 'theme-vintage'): Promise<{ success: boolean; status: string }> => {
-        try {
-            const response = await fetch('/api/trigger-deploy', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ weddingId, templateBranch }),
-            });
-
-            if (response.ok) {
-                return { success: true, status: 'building' };
-            } else {
-                console.error('Deploy failed');
-                return { success: false, status: 'failed' };
-            }
-        } catch (e) {
-            return { success: false, status: 'failed' };
-        }
-    },
-
-    exportRSVPs: async (weddingId: string): Promise<void> => {
-        // For a real app, this would probably fetch a CSV generated by backend or generate client side
-        console.log(`Exporting RSVPs for ${weddingId}`);
-        alert('Export functionality would generate an Excel file here.');
+    if (error) {
+      console.error('Error fetching wedding:', error)
+      return null
     }
-};
 
+    return {
+      ...data,
+      content: (data.content as unknown as WeddingContent) || {}
+    } as Wedding
+  },
+
+  updateWedding: async (weddingId: string, content: WeddingContent): Promise<Wedding | null> => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('weddings')
+      .update({ content: content })
+      .eq('id', weddingId)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error updating wedding:', error)
+      throw error
+    }
+
+    return {
+      ...data,
+      content: (data.content as unknown as WeddingContent) || {}
+    } as Wedding
+  },
+
+  updateWeddingTemplate: async (weddingId: string, templateId: number): Promise<void> => {
+    const supabase = createClient()
+    const { error } = await supabase.from('weddings').update({ template_id: templateId }).eq('id', weddingId)
+
+    if (error) {
+      console.error('Error updating template:', error)
+      throw error
+    }
+  },
+
+  getRSVPs: async (weddingId: string): Promise<RSVP[]> => {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('rsvps')
+      .select('*')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching RSVPs:', error)
+      return []
+    }
+    return data
+  },
+
+  getTemplates: async (): Promise<Template[]> => {
+    const supabase = createClient()
+    const { data, error } = await supabase.from('templates').select('*')
+
+    if (error) {
+      console.error('Error fetching templates:', error)
+      return []
+    }
+    return data
+  },
+
+  deployWedding: async (
+    weddingId: string,
+    templateBranch: string = 'theme-vintage'
+  ): Promise<{ success: boolean; status: string }> => {
+    try {
+      const response = await fetch('/api/trigger-deploy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weddingId, templateBranch })
+      })
+
+      if (response.ok) {
+        return { success: true, status: 'building' }
+      } else {
+        console.error('Deploy failed')
+        return { success: false, status: 'failed' }
+      }
+    } catch (e) {
+      return { success: false, status: 'failed' }
+    }
+  },
+
+  exportRSVPs: async (weddingId: string): Promise<void> => {
+    // For a real app, this would probably fetch a CSV generated by backend or generate client side
+    console.log(`Exporting RSVPs for ${weddingId}`)
+    alert('Export functionality would generate an Excel file here.')
+  }
+}
 ```
 
 ### lib\initSupabase.ts
@@ -1115,50 +1100,48 @@ export const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? '',
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? ''
 )
-
 ```
 
 ### lib\mock-service.ts
 
 ```ts
-
 export interface Wedding {
-  id: string;
-  host_id: string;
-  template_id: string;
+  id: string
+  host_id: string
+  template_id: string
   content: {
-    groom_name: string;
-    bride_name: string;
-    wedding_date: string;
-    wedding_time: string;
-    address: string;
-    map_url: string;
-    images: string[];
-    bank_name: string;
-    account_number: string;
-    account_name: string;
-  };
-  slug: string;
-  deployment_status: 'draft' | 'building' | 'published' | 'failed';
-  repo_branch?: string;
+    groom_name: string
+    bride_name: string
+    wedding_date: string
+    wedding_time: string
+    address: string
+    map_url: string
+    images: string[]
+    bank_name: string
+    account_number: string
+    account_name: string
+  }
+  slug: string
+  deployment_status: 'draft' | 'building' | 'published' | 'failed'
+  repo_branch?: string
 }
 
 export interface RSVP {
-  id: string;
-  wedding_id: string;
-  guest_name: string;
-  phone: string;
-  wishes: string;
-  is_attending: boolean;
-  party_size: number;
-  created_at: string;
+  id: string
+  wedding_id: string
+  guest_name: string
+  phone: string
+  wishes: string
+  is_attending: boolean
+  party_size: number
+  created_at: string
 }
 
 export interface Template {
-  id: string;
-  name: string;
-  thumbnail_url: string;
-  repo_branch: string;
+  id: string
+  name: string
+  thumbnail_url: string
+  repo_branch: string
 }
 
 const MOCK_TEMPLATES: Template[] = [
@@ -1166,15 +1149,15 @@ const MOCK_TEMPLATES: Template[] = [
     id: 'tpl_01',
     name: 'Vintage Theme',
     thumbnail_url: 'https://via.placeholder.com/300x200?text=Vintage',
-    repo_branch: 'theme-vintage',
+    repo_branch: 'theme-vintage'
   },
   {
     id: 'tpl_02',
     name: 'Modern Theme',
     thumbnail_url: 'https://via.placeholder.com/300x200?text=Modern',
-    repo_branch: 'theme-modern',
-  },
-];
+    repo_branch: 'theme-modern'
+  }
+]
 
 const MOCK_WEDDING: Wedding = {
   id: 'wed_123',
@@ -1189,16 +1172,16 @@ const MOCK_WEDDING: Wedding = {
     map_url: 'https://maps.google.com',
     images: [
       'https://via.placeholder.com/400x300?text=Wedding+1',
-      'https://via.placeholder.com/400x300?text=Wedding+2',
+      'https://via.placeholder.com/400x300?text=Wedding+2'
     ],
     bank_name: 'Vietcombank',
     account_number: '999988887777',
-    account_name: 'NGUYEN MINH TUAN',
+    account_name: 'NGUYEN MINH TUAN'
   },
   slug: 'tuan-hien',
   deployment_status: 'draft',
-  repo_branch: 'theme-vintage',
-};
+  repo_branch: 'theme-vintage'
+}
 
 const MOCK_RSVPS: RSVP[] = [
   {
@@ -1209,7 +1192,7 @@ const MOCK_RSVPS: RSVP[] = [
     wishes: 'Chuc mung hanh phuc!',
     is_attending: true,
     party_size: 2,
-    created_at: '2023-10-01T10:00:00Z',
+    created_at: '2023-10-01T10:00:00Z'
   },
   {
     id: 'rsvp_2',
@@ -1219,56 +1202,55 @@ const MOCK_RSVPS: RSVP[] = [
     wishes: '',
     is_attending: false,
     party_size: 0,
-    created_at: '2023-10-02T11:30:00Z',
-  },
-];
+    created_at: '2023-10-02T11:30:00Z'
+  }
+]
 
 export const mockService = {
   getWedding: async (): Promise<Wedding> => {
     return new Promise((resolve) => {
-      setTimeout(() => resolve({ ...MOCK_WEDDING }), 500);
-    });
+      setTimeout(() => resolve({ ...MOCK_WEDDING }), 500)
+    })
   },
 
   updateWedding: async (data: Partial<Wedding>): Promise<Wedding> => {
     return new Promise((resolve) => {
       // In a real app, we would merge data here
-      console.log('Updating wedding:', data);
-      setTimeout(() => resolve({ ...MOCK_WEDDING, ...data }), 800);
-    });
+      console.log('Updating wedding:', data)
+      setTimeout(() => resolve({ ...MOCK_WEDDING, ...data }), 800)
+    })
   },
 
   getRSVPs: async (): Promise<RSVP[]> => {
     return new Promise((resolve) => {
-      setTimeout(() => resolve([...MOCK_RSVPS]), 600);
-    });
+      setTimeout(() => resolve([...MOCK_RSVPS]), 600)
+    })
   },
 
   getTemplates: async (): Promise<Template[]> => {
     return new Promise((resolve) => {
-      setTimeout(() => resolve([...MOCK_TEMPLATES]), 400);
-    });
+      setTimeout(() => resolve([...MOCK_TEMPLATES]), 400)
+    })
   },
 
   deployWedding: async (): Promise<{ success: boolean; status: string }> => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve({ success: true, status: 'published' });
-      }, 2000);
-    });
+        resolve({ success: true, status: 'published' })
+      }, 2000)
+    })
   },
 
   exportRSVPs: async (): Promise<void> => {
     return new Promise((resolve) => {
-      console.log('Exporting RSVPs...');
+      console.log('Exporting RSVPs...')
       setTimeout(() => {
-        alert('Mock: Downloaded rsvps.xlsx');
-        resolve();
-      }, 1000);
-    });
-  },
-};
-
+        alert('Mock: Downloaded rsvps.xlsx')
+        resolve()
+      }, 1000)
+    })
+  }
+}
 ```
 
 ### lib\schema.ts
@@ -1317,7 +1299,6 @@ export interface Database {
     }
   }
 }
-
 ```
 
 ### pages\admin\dashboard.tsx
@@ -1443,7 +1424,6 @@ const Dashboard = () => {
 }
 
 export default Dashboard
-
 ```
 
 ### pages\admin\editor.tsx
@@ -1554,7 +1534,6 @@ const Editor = () => {
 }
 
 export default Editor
-
 ```
 
 ### pages\admin\guests.tsx
@@ -1722,7 +1701,6 @@ const Guests = () => {
 }
 
 export default Guests
-
 ```
 
 ### pages\admin\settings.tsx
@@ -1855,7 +1833,6 @@ const Settings = () => {
 }
 
 export default Settings
-
 ```
 
 ### pages\api\hello.ts
@@ -1871,7 +1848,6 @@ type Data = {
 export default function handler(req: NextApiRequest, res: NextApiResponse<Data>) {
   res.status(200).json({ name: 'John Doe' })
 }
-
 ```
 
 ### pages\api\trigger-deploy.ts
@@ -1880,41 +1856,38 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Data>)
 import type { NextApiRequest, NextApiResponse } from 'next'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    if (req.method !== 'POST') return res.status(405).end()
+  if (req.method !== 'POST') return res.status(405).end()
 
-    const { weddingId, templateBranch } = req.body
-    const GITHUB_PAT = process.env.GITHUB_PAT // Token GitHub (Classic) có quyền 'repo'
-    const REPO_OWNER = 'MoiMoi-std'
-    const REPO_NAME = 'moimoi.std'
+  const { weddingId, templateBranch } = req.body
+  const GITHUB_PAT = process.env.GITHUB_PAT // Token GitHub (Classic) có quyền 'repo'
+  const REPO_OWNER = 'MoiMoi-std'
+  const REPO_NAME = 'moimoi.std'
 
-    try {
-        const response = await fetch(
-            `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/dispatches`,
-            {
-                method: 'POST',
-                headers: {
-                    Accept: 'application/vnd.github.v3+json',
-                    Authorization: `Bearer ${GITHUB_PAT}`,
-                },
-                body: JSON.stringify({
-                    event_type: 'deploy_wedding_trigger',
-                    client_payload: {
-                        wedding_id: weddingId,
-                        template_branch: templateBranch || 'theme-vintage',
-                    },
-                }),
-            }
-        )
-
-        if (response.status === 204) {
-            res.status(200).json({ message: 'Deployment triggered successfully' })
-        } else {
-            const errorText = await response.text()
-            res.status(500).json({ error: errorText })
+  try {
+    const response = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/dispatches`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+        Authorization: `Bearer ${GITHUB_PAT}`
+      },
+      body: JSON.stringify({
+        event_type: 'deploy_wedding_trigger',
+        client_payload: {
+          wedding_id: weddingId,
+          template_branch: templateBranch || 'theme-vintage'
         }
-    } catch (error) {
-        res.status(500).json({ error: 'Internal Server Error' })
+      })
+    })
+
+    if (response.status === 204) {
+      res.status(200).json({ message: 'Deployment triggered successfully' })
+    } else {
+      const errorText = await response.text()
+      res.status(500).json({ error: errorText })
     }
+  } catch (error) {
+    res.status(500).json({ error: 'Internal Server Error' })
+  }
 }
 ```
 
@@ -1949,10 +1922,9 @@ export default function Home() {
     </>
   )
 }
-
 ```
 
-### pages\_app.tsx
+### pages_app.tsx
 
 ```tsx
 import { supabase } from '@/lib/initSupabase'
@@ -1967,10 +1939,9 @@ export default function App({ Component, pageProps }: AppProps) {
     </SessionContextProvider>
   )
 }
-
 ```
 
-### pages\_document.tsx
+### pages_document.tsx
 
 ```tsx
 import { Html, Head, Main, NextScript } from 'next/document'
@@ -1986,7 +1957,6 @@ export default function Document() {
     </Html>
   )
 }
-
 ```
 
 ### utils\supabase\client.ts
@@ -1995,29 +1965,20 @@ export default function Document() {
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {
-    return createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+  return createBrowserClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 }
 ```
 
 ### types\supabase.ts
 
 ```ts
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.1"
+    PostgrestVersion: '14.1'
   }
   public: {
     Tables: {
@@ -2054,12 +2015,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "rsvps_wedding_id_fkey"
-            columns: ["wedding_id"]
+            foreignKeyName: 'rsvps_wedding_id_fkey'
+            columns: ['wedding_id']
             isOneToOne: false
-            referencedRelation: "weddings"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'weddings'
+            referencedColumns: ['id']
+          }
         ]
       }
       templates: {
@@ -2116,12 +2077,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "weddings_template_id_fkey"
-            columns: ["template_id"]
+            foreignKeyName: 'weddings_template_id_fkey'
+            columns: ['template_id']
             isOneToOne: false
-            referencedRelation: "templates"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'templates'
+            referencedColumns: ['id']
+          }
         ]
       }
     }
@@ -2140,33 +2101,31 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -2174,24 +2133,22 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -2199,24 +2156,22 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -2224,43 +2179,40 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    : never = never
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never = never
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   public: {
-    Enums: {},
-  },
+    Enums: {}
+  }
 } as const
-
 ```
