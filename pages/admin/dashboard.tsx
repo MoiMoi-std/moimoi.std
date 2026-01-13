@@ -28,7 +28,7 @@ const Dashboard = () => {
       <AdminLayout>
         <div className='flex flex-col items-center justify-center p-12 bg-white rounded-lg shadow-sm'>
           <h2 className='text-2xl font-bold text-gray-800 mb-4'>Welcome to MoiMoi!</h2>
-          <p className='text-gray-600 mb-6'>It looks like you haven't set up your wedding yet.</p>
+          <p className='text-gray-600 mb-6'>It looks like you haven&apos;t set up your wedding yet.</p>
           <button
             onClick={async () => {
               setLoading(true)

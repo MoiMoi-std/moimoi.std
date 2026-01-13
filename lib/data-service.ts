@@ -25,7 +25,9 @@ export interface WeddingContent {
 
 export const dataService = {
   getWedding: async (): Promise<Wedding | null> => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
     if (!user) return null
 
     const { data, error } = await supabase
@@ -46,7 +48,9 @@ export const dataService = {
   },
 
   createWedding: async (): Promise<Wedding | null> => {
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user }
+    } = await supabase.auth.getUser()
     if (!user) return null
 
     // Call API to bypass RLS
@@ -131,10 +135,7 @@ export const dataService = {
       })
 
       if (response.ok) {
-        await supabase
-          .from('weddings')
-          .update({ deployment_status: 'published' })
-          .eq('id', weddingId)
+        await supabase.from('weddings').update({ deployment_status: 'published' }).eq('id', weddingId)
 
         return { success: true, status: 'building' }
       } else {
