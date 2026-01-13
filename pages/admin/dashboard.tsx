@@ -40,8 +40,17 @@ const Dashboard = () => {
   return (
     <AdminLayout>
       <div className='mb-8'>
-        <h2 className='text-3xl font-bold text-gray-800'>Dashboard</h2>
-        <p className='text-gray-600'>Overview of your wedding invitation</p>
+        <div className='flex justify-between items-center'>
+          <div>
+            <h2 className='text-3xl font-bold text-gray-800'>Dashboard</h2>
+            <p className='text-gray-600'>Overview of your wedding invitation</p>
+          </div>
+          <Link href='/'>
+            <button className='px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors'>
+              ← Back to Home
+            </button>
+          </Link>
+        </div>
       </div>
 
       {/* Status Card */}

@@ -26,7 +26,10 @@ export default function Header() {
         </nav>
 
         {/* CTA Button */}
-        <div className='hidden md:block'>
+        <div className='hidden md:flex items-center space-x-4'>
+          <Link href='/admin/dashboard'>
+            <button className='text-gray-600 hover:text-pink-600 font-medium transition'>Admin Dashboard</button>
+          </Link>
           <button className='px-6 py-2 font-medium text-white transition bg-pink-600 rounded-full hover:bg-pink-700'>
             Tạo Thiệp Ngay
           </button>

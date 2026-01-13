@@ -120,6 +120,13 @@ export const dataService = {
       })
 
       if (response.ok) {
+        // Persist the status change to the database so it survives refresh
+        const supabase = createClient()
+        await supabase
+          .from('weddings')
+          .update({ deployment_status: 'published' }) // In real app: 'building', then webhook updates to 'published'
+          .eq('id', weddingId)
+
         return { success: true, status: 'building' }
       } else {
         console.error('Deploy failed')
