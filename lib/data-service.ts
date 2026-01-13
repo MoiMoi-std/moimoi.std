@@ -114,18 +114,23 @@ export const dataService = {
         return data;
     },
 
-    deployWedding: async (weddingId: string): Promise<{ success: boolean; status: string }> => {
-        // This would call the edge function "deploy-wedding"
-        // For now we simulate it or call the function if it existed
-        console.log(`Deploying wedding ${weddingId}...`);
+    deployWedding: async (weddingId: string, templateBranch: string = 'theme-vintage'): Promise<{ success: boolean; status: string }> => {
+        try {
+            const response = await fetch('/api/trigger-deploy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ weddingId, templateBranch }),
+            });
 
-        // Simulate API call
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log('Deployment triggered (mock)');
-                resolve({ success: true, status: 'published' });
-            }, 2000);
-        });
+            if (response.ok) {
+                return { success: true, status: 'building' };
+            } else {
+                console.error('Deploy failed');
+                return { success: false, status: 'failed' };
+            }
+        } catch (e) {
+            return { success: false, status: 'failed' };
+        }
     },
 
     exportRSVPs: async (weddingId: string): Promise<void> => {
