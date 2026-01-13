@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import React, { ReactNode } from 'react'
+import React, { ReactNode, useEffect } from 'react'
+import { useSession, useSessionContext } from '@supabase/auth-helpers-react'
 
 interface AdminLayoutProps {
   children: ReactNode
@@ -8,6 +9,16 @@ interface AdminLayoutProps {
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
   const router = useRouter()
+  const session = useSession()
+  const isLoading = useSessionContext().isLoading
+
+  useEffect(() => {
+    if (!isLoading && !session) {
+      router.push('/admin/login')
+    }
+  }, [session, isLoading, router])
+
+  if (isLoading || !session) return <div className='p-8'>Loading auth state...</div>
 
   const navItems = [
     { label: 'Dashboard', href: '/admin/dashboard', icon: '📊' },
@@ -40,7 +51,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             )
           })}
         </nav>
-        <div className='p-4 border-t text-sm text-gray-500'>User: host_001</div>
+        <div className='p-4 border-t text-sm text-gray-500'>User: {session?.user?.email}</div>
       </aside>
 
       {/* Main Content */}

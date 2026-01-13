@@ -24,7 +24,31 @@ const Dashboard = () => {
 
   if (loading) return <AdminLayout>Loading...</AdminLayout>
   if (!wedding)
-    return <AdminLayout>Error loading data. Are you sure you have set up the seed data correctly?</AdminLayout>
+    return (
+      <AdminLayout>
+        <div className='flex flex-col items-center justify-center p-12 bg-white rounded-lg shadow-sm'>
+          <h2 className='text-2xl font-bold text-gray-800 mb-4'>Welcome to MoiMoi!</h2>
+          <p className='text-gray-600 mb-6'>It looks like you haven't set up your wedding yet.</p>
+          <button
+            onClick={async () => {
+              setLoading(true)
+              try {
+                const newWedding = await dataService.createWedding()
+                setWedding(newWedding)
+              } catch (e) {
+                alert('Failed to create wedding. See console for details.')
+              } finally {
+                setLoading(false)
+              }
+            }}
+            disabled={loading}
+            className='px-6 py-3 font-medium text-white bg-pink-600 rounded-full hover:bg-pink-700 transition'
+          >
+            {loading ? 'Initializing...' : 'Initialize My Wedding'}
+          </button>
+        </div>
+      </AdminLayout>
+    )
 
   const attendingCount = rsvps.filter((r) => r.is_attending).reduce((acc, curr) => acc + (curr.party_size || 0), 0)
   const totalGuests = rsvps.reduce((acc, curr) => acc + (curr.party_size || 0), 0)
