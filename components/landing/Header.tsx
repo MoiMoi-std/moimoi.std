@@ -8,6 +8,7 @@ export default function Header() {
       <div className='container flex items-center justify-between h-16 px-8 mx-auto'>
         {/* Logo */}
         <div className='flex items-center'>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src='/image/LOGO.png' alt='MoiMoi.STD' className='h-36 w-auto translate-y-1' />
         </div>
 
