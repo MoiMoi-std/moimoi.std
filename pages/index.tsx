@@ -1,12 +1,9 @@
-// pages/index.tsx trên nhánh theme-vintage
 import { GetStaticProps } from 'next'
 import { createClient } from '@/utils/supabase/client'
-import { Database } from '@/types/supabase'
-
-type Wedding = Database['public']['Tables']['weddings']['Row']
+import { Wedding } from '@/types/supabase' // Đảm bảo bạn đã export type này
 
 interface Props {
-  wedding: Wedding | null
+  wedding: Wedding['Row'] | null
 }
 
 export default function WeddingTemplate({ wedding }: Props) {
@@ -32,8 +29,7 @@ export default function WeddingTemplate({ wedding }: Props) {
 
       {/* Các phần khác: Album, Time, Location... */}
       <section className='p-10 text-center'>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={content.images?.[0]} alt='Wedding Photo' className='w-full max-w-2xl mx-auto rounded shadow' />
+        <img src={content.images?.[0]} className='w-full max-w-2xl mx-auto rounded shadow' />
         <p className='mt-4'>{content.wishes}</p>
       </section>
     </div>
