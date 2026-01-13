@@ -2,7 +2,7 @@
 
 ## Project Statistics
 
-- Total files: 25
+- Total files: 26
 
 ## Folder Structure
 
@@ -34,14 +34,15 @@ pages
     settings.tsx
   api
     hello.ts
+    trigger-deploy.ts
   index.tsx
   _app.tsx
   _document.tsx
-types
-  supabase.ts
 utils
   supabase
     client.ts
+types
+  supabase.ts
 
 ```
 
@@ -1077,18 +1078,23 @@ export const dataService = {
         return data;
     },
 
-    deployWedding: async (weddingId: string): Promise<{ success: boolean; status: string }> => {
-        // This would call the edge function "deploy-wedding"
-        // For now we simulate it or call the function if it existed
-        console.log(`Deploying wedding ${weddingId}...`);
+    deployWedding: async (weddingId: string, templateBranch: string = 'theme-vintage'): Promise<{ success: boolean; status: string }> => {
+        try {
+            const response = await fetch('/api/trigger-deploy', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ weddingId, templateBranch }),
+            });
 
-        // Simulate API call
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                console.log('Deployment triggered (mock)');
-                resolve({ success: true, status: 'published' });
-            }, 2000);
-        });
+            if (response.ok) {
+                return { success: true, status: 'building' };
+            } else {
+                console.error('Deploy failed');
+                return { success: false, status: 'failed' };
+            }
+        } catch (e) {
+            return { success: false, status: 'failed' };
+        }
     },
 
     exportRSVPs: async (weddingId: string): Promise<void> => {
@@ -1868,6 +1874,50 @@ export default function handler(req: NextApiRequest, res: NextApiResponse<Data>)
 
 ```
 
+### pages\api\trigger-deploy.ts
+
+```ts
+import type { NextApiRequest, NextApiResponse } from 'next'
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+    if (req.method !== 'POST') return res.status(405).end()
+
+    const { weddingId, templateBranch } = req.body
+    const GITHUB_PAT = process.env.GITHUB_PAT // Token GitHub (Classic) có quyền 'repo'
+    const REPO_OWNER = 'MoiMoi-std'
+    const REPO_NAME = 'moimoi.std'
+
+    try {
+        const response = await fetch(
+            `https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/dispatches`,
+            {
+                method: 'POST',
+                headers: {
+                    Accept: 'application/vnd.github.v3+json',
+                    Authorization: `Bearer ${GITHUB_PAT}`,
+                },
+                body: JSON.stringify({
+                    event_type: 'deploy_wedding_trigger',
+                    client_payload: {
+                        wedding_id: weddingId,
+                        template_branch: templateBranch || 'theme-vintage',
+                    },
+                }),
+            }
+        )
+
+        if (response.status === 204) {
+            res.status(200).json({ message: 'Deployment triggered successfully' })
+        } else {
+            const errorText = await response.text()
+            res.status(500).json({ error: errorText })
+        }
+    } catch (error) {
+        res.status(500).json({ error: 'Internal Server Error' })
+    }
+}
+```
+
 ### pages\index.tsx
 
 ```tsx
@@ -1937,6 +1987,19 @@ export default function Document() {
   )
 }
 
+```
+
+### utils\supabase\client.ts
+
+```ts
+import { createBrowserClient } from '@supabase/ssr'
+
+export function createClient() {
+    return createBrowserClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+}
 ```
 
 ### types\supabase.ts
@@ -2200,17 +2263,4 @@ export const Constants = {
   },
 } as const
 
-```
-
-### utils\supabase\client.ts
-
-```ts
-import { createBrowserClient } from '@supabase/ssr'
-
-export function createClient() {
-    return createBrowserClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-}
 ```
