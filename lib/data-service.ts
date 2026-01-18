@@ -48,11 +48,7 @@ export const dataService = {
   },
 
   getWeddingBySlug: async (slug: string): Promise<Wedding | null> => {
-    const { data, error } = await supabase
-      .from('weddings')
-      .select('*, template:templates(*)')
-      .eq('slug', slug)
-      .single()
+    const { data, error } = await supabase.from('weddings').select('*, template:templates(*)').eq('slug', slug).single()
 
     if (error) return null
 

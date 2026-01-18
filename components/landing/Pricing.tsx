@@ -35,7 +35,7 @@ const plans = [
       'Hiệu ứng mở thiệp độc đáo',
       'Lưu trữ 3 năm'
     ],
-    notIncluded: ['Sở hữu slug tùy chọn', 'Hỗ trợ setup 1-1','Thiết kế theo yêu cầu'],
+    notIncluded: ['Sở hữu slug tùy chọn', 'Hỗ trợ setup 1-1', 'Thiết kế theo yêu cầu'],
     highlight: false
   },
   {

@@ -27,36 +27,39 @@ const LoginPage = () => {
 
       <div className='w-full max-w-md p-10 bg-white rounded-3xl shadow-xl shadow-pink-100/50 border border-white z-10'>
         <div className='mb-8 text-center'>
-            <div className='w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl'>
-                🔐
-            </div>
+          <div className='w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl'>
+            🔐
+          </div>
           <h1 className='text-3xl font-serif font-bold text-gray-900'>Chào Mừng Trở Lại</h1>
           <p className='text-gray-500 mt-2'>Đăng nhập để quản lý đám cưới của bạn</p>
         </div>
 
-        <Auth 
-            supabaseClient={supabase} 
-            appearance={{ 
-                theme: ThemeSupa,
-                variables: {
-                    default: {
-                        colors: {
-                            brand: '#E27D60',
-                            brandAccent: '#C38D9E',
-                        },
-                        radii: {
-                            borderRadiusButton: '12px',
-                            inputBorderRadius: '12px',
-                        }
-                    }
+        <Auth
+          supabaseClient={supabase}
+          appearance={{
+            theme: ThemeSupa,
+            variables: {
+              default: {
+                colors: {
+                  brand: '#E27D60',
+                  brandAccent: '#C38D9E'
+                },
+                radii: {
+                  borderRadiusButton: '12px',
+                  inputBorderRadius: '12px'
                 }
-            }} 
-            theme='light' 
-            providers={[]} 
+              }
+            }
+          }}
+          theme='light'
+          providers={[]}
         />
 
         <div className='mt-8 pt-6 border-t border-gray-100 text-center'>
-          <Link href='/' className='inline-flex items-center text-sm font-medium text-gray-400 hover:text-pink-600 transition-colors'>
+          <Link
+            href='/'
+            className='inline-flex items-center text-sm font-medium text-gray-400 hover:text-pink-600 transition-colors'
+          >
             <ArrowLeft size={16} className='mr-1' /> Quay về Trang chủ
           </Link>
         </div>

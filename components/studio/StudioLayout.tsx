@@ -47,9 +47,9 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
       {/* Mobile Header */}
       <div className='md:hidden bg-white/80 backdrop-blur-md border-b p-4 flex justify-between items-center sticky top-0 z-50'>
         <div className='flex items-center gap-2'>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src='/image/logo-notext.png' alt='MoiMoi' className='h-8 w-auto' />
-            <h1 className='text-xl font-bold font-serif text-pink-600'>MoiMoi Studio</h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src='/image/logo-notext.png' alt='MoiMoi' className='h-8 w-auto' />
+          <h1 className='text-xl font-bold font-serif text-pink-600'>MoiMoi Studio</h1>
         </div>
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className='p-2 text-gray-600 hover:text-pink-600'>
           {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
@@ -58,10 +58,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
 
       {/* Sidebar Overlay (Mobile) */}
       {sidebarOpen && (
-        <div
-          className='fixed inset-0 bg-black/20 z-40 md:hidden'
-          onClick={() => setSidebarOpen(false)}
-        />
+        <div className='fixed inset-0 bg-black/20 z-40 md:hidden' onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar */}
@@ -79,7 +76,8 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
 
         <nav className='flex-1 px-4 space-y-2 py-4'>
           {navItems.map((item) => {
-            const isActive = router.pathname === item.href || (item.href !== '/studio' && router.pathname.startsWith(item.href))
+            const isActive =
+              router.pathname === item.href || (item.href !== '/studio' && router.pathname.startsWith(item.href))
             return (
               <Link href={item.href} key={item.href} onClick={() => setSidebarOpen(false)}>
                 <span

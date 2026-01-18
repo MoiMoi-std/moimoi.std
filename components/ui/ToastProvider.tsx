@@ -25,13 +25,16 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     setToasts((prev) => prev.filter((toast) => toast.id !== id))
   }, [])
 
-  const addToast = useCallback((message: string, type: ToastType = 'info') => {
-    const id = Math.random().toString(36).substring(2, 9)
-    setToasts((prev) => [...prev, { id, message, type }])
-    setTimeout(() => {
-      removeToast(id)
-    }, 3000)
-  }, [removeToast])
+  const addToast = useCallback(
+    (message: string, type: ToastType = 'info') => {
+      const id = Math.random().toString(36).substring(2, 9)
+      setToasts((prev) => [...prev, { id, message, type }])
+      setTimeout(() => {
+        removeToast(id)
+      }, 3000)
+    },
+    [removeToast]
+  )
 
   const success = (message: string) => addToast(message, 'success')
   const error = (message: string) => addToast(message, 'error')
@@ -74,9 +77,7 @@ const ToastItem: React.FC<{ toast: Toast; onClose: () => void }> = ({ toast, onC
       className={`min-w-[300px] p-4 rounded-xl shadow-lg border flex items-center gap-3 pointer-events-auto cursor-pointer ${styles[toast.type]}`}
       onClick={onClose}
     >
-      <div className={`p-2 rounded-full bg-white/50 backdrop-blur-sm`}>
-        {icons[toast.type]}
-      </div>
+      <div className={`p-2 rounded-full bg-white/50 backdrop-blur-sm`}>{icons[toast.type]}</div>
       <p className='text-sm font-medium'>{toast.message}</p>
     </motion.div>
   )

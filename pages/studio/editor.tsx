@@ -133,9 +133,7 @@ const Editor = () => {
 
         {/* Tab Content with Animation Placeholder */}
         <div className='p-8 animate-in fade-in slide-in-from-bottom-2 duration-300'>
-          {activeTab === 'info' && (
-            <TabInfo content={wedding.content} onChange={handleInfoChange} />
-          )}
+          {activeTab === 'info' && <TabInfo content={wedding.content} onChange={handleInfoChange} />}
           {activeTab === 'album' && <TabAlbum images={wedding.content.images || []} onChange={handleImagesChange} />}
           {activeTab === 'bank' && <TabBank content={wedding.content} onChange={handleInfoChange} />}
         </div>

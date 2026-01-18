@@ -7,8 +7,8 @@ module.exports = {
         'accent-1': '#333',
         'rose-gold': '#E27D60',
         'rose-gold-dark': '#C38D9E',
-        'cream': '#FDFBF7',
-        'navy': '#1B2631'
+        cream: '#FDFBF7',
+        navy: '#1B2631'
       },
       fontFamily: {
         sans: ['SDK SC Web', 'ui-sans-serif', 'system-ui', 'sans-serif'],

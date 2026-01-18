@@ -80,8 +80,8 @@ const Settings = () => {
                 <h3 className='text-2xl font-bold'>Trạng Thái Xuất Bản</h3>
               </div>
               <p className='text-gray-300 mb-6 text-lg'>
-                Sẵn sàng ra mắt? Việc xuất bản chỉ tốn khoảng 2-3 phút. Sau khi xuất bản, 
-                khách mời có thể xem thiệp và gửi lời chúc ngay lập tức.
+                Sẵn sàng ra mắt? Việc xuất bản chỉ tốn khoảng 2-3 phút. Sau khi xuất bản, khách mời có thể xem thiệp và
+                gửi lời chúc ngay lập tức.
               </p>
               {wedding.deployment_status === 'published' && (
                 <div className='inline-flex items-center gap-2 bg-green-500/20 border border-green-500/50 px-4 py-2 rounded-full text-green-300 font-medium'>
@@ -131,10 +131,7 @@ const Settings = () => {
                 ) : (
                   <span className='flex items-center'>
                     Thực Hiện Xuất Bản{' '}
-                    <ArrowRight
-                      size={20}
-                      className='ml-2 group-hover:translate-x-1 transition-transform'
-                    />
+                    <ArrowRight size={20} className='ml-2 group-hover:translate-x-1 transition-transform' />
                   </span>
                 )}
               </button>
