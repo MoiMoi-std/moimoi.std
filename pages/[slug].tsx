@@ -11,9 +11,10 @@ import { Wedding } from '../lib/data-service'
 
 interface WeddingPageProps {
   wedding: Wedding | null
+  guestName: string | null
 }
 
-export default function WeddingPage({ wedding }: WeddingPageProps) {
+export default function WeddingPage({ wedding, guestName }: WeddingPageProps) {
   if (!wedding) {
     return (
       <div className='flex items-center justify-center min-h-screen bg-pink-50'>
@@ -198,7 +199,7 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
 
             {/* Money Gift */}
             <section>
-              <MoneyGift content={content} />
+              <MoneyGift content={content} guestName={guestName || undefined} />
             </section>
 
             {/* Wishes */}
@@ -222,6 +223,7 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
 // Minimal SSR to get wedding data by Slug
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { slug } = context.params as { slug: string }
+  const guestNameParam = typeof context.query.g === 'string' ? context.query.g : null
   // We need a method to get wedding by SLUG, not by user ID.
   // Assuming Supabase table has 'slug' column.
 
@@ -239,7 +241,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   if (error || !data) {
     return {
       props: {
-        wedding: null
+        wedding: null,
+        guestName: guestNameParam
       }
     }
   }
@@ -249,7 +252,8 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       wedding: {
         ...data,
         content: data.content || {}
-      }
+      },
+      guestName: guestNameParam
     }
   }
 }

@@ -4,6 +4,7 @@ import { Copy, CreditCard } from 'lucide-react'
 
 interface MoneyGiftProps {
   content: WeddingContent
+  guestName?: string
 }
 
 const BANK_MAP: Record<string, string> = {
@@ -17,17 +18,23 @@ const BANK_MAP: Record<string, string> = {
   TPBank: 'TPB'
 }
 
-export default function MoneyGift({ content }: MoneyGiftProps) {
+export default function MoneyGift({ content, guestName }: MoneyGiftProps) {
   const { toast } = useToast()
 
   if (!content.bank_name || !content.account_number) return null
 
   const bankCode = BANK_MAP[content.bank_name] || content.bank_name
-  const qrUrl = `https://img.vietqr.io/image/${bankCode}-${content.account_number}-compact2.jpg?amount=0&addInfo=Mung%20Cuoi&accountName=${encodeURIComponent(content.account_name || '')}`
+  const transferNote = `Mung cuoi ${guestName || ''}`.trim()
+  const qrUrl = `https://img.vietqr.io/image/${bankCode}-${content.account_number}-compact2.jpg?amount=0&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(content.account_name || '')}`
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text)
     toast('Đã sao chép số tài khoản!', 'success')
+  }
+
+  const copyNote = () => {
+    navigator.clipboard.writeText(transferNote)
+    toast('Đã sao chép nội dung chuyển khoản!', 'success')
   }
 
   return (
@@ -69,6 +76,21 @@ export default function MoneyGift({ content }: MoneyGiftProps) {
                 onClick={() => copyToClipboard(content.account_number || '')}
                 className='p-2 text-gray-400 hover:text-pink-600 transition-colors'
                 title='Sao chép'
+              >
+                <Copy size={18} />
+              </button>
+            </div>
+          </div>
+          <div className='relative'>
+            <div className='text-xs text-gray-500 uppercase tracking-wider font-bold mb-1'>Nội Dung Chuyển Khoản</div>
+            <div className='flex items-center justify-center gap-2'>
+              <div className='text-sm font-mono font-semibold text-gray-700 bg-gray-50 px-3 py-2 rounded-lg'>
+                {transferNote}
+              </div>
+              <button
+                onClick={copyNote}
+                className='p-2 text-gray-400 hover:text-pink-600 transition-colors'
+                title='Sao chép nội dung'
               >
                 <Copy size={18} />
               </button>

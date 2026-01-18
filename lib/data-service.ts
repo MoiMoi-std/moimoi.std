@@ -126,12 +126,28 @@ export const dataService = {
   },
 
   getTemplates: async (): Promise<Template[]> => {
-    const { data, error } = await supabase.from('templates').select('*')
-    if (error) {
-      console.error('Error fetching templates:', error)
-      return []
+    const [dbResult, mockTemplates] = await Promise.all([
+      supabase.from('templates').select('*'),
+      Promise.resolve(createMockTemplates(36))
+    ])
+
+    if (dbResult.error) {
+      console.warn('Template fetch failed, using mock data:', dbResult.error)
+      return mockTemplates
     }
-    return data
+
+    const dbTemplates = dbResult.data || []
+    if (dbTemplates.length === 0) return mockTemplates
+
+    const merged = new Map<number, Template>()
+    dbTemplates.forEach((template) => merged.set(template.id, template))
+    mockTemplates.forEach((template) => {
+      if (!merged.has(template.id)) {
+        merged.set(template.id, template)
+      }
+    })
+
+    return Array.from(merged.values())
   },
 
   deployWedding: async (
@@ -172,4 +188,55 @@ export const dataService = {
     }
     return data
   }
+}
+
+const TEMPLATE_NAMES = [
+  'Vintage Rose',
+  'Modern Minimal',
+  'Luxury Gold',
+  'Floral Dream',
+  'Korean Style',
+  'Traditional Red',
+  'Olive Garden',
+  'Midnight Bloom',
+  'Classic Ivory',
+  'Warm Terracotta',
+  'Ocean Breeze',
+  'Sunset Bliss'
+]
+
+const TEMPLATE_BRANCHES = ['vintage', 'modern', 'minimal', 'luxury', 'classic', 'floral', 'korean', 'traditional']
+const TEMPLATE_COLORS = ['#FDE68A', '#E5E7EB', '#FEF3C7', '#FCE7F3', '#DBEAFE', '#FEE2E2', '#E0F2FE', '#E7E5E4']
+
+const createTemplateThumbnail = (name: string, subtitle: string, color: string) => {
+  const safeName = name.replace(/&/g, 'and')
+  const safeSubtitle = subtitle.replace(/&/g, 'and')
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="600" height="800">
+      <rect width="100%" height="100%" fill="${color}"/>
+      <rect x="40" y="60" width="520" height="680" rx="32" fill="rgba(255,255,255,0.6)"/>
+      <text x="300" y="380" text-anchor="middle" font-size="36" font-family="Arial" fill="#374151">${safeName}</text>
+      <text x="300" y="430" text-anchor="middle" font-size="20" font-family="Arial" fill="#9CA3AF">${safeSubtitle}</text>
+    </svg>
+  `
+  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+}
+
+const createMockTemplates = (count: number): Template[] => {
+  const now = new Date().toISOString()
+  return Array.from({ length: count }, (_, index) => {
+    const name = TEMPLATE_NAMES[index % TEMPLATE_NAMES.length]
+    const style = TEMPLATE_BRANCHES[index % TEMPLATE_BRANCHES.length]
+    return {
+      id: index + 1,
+      name: `${name} ${index + 1}`,
+      repo_branch: `theme-${style}`,
+      thumbnail_url: createTemplateThumbnail(
+        `${name} ${index + 1}`,
+        `Theme ${style}`,
+        TEMPLATE_COLORS[index % TEMPLATE_COLORS.length]
+      ),
+      created_at: now
+    }
+  })
 }

@@ -1,23 +1,46 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ExternalLink } from 'lucide-react'
+import { dataService, Template } from '@/lib/data-service'
 
-// Mock Data (Sau này sẽ fetch từ Supabase)
-const TEMPLATES = [
-  { id: 1, name: 'Vintage Rose', category: 'Cổ điển', color: 'bg-amber-100' },
-  { id: 2, name: 'Modern Minimal', category: 'Hiện đại', color: 'bg-gray-100' },
-  { id: 3, name: 'Luxury Gold', category: 'Sang trọng', color: 'bg-yellow-50' },
-  { id: 4, name: 'Floral Dream', category: 'Hoa lá', color: 'bg-pink-50' },
-  { id: 5, name: 'Korean Style', category: 'Hiện đại', color: 'bg-blue-50' },
-  { id: 6, name: 'Traditional Red', category: 'Truyền thống', color: 'bg-red-50' }
-]
+const CATEGORIES = ['Tất cả', 'Vintage', 'Modern', 'Minimal', 'Luxury', 'Traditional']
+const CARD_COLORS = ['bg-amber-100', 'bg-gray-100', 'bg-yellow-50', 'bg-pink-50', 'bg-blue-50', 'bg-red-50']
 
-const CATEGORIES = ['Tất cả', 'Hiện đại', 'Cổ điển', 'Sang trọng', 'Truyền thống']
+const matchCategory = (template: Template, category: string) => {
+  if (category === 'Tất cả') return true
+  const keyword = category.toLowerCase()
+  return template.name.toLowerCase().includes(keyword) || template.repo_branch.toLowerCase().includes(keyword)
+}
 
 export default function TemplateGallery() {
   const [activeCategory, setActiveCategory] = useState('Tất cả')
+  const [templates, setTemplates] = useState<Template[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showAll, setShowAll] = useState(false)
 
-  const filteredTemplates =
-    activeCategory === 'Tất cả' ? TEMPLATES : TEMPLATES.filter((t) => t.category === activeCategory)
+  const INITIAL_VISIBLE_COUNT = 6
+
+  useEffect(() => {
+    const loadTemplates = async () => {
+      setLoading(true)
+      const data = await dataService.getTemplates()
+      setTemplates(data)
+      setLoading(false)
+    }
+    loadTemplates()
+  }, [])
+
+  const filteredTemplates = useMemo(() => {
+    return templates.filter((template) => matchCategory(template, activeCategory))
+  }, [activeCategory, templates])
+
+  const visibleTemplates = useMemo(() => {
+    if (showAll) return filteredTemplates
+    return filteredTemplates.slice(0, INITIAL_VISIBLE_COUNT)
+  }, [filteredTemplates, showAll])
+
+  useEffect(() => {
+    setShowAll(false)
+  }, [activeCategory])
 
   return (
     <section id='templates' className='py-20 bg-white'>
@@ -45,32 +68,48 @@ export default function TemplateGallery() {
         </div>
 
         {/* Grid Templates */}
-        <div className='grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3'>
-          {filteredTemplates.map((template) => (
-            <div key={template.id} className='cursor-pointer group'>
-              {/* Card Image Placeholder */}
-              <div
-                className={`aspect-[3/4] rounded-2xl ${template.color} relative overflow-hidden mb-4 shadow-sm border border-gray-100 transition-transform group-hover:-translate-y-2`}
-              >
-                <div className='absolute inset-0 flex items-center justify-center font-medium text-gray-400'>
-                  Ảnh Mẫu: {template.name}
+        {loading ? (
+          <div className='text-center text-gray-400 py-16'>Đang tải kho mẫu...</div>
+        ) : (
+          <div className='grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3'>
+            {visibleTemplates.map((template, index) => (
+              <div key={template.id} className='cursor-pointer group'>
+                {/* Card Image Placeholder */}
+                <div
+                  className={`aspect-[3/4] rounded-2xl ${CARD_COLORS[index % CARD_COLORS.length]} relative overflow-hidden mb-4 shadow-sm border border-gray-100 transition-transform group-hover:-translate-y-2`}
+                >
+                  <div className='absolute inset-0 flex items-center justify-center font-medium text-gray-400'>
+                    Ảnh Mẫu: {template.name}
+                  </div>
+
+                  {/* Hover Overlay */}
+                  <div className='absolute inset-0 flex items-center justify-center gap-3 transition-opacity opacity-0 bg-black/40 group-hover:opacity-100'>
+                    <button className='flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-900 bg-white rounded-full hover:bg-pink-50'>
+                      <ExternalLink className='w-4 h-4' /> Xem Demo
+                    </button>
+                  </div>
                 </div>
 
-                {/* Hover Overlay */}
-                <div className='absolute inset-0 flex items-center justify-center gap-3 transition-opacity opacity-0 bg-black/40 group-hover:opacity-100'>
-                  <button className='flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-900 bg-white rounded-full hover:bg-pink-50'>
-                    <ExternalLink className='w-4 h-4' /> Xem Demo
-                  </button>
+                <div className='flex items-center justify-between'>
+                  <h3 className='text-lg font-bold text-gray-900'>{template.name}</h3>
+                  <span className='px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded-md'>{template.repo_branch}</span>
                 </div>
               </div>
+            ))}
+          </div>
+        )}
 
-              <div className='flex items-center justify-between'>
-                <h3 className='text-lg font-bold text-gray-900'>{template.name}</h3>
-                <span className='px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded-md'>{template.category}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        {!loading && filteredTemplates.length > INITIAL_VISIBLE_COUNT && (
+          <div className='mt-10 flex justify-center'>
+            <button
+              type='button'
+              onClick={() => setShowAll((prev) => !prev)}
+              className='px-6 py-3 rounded-full text-sm font-bold border border-gray-200 text-gray-700 hover:bg-gray-50'
+            >
+              {showAll ? 'Thu gọn' : 'Xem thêm'}
+            </button>
+          </div>
+        )}
       </div>
     </section>
   )

@@ -45,6 +45,14 @@ const Guests = () => {
   const [editingGuest, setEditingGuest] = useState<{ index: number; guest: ImportedGuest } | null>(null)
   const [editingRSVP, setEditingRSVP] = useState<RSVP | null>(null)
   const [qrGuest, setQrGuest] = useState<{ name: string; link: string } | null>(null)
+  const [isAdminMode, setIsAdminMode] = useState(false)
+  const [selectedRsvpIds, setSelectedRsvpIds] = useState<number[]>([])
+  const [visibleColumns, setVisibleColumns] = useState({
+    phone: true,
+    status: true,
+    party: true,
+    wishes: true
+  })
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
   const qrCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -237,6 +245,64 @@ const Guests = () => {
     }
   }
 
+  const toggleRsvpSelection = (id: number) => {
+    setSelectedRsvpIds((prev) => (prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]))
+  }
+
+  const toggleSelectAll = (checked: boolean, ids: number[]) => {
+    setSelectedRsvpIds((prev) => {
+      if (checked) {
+        const merged = new Set([...prev, ...ids])
+        return Array.from(merged)
+      }
+      return prev.filter((id) => !ids.includes(id))
+    })
+  }
+
+  const bulkUpdateAttendance = (isAttending: boolean) => {
+    if (selectedRsvpIds.length === 0) {
+      toast('Chưa chọn khách mời nào.', 'info')
+      return
+    }
+    const updatedRsvps = rsvps.map((r) => (selectedRsvpIds.includes(r.id) ? { ...r, is_attending: isAttending } : r))
+    setRsvps(updatedRsvps)
+    setFilteredRsvps(updatedRsvps)
+    toast(`Đã cập nhật trạng thái cho ${selectedRsvpIds.length} khách.`, 'success')
+  }
+
+  const bulkDelete = () => {
+    if (selectedRsvpIds.length === 0) {
+      toast('Chưa chọn khách mời nào.', 'info')
+      return
+    }
+    if (!confirm(`Xác nhận xóa ${selectedRsvpIds.length} khách mời đã chọn?`)) return
+    const updatedRsvps = rsvps.filter((r) => !selectedRsvpIds.includes(r.id))
+    setRsvps(updatedRsvps)
+    setFilteredRsvps(updatedRsvps)
+    setSelectedRsvpIds([])
+    toast('Đã xóa khách mời đã chọn!', 'info')
+  }
+
+  const bulkExport = () => {
+    if (selectedRsvpIds.length === 0) {
+      toast('Chưa chọn khách mời nào.', 'info')
+      return
+    }
+    toast(`Đang xuất ${selectedRsvpIds.length} khách (mock).`, 'info')
+  }
+
+  const bulkGenerateQr = () => {
+    if (selectedRsvpIds.length === 0) {
+      toast('Chưa chọn khách mời nào.', 'info')
+      return
+    }
+    toast(`Đã tạo QR hàng loạt cho ${selectedRsvpIds.length} khách (mock).`, 'success')
+  }
+
+  const toggleColumn = (key: keyof typeof visibleColumns) => {
+    setVisibleColumns((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
   const handleShowQR = (rsvp: RSVP) => {
     if (!wedding) return
     const params = new URLSearchParams()
@@ -264,6 +330,14 @@ const Guests = () => {
     return `https://moimoi.vn/${wedding.slug}?${params.toString()}`
   }
 
+  useEffect(() => {
+    if (!isAdminMode) setSelectedRsvpIds([])
+  }, [isAdminMode])
+
+  useEffect(() => {
+    setSelectedRsvpIds((prev) => prev.filter((id) => filteredRsvps.some((r) => r.id === id)))
+  }, [filteredRsvps])
+
   if (weddingLoading || loading) {
     return (
       <StudioLayout>
@@ -281,6 +355,16 @@ const Guests = () => {
   }
 
   const paginatedRsvps = filteredRsvps.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+  const pageIds = paginatedRsvps.map((rsvp) => rsvp.id)
+  const allSelected = pageIds.length > 0 && pageIds.every((id) => selectedRsvpIds.includes(id))
+  const columnCount =
+    (isAdminMode ? 1 : 0) +
+    1 +
+    (visibleColumns.phone ? 1 : 0) +
+    (visibleColumns.status ? 1 : 0) +
+    (visibleColumns.party ? 1 : 0) +
+    (visibleColumns.wishes ? 1 : 0) +
+    1
 
   return (
     <StudioLayout>
@@ -289,7 +373,7 @@ const Guests = () => {
           <h2 className='text-3xl font-serif font-bold text-gray-900'>Quản Lý Khách Mời</h2>
           <p className='text-gray-500 mt-1'>Theo dõi RSVP và tạo liên kết mời ({rsvps.length} khách)</p>
         </div>
-        <div className='flex gap-3'>
+        <div className='flex flex-wrap items-center gap-3'>
           <button
             onClick={downloadTemplate}
             className='flex items-center px-6 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl hover:bg-green-100 transition-all shadow-sm'
@@ -302,8 +386,97 @@ const Guests = () => {
           >
             <Download size={18} className='mr-2' /> Xuất Danh Sách
           </button>
+          <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
+            <span>Chế độ quản trị</span>
+            <button
+              type='button'
+              onClick={() => setIsAdminMode((prev) => !prev)}
+              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
+                isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
+              }`}
+            >
+              <span
+                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
+                  isAdminMode ? 'translate-x-7' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </label>
         </div>
       </div>
+
+      {isAdminMode && (
+        <div className='bg-white rounded-3xl shadow-sm border border-gray-100 p-6 mb-8'>
+          <div className='flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between'>
+            <div>
+              <h3 className='text-lg font-bold text-gray-900'>Quản trị nhanh</h3>
+              <p className='text-sm text-gray-500'>Đã chọn {selectedRsvpIds.length} khách</p>
+            </div>
+            <div className='flex flex-wrap gap-3'>
+              <button
+                onClick={() => toggleSelectAll(true, pageIds)}
+                className='px-4 py-2 text-sm font-bold border border-gray-200 rounded-lg hover:bg-gray-50'
+              >
+                Chọn trang này
+              </button>
+              <button
+                onClick={() => setSelectedRsvpIds([])}
+                className='px-4 py-2 text-sm font-bold border border-gray-200 rounded-lg hover:bg-gray-50'
+              >
+                Bỏ chọn
+              </button>
+              <button
+                onClick={() => bulkUpdateAttendance(true)}
+                className='px-4 py-2 text-sm font-bold bg-green-50 text-green-700 border border-green-200 rounded-lg hover:bg-green-100'
+              >
+                Đánh dấu tham dự
+              </button>
+              <button
+                onClick={() => bulkUpdateAttendance(false)}
+                className='px-4 py-2 text-sm font-bold bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100'
+              >
+                Đánh dấu vắng
+              </button>
+              <button
+                onClick={bulkGenerateQr}
+                className='px-4 py-2 text-sm font-bold bg-purple-50 text-purple-700 border border-purple-200 rounded-lg hover:bg-purple-100'
+              >
+                QR hàng loạt
+              </button>
+              <button
+                onClick={bulkExport}
+                className='px-4 py-2 text-sm font-bold bg-white text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50'
+              >
+                Xuất đã chọn
+              </button>
+              <button
+                onClick={bulkDelete}
+                className='px-4 py-2 text-sm font-bold bg-red-600 text-white rounded-lg hover:bg-red-700'
+              >
+                Xóa đã chọn
+              </button>
+            </div>
+          </div>
+          <div className='mt-4 flex flex-wrap gap-4 text-sm text-gray-600'>
+            <label className='flex items-center gap-2'>
+              <input type='checkbox' checked={visibleColumns.phone} onChange={() => toggleColumn('phone')} />
+              Hiện cột SĐT
+            </label>
+            <label className='flex items-center gap-2'>
+              <input type='checkbox' checked={visibleColumns.status} onChange={() => toggleColumn('status')} />
+              Hiện trạng thái
+            </label>
+            <label className='flex items-center gap-2'>
+              <input type='checkbox' checked={visibleColumns.party} onChange={() => toggleColumn('party')} />
+              Hiện số lượng
+            </label>
+            <label className='flex items-center gap-2'>
+              <input type='checkbox' checked={visibleColumns.wishes} onChange={() => toggleColumn('wishes')} />
+              Hiện lời chúc
+            </label>
+          </div>
+        </div>
+      )}
 
       {/* Import Excel Section */}
       {importedGuests.length === 0 && (
@@ -520,38 +693,97 @@ const Guests = () => {
             <table className='w-full text-left'>
               <thead className='bg-gray-50/50 text-gray-500 text-xs font-bold uppercase tracking-wider'>
                 <tr>
+                  {isAdminMode && (
+                    <th className='px-6 py-4'>
+                      <input
+                        type='checkbox'
+                        checked={allSelected}
+                        onChange={(e) => toggleSelectAll(e.target.checked, pageIds)}
+                      />
+                    </th>
+                  )}
                   <th className='px-6 py-4'>Tên Khách</th>
-                  <th className='px-6 py-4'>SĐT</th>
-                  <th className='px-6 py-4'>Trạng Thái</th>
-                  <th className='px-6 py-4'>Số Lượng</th>
-                  <th className='px-6 py-4'>Lời Chúc</th>
+                  {visibleColumns.phone && <th className='px-6 py-4'>SĐT</th>}
+                  {visibleColumns.status && <th className='px-6 py-4'>Trạng Thái</th>}
+                  {visibleColumns.party && <th className='px-6 py-4'>Số Lượng</th>}
+                  {visibleColumns.wishes && <th className='px-6 py-4'>Lời Chúc</th>}
                   <th className='px-6 py-4 text-right'>Thao Tác</th>
                 </tr>
               </thead>
               <tbody className='divide-y divide-gray-50'>
                 {paginatedRsvps.map((rsvp) => (
                   <tr key={rsvp.id} className='hover:bg-pink-50/30 transition-colors group'>
+                    {isAdminMode && (
+                      <td className='px-6 py-4'>
+                        <input
+                          type='checkbox'
+                          checked={selectedRsvpIds.includes(rsvp.id)}
+                          onChange={() => toggleRsvpSelection(rsvp.id)}
+                        />
+                      </td>
+                    )}
                     <td className='px-6 py-4'>
                       <div className='font-bold text-gray-900'>{rsvp.guest_name}</div>
                     </td>
-                    <td className='px-6 py-4 text-gray-500 text-sm font-mono'>{rsvp.phone || '-'}</td>
-                    <td className='px-6 py-4'>
-                      {rsvp.is_attending ? (
-                        <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700'>
-                          Tham dự
-                        </span>
-                      ) : (
-                        <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600'>
-                          Vắng mặt
-                        </span>
-                      )}
-                    </td>
-                    <td className='px-6 py-4 text-gray-600 font-medium'>{rsvp.party_size}</td>
-                    <td className='px-6 py-4'>
-                      <div className='max-w-xs truncate text-gray-500 text-sm italic' title={rsvp.wishes || ''}>
-                        {rsvp.wishes || <span className='text-gray-300'>Không có lời nhắn</span>}
-                      </div>
-                    </td>
+                    {visibleColumns.phone && (
+                      <td className='px-6 py-4 text-gray-500 text-sm font-mono'>{rsvp.phone || '-'}</td>
+                    )}
+                    {visibleColumns.status && (
+                      <td className='px-6 py-4'>
+                        {isAdminMode ? (
+                          <button
+                            onClick={() => {
+                              const updatedRsvps = rsvps.map((r) =>
+                                r.id === rsvp.id ? { ...r, is_attending: !r.is_attending } : r
+                              )
+                              setRsvps(updatedRsvps)
+                              setFilteredRsvps(updatedRsvps)
+                            }}
+                            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
+                              rsvp.is_attending ? 'bg-green-100 text-green-700' : 'bg-red-50 text-red-600'
+                            }`}
+                          >
+                            {rsvp.is_attending ? 'Tham dự' : 'Vắng mặt'}
+                          </button>
+                        ) : rsvp.is_attending ? (
+                          <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700'>
+                            Tham dự
+                          </span>
+                        ) : (
+                          <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-50 text-red-600'>
+                            Vắng mặt
+                          </span>
+                        )}
+                      </td>
+                    )}
+                    {visibleColumns.party && (
+                      <td className='px-6 py-4 text-gray-600 font-medium'>
+                        {isAdminMode ? (
+                          <input
+                            type='number'
+                            min={1}
+                            value={rsvp.party_size ?? 1}
+                            onChange={(e) => {
+                              const updatedRsvps = rsvps.map((r) =>
+                                r.id === rsvp.id ? { ...r, party_size: parseInt(e.target.value) || 1 } : r
+                              )
+                              setRsvps(updatedRsvps)
+                              setFilteredRsvps(updatedRsvps)
+                            }}
+                            className='w-20 rounded-lg border border-gray-200 px-2 py-1 text-sm'
+                          />
+                        ) : (
+                          rsvp.party_size
+                        )}
+                      </td>
+                    )}
+                    {visibleColumns.wishes && (
+                      <td className='px-6 py-4'>
+                        <div className='max-w-xs truncate text-gray-500 text-sm italic' title={rsvp.wishes || ''}>
+                          {rsvp.wishes || <span className='text-gray-300'>Không có lời nhắn</span>}
+                        </div>
+                      </td>
+                    )}
                     <td className='px-6 py-4'>
                       <div className='flex gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity'>
                         <button
@@ -588,7 +820,7 @@ const Guests = () => {
                 ))}
                 {filteredRsvps.length === 0 && (
                   <tr>
-                    <td colSpan={6} className='px-6 py-12 text-center text-gray-400'>
+                    <td colSpan={columnCount} className='px-6 py-12 text-center text-gray-400'>
                       <div className='flex flex-col items-center'>
                         <div className='mb-2 text-4xl opacity-20'>📭</div>
                         <p>Không tìm thấy khách mời nào phù hợp.</p>

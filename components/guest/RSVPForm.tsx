@@ -12,8 +12,11 @@ export default function RSVPForm({ weddingId }: RSVPFormProps) {
     guest_name: '',
     phone: '',
     is_attending: true,
-    party_size: 1,
-    wishes: ''
+    adults: 1,
+    children: 0,
+    meal_preference: '',
+    wishes: '',
+    website: ''
   })
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -21,24 +24,57 @@ export default function RSVPForm({ weddingId }: RSVPFormProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (formData.website) {
+      return
+    }
+
     if (!formData.guest_name) {
       toast('Vui lòng nhập tên của bạn', 'warning')
       return
     }
 
+    if (formData.phone && !/^(0|\+84)\d{9,10}$/.test(formData.phone.trim())) {
+      toast('Số điện thoại chưa đúng định dạng', 'warning')
+      return
+    }
+
+    const lastSubmitKey = `rsvp_last_submit_${weddingId}`
+    const lastSubmit = typeof window !== 'undefined' ? localStorage.getItem(lastSubmitKey) : null
+    if (lastSubmit && Date.now() - Number(lastSubmit) < 5 * 60 * 1000) {
+      toast('Bạn vừa gửi RSVP gần đây. Vui lòng thử lại sau ít phút.', 'warning')
+      return
+    }
+
     setSubmitting(true)
     try {
+      const attendingAdults = formData.is_attending ? formData.adults : 0
+      const attendingChildren = formData.is_attending ? formData.children : 0
+      const partySize = attendingAdults + attendingChildren
+      const meta: string[] = []
+      if (formData.is_attending) {
+        meta.push(`Người lớn: ${attendingAdults}`)
+        meta.push(`Trẻ em: ${attendingChildren}`)
+      }
+      if (formData.meal_preference) {
+        meta.push(`Thực đơn: ${formData.meal_preference}`)
+      }
+      const metaText = meta.length ? ` [${meta.join(', ')}]` : ''
+      const wishesText = formData.wishes.trim()
+
       const result = await dataService.createRSVP({
         wedding_id: weddingId,
         guest_name: formData.guest_name,
         phone: formData.phone,
         is_attending: formData.is_attending,
-        party_size: formData.is_attending ? formData.party_size : 0,
-        wishes: formData.wishes
+        party_size: partySize,
+        wishes: `${wishesText}${metaText}`.trim()
       })
 
       if (result) {
         setSubmitted(true)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(lastSubmitKey, Date.now().toString())
+        }
         success('Gửi phản hồi thành công! Cảm ơn bạn.')
       } else {
         error('Có lỗi xảy ra. Vui lòng thử lại.')
@@ -97,6 +133,16 @@ export default function RSVPForm({ weddingId }: RSVPFormProps) {
           />
         </div>
 
+        {/* Honeypot */}
+        <input
+          type='text'
+          tabIndex={-1}
+          autoComplete='off'
+          className='hidden'
+          value={formData.website}
+          onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+        />
+
         {/* Attendance Status */}
         <div>
           <label className='block text-sm font-bold text-gray-700 mb-2'>Bạn sẽ tham dự chứ?</label>
@@ -129,23 +175,48 @@ export default function RSVPForm({ weddingId }: RSVPFormProps) {
         {/* Party Size (Only show if attending) */}
         {formData.is_attending && (
           <div className='animate-in fade-in slide-in-from-top-2'>
-            <label className='block text-sm font-bold text-gray-700 mb-2'>Bạn đi mấy người?</label>
-            <div className='flex items-center gap-4'>
-              {[1, 2, 3, 4, 5].map((num) => (
-                <button
-                  key={num}
-                  type='button'
-                  onClick={() => setFormData({ ...formData, party_size: num })}
-                  className={`w-12 h-12 rounded-full font-bold transition-all ${
-                    formData.party_size === num
-                      ? 'bg-pink-600 text-white shadow-lg scale-110'
-                      : 'bg-gray-100 text-gray-600 hover:bg-pink-100'
-                  }`}
-                >
-                  {num}
-                </button>
-              ))}
+            <label className='block text-sm font-bold text-gray-700 mb-2'>Số lượng người tham dự</label>
+            <div className='grid grid-cols-2 gap-4'>
+              <div>
+                <div className='text-xs text-gray-500 mb-1'>Người lớn</div>
+                <input
+                  type='number'
+                  min={1}
+                  max={20}
+                  value={formData.adults}
+                  onChange={(e) => setFormData({ ...formData, adults: Math.max(1, Number(e.target.value || 1)) })}
+                  className='w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all font-medium'
+                />
+              </div>
+              <div>
+                <div className='text-xs text-gray-500 mb-1'>Trẻ em</div>
+                <input
+                  type='number'
+                  min={0}
+                  max={20}
+                  value={formData.children}
+                  onChange={(e) => setFormData({ ...formData, children: Math.max(0, Number(e.target.value || 0)) })}
+                  className='w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all font-medium'
+                />
+              </div>
             </div>
+          </div>
+        )}
+
+        {/* Meal Preference */}
+        {formData.is_attending && (
+          <div className='animate-in fade-in slide-in-from-top-2'>
+            <label className='block text-sm font-bold text-gray-700 mb-2'>Chế độ ăn uống (Tùy chọn)</label>
+            <select
+              value={formData.meal_preference}
+              onChange={(e) => setFormData({ ...formData, meal_preference: e.target.value })}
+              className='w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all font-medium'
+            >
+              <option value=''>Không yêu cầu</option>
+              <option value='Ăn chay'>Ăn chay</option>
+              <option value='Ít cay'>Ít cay</option>
+              <option value='Không hải sản'>Không hải sản</option>
+            </select>
           </div>
         )}
 

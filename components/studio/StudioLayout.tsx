@@ -7,6 +7,7 @@ import {
   Edit3,
   Headset,
   LayoutDashboard,
+  LayoutTemplate,
   LogOut,
   Menu,
   Settings,
@@ -51,6 +52,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
   const navItems = [
     { label: 'Tổng Quan', href: '/studio', icon: LayoutDashboard },
     { label: 'Chỉnh Sửa Thiệp', href: '/studio/editor', icon: Edit3 },
+    { label: 'Kho Giao Diện', href: '/studio/templates', icon: LayoutTemplate },
     { label: 'Khách Mời', href: '/studio/guests', icon: Users },
     { label: 'Nâng cấp gói', href: '/studio/upgrade', icon: CreditCard },
     { label: 'Cài Đặt', href: '/studio/settings', icon: Settings },
