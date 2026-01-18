@@ -7,9 +7,9 @@ export default function Header() {
     <header className='fixed top-0 z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md'>
       <div className='container flex items-center justify-between h-16 px-8 mx-auto'>
         {/* Logo */}
-        <div className='flex items-center'>
+        <Link href='/' className='flex items-center'>
           <img src='/image/LOGO.png' alt='MoiMoi.STD' className='h-36 w-auto translate-y-1' />
-        </div>
+        </Link>
 
         {/* Desktop Menu */}
         <nav className='hidden gap-12 font-medium text-gray-600 md:flex'>
