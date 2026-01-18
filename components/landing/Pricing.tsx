@@ -2,37 +2,54 @@ import { Check, X } from 'lucide-react'
 
 const plans = [
   {
-    name: 'Trải Nghiệm',
-    price: '0đ',
-    desc: 'Dành cho các cặp đôi muốn thử nghiệm trước.',
-    features: ['1 Mẫu thiệp cơ bản', 'Giới hạn 50 khách mời RSVP', 'Lưu trữ trong 1 tuần', 'Có logo MoiMoi Studio'],
+    name: 'Sinh Viên',
+    price: '150.000đ',
+    desc: 'Ưu đãi cho lễ tốt nghiệp, sinh nhật và đám cưới nhỏ',
+    features: ['5 Mẫu thiệp cơ bản', 'Giới hạn 50 khách mời RSVP', 'Lưu trữ trong 6 tháng', 'Có logo MoiMoi Studio'],
     notIncluded: ['Nhạc nền', 'Bản đồ chỉ đường', 'QR Mừng cưới', 'Hiệu ứng mở thiệp'],
     highlight: false
   },
   {
     name: 'Gói Cơ Bản',
-    price: '199.000đ',
+    price: '500.000đ',
     desc: 'Đầy đủ tính năng cần thiết cho một đám cưới.',
     features: [
       'Kho 20+ mẫu thiệp Premium',
+      'Giới hạn 100 khách mời RSVP',
       'Không giới hạn khách RSVP',
       'Tích hợp Bản đồ & QR Mừng cưới',
       'Nhạc nền tùy chọn',
-      'Lưu trữ 6 tháng'
+      'Lưu trữ 2 năm'
     ],
-    notIncluded: ['Tên miền riêng (.vn)', 'Hỗ trợ thay đổi thiết kế'],
+    notIncluded: ['Hỗ trợ thay đổi thiết kế'],
     highlight: true // Gói này sẽ nổi bật nhất
   },
   {
-    name: 'Gói Cao Cấp',
-    price: '499.000đ',
-    desc: 'Sự hoàn hảo và hỗ trợ tận răng từ đội ngũ.',
+    name: 'Gói Nâng Cao',
+    price: '699.000đ',
+    desc: 'Tùy chỉnh nâng cao, thể hiện phong cách riêng của bạn.',
     features: [
       'Mọi tính năng của Gói Cơ Bản',
-      'Sở hữu tên miền riêng (tu-uyen.vn)',
+      'Giới hạn 250 khách mời RSVP',
+      'Hỗ trợ thay đổi thiết kế (màu sắc, font chữ)',
+      'Hiệu ứng mở thiệp độc đáo',
+      'Lưu trữ 3 năm'
+    ],
+    notIncluded: ['Sở hữu slug tùy chọn', 'Hỗ trợ setup 1-1','Thiết kế theo yêu cầu'],
+    highlight: false
+  },
+  {
+    name: 'Gói Cao Cấp',
+    price: '1.299.000đ',
+    desc: 'Sự hoàn hảo và hỗ trợ tận răng từ đội ngũ.',
+    features: [
+      'Mọi tính năng của Gói Cơ Bản & Nâng cao',
+      'Giới hạn 500 khách mời RSVP',
+      'Thiết kế thiệp theo yêu cầu',
+      'Sở hữu slug tùy chọn (moimoi.io.vn/yourname)',
       'Tùy chỉnh màu sắc/font chữ theo yêu cầu',
       'Chuyên viên hỗ trợ setup 1-1',
-      'Lưu trữ vĩnh viễn'
+      'Lưu trữ 5 năm'
     ],
     notIncluded: [],
     highlight: false
@@ -46,11 +63,12 @@ export default function Pricing() {
         <div className='mb-16 text-center'>
           <h2 className='mb-4 text-3xl font-bold text-gray-900 md:text-4xl'>Bảng Giá Dịch Vụ</h2>
           <p className='max-w-2xl mx-auto text-gray-600'>
-            Chi phí chỉ bằng 5 tấm thiệp giấy, nhưng lưu giữ kỷ niệm mãi mãi. Thanh toán 1 lần, sử dụng trọn đời.
+            MoiMoi giúp bạn thong dong<br></br>
+            Giá mềm như bún, hài lòng khách qua
           </p>
         </div>
 
-        <div className='grid max-w-6xl gap-8 mx-auto md:grid-cols-3'>
+        <div className='grid max-w-7xl gap-8 mx-auto md:grid-cols-2 lg:grid-cols-4'>
           {plans.map((plan, idx) => (
             <div
               key={idx}

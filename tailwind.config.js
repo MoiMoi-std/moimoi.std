@@ -4,11 +4,16 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'accent-1': '#333'
+        'accent-1': '#333',
+        'rose-gold': '#E27D60',
+        'rose-gold-dark': '#C38D9E',
+        'cream': '#FDFBF7',
+        'navy': '#1B2631'
       },
       fontFamily: {
         sans: ['SDK SC Web', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        heavy: ['SDK SC Web', 'sans-serif']
+        heavy: ['SDK SC Web', 'sans-serif'],
+        serif: ['Playfair Display', 'Merriweather', 'serif']
       }
     }
   },

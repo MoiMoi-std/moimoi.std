@@ -1,5 +1,5 @@
-import { supabase } from './initSupabase'
 import { Database } from '../types/supabase'
+import { supabase } from './initSupabase'
 
 export interface Wedding extends Omit<Database['public']['Tables']['weddings']['Row'], 'content'> {
   content: WeddingContent
@@ -40,6 +40,21 @@ export const dataService = {
       console.error('Error fetching wedding:', error)
       return null
     }
+
+    return {
+      ...data,
+      content: (data.content as unknown as WeddingContent) || {}
+    } as Wedding
+  },
+
+  getWeddingBySlug: async (slug: string): Promise<Wedding | null> => {
+    const { data, error } = await supabase
+      .from('weddings')
+      .select('*, template:templates(*)')
+      .eq('slug', slug)
+      .single()
+
+    if (error) return null
 
     return {
       ...data,
@@ -149,6 +164,6 @@ export const dataService = {
 
   exportRSVPs: async (weddingId: string): Promise<void> => {
     console.log(`Exporting RSVPs for ${weddingId}`)
-    alert('Export functionality would generate an Excel file here.')
+    console.log(`Export functionality would generate an Excel file here.`)
   }
 }
