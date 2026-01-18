@@ -1,6 +1,5 @@
-import Link from 'next/link'
-import Image from 'next/image'
 import { Menu } from 'lucide-react'
+import Link from 'next/link'
 
 export default function Header() {
   return (
@@ -27,8 +26,8 @@ export default function Header() {
 
         {/* CTA Button */}
         <div className='hidden md:flex items-center space-x-4'>
-          <Link href='/admin/dashboard'>
-            <button className='text-gray-600 hover:text-pink-600 font-medium transition'>Admin Dashboard</button>
+          <Link href='/studio'>
+            <button className='text-gray-600 hover:text-pink-600 font-medium transition'>Admin Studio</button>
           </Link>
           <button className='px-6 py-2 font-medium text-white transition bg-pink-600 rounded-full hover:bg-pink-700'>
             Tạo Thiệp Ngay

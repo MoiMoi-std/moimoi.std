@@ -2,30 +2,30 @@ import React, { useState } from 'react'
 
 interface TabAlbumProps {
   images: string[]
-  onImagesChange: (images: string[]) => void
+  onChange: (images: string[]) => void
 }
 
-const TabAlbum: React.FC<TabAlbumProps> = ({ images, onImagesChange }) => {
+const TabAlbum: React.FC<TabAlbumProps> = ({ images, onChange }) => {
   const [isUploading, setIsUploading] = useState(false)
 
   const handleUpload = () => {
     setIsUploading(true)
     // Simulate upload delay
     setTimeout(() => {
-      const newImage = `https://via.placeholder.com/400x300?text=New+Image+${images.length + 1}`
-      onImagesChange([...images, newImage])
+      const newImage = `https://via.placeholder.com/400x300?text=Anh+Moi+${images.length + 1}`
+      onChange([...images, newImage])
       setIsUploading(false)
     }, 1000)
   }
 
   const removeImage = (indexToRemove: number) => {
     const newImages = images.filter((_, index) => index !== indexToRemove)
-    onImagesChange(newImages)
+    onChange(newImages)
   }
 
   return (
     <div className='bg-white p-6 rounded-lg shadow-sm space-y-6'>
-      <h3 className='text-lg font-medium text-gray-900 border-b pb-2'>Photo Album</h3>
+      <h3 className='text-lg font-medium text-gray-900 border-b pb-2'>Album Ảnh Cưới</h3>
 
       <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
         {images.map((img, index) => (
@@ -36,7 +36,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onImagesChange }) => {
               <button
                 onClick={() => removeImage(index)}
                 className='opacity-0 group-hover:opacity-100 bg-red-600 text-white p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
-                title='Remove'
+                title='Xóa ảnh'
               >
                 🗑️
               </button>
@@ -50,11 +50,11 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onImagesChange }) => {
         >
           <div className='text-center p-4'>
             {isUploading ? (
-              <span className='text-pink-600'>Uploading...</span>
+              <span className='text-pink-600'>Đang tải...</span>
             ) : (
               <>
                 <div className='text-3xl mb-2'>📷</div>
-                <span className='text-sm text-gray-500 font-medium'>Add Photo</span>
+                <span className='text-sm text-gray-500 font-medium'>Thêm Ảnh</span>
               </>
             )}
           </div>
@@ -62,7 +62,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onImagesChange }) => {
       </div>
 
       <p className='text-sm text-gray-500 italic'>
-        * Note: In this mock version, clicking &quot;Add Photo&quot; simulates a successful upload.
+        * Lưu ý: Đây là phiên bản thử nghiệm, bấm &quot;Thêm Ảnh&quot; sẽ giả lập việc tải ảnh lên.
       </p>
     </div>
   )
