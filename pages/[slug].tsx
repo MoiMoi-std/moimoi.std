@@ -138,7 +138,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   // We need a public fetch.
 
   const { createClient } = require('@supabase/supabase-js')
-  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  )
 
   const { data, error } = await supabase.from('weddings').select('*').eq('slug', slug).single()
 
