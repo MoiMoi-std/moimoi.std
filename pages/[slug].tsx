@@ -66,12 +66,12 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
             <div className='space-y-6'>
               <h2 className='text-3xl font-serif font-bold text-pink-600'>The Groom</h2>
               <p className='text-gray-600 leading-relaxed text-lg'>{content.groom_name || 'Groom Name'}</p>
-              <p className='text-gray-500 italic'>"Can't wait to see you all!"</p>
+              <p className='text-gray-500 italic'>&quot;Can&apos;t wait to see you all!&quot;</p>
             </div>
             <div className='space-y-6 md:text-right'>
               <h2 className='text-3xl font-serif font-bold text-pink-600'>The Bride</h2>
               <p className='text-gray-600 leading-relaxed text-lg'>{content.bride_name || 'Bride Name'}</p>
-              <p className='text-gray-500 italic'>"Best day ever loading..."</p>
+              <p className='text-gray-500 italic'>&quot;Best day ever loading...&quot;</p>
             </div>
           </div>
         </div>
