@@ -9,17 +9,10 @@ export default function Header() {
 
   return (
     <header className='fixed top-0 z-50 w-full border-b border-gray-100 bg-white/80 backdrop-blur-md'>
-      <div className='container flex items-center justify-between h-16 px-4 md:px-8 mx-auto'>
-        {/* Logo */}
-        <div className='flex items-center'>
-            <Link href='/'>
-               {/* eslint-disable-next-line @next/next/no-img-element */}
-               <img src='/image/LOGO.png' alt='MoiMoi.STD' className='h-10 md:h-36 w-auto translate-y-0 md:translate-y-1 object-contain' />
-            </Link>
-        </div>
-
-        {/* Desktop Menu */}
-        <nav className='hidden gap-12 font-medium text-gray-600 md:flex'>
+      <div className='container flex items-center h-16 px-4 md:px-8 mx-auto relative'>
+        
+        {/* Left: Navigation (Desktop) */}
+        <nav className='hidden md:flex flex-1 items-center justify-start gap-8 font-medium text-gray-600'>
           <Link href='#features' className='transition hover:text-pink-600'>
             Tính năng
           </Link>
@@ -31,8 +24,16 @@ export default function Header() {
           </Link>
         </nav>
 
-        {/* CTA Button (Desktop) */}
-        <div className='hidden md:flex items-center space-x-4'>
+        {/* Center: Logo */}
+        <div className='flex-1 md:flex-none flex justify-start md:justify-center md:absolute md:left-1/2 md:-translate-x-1/2 z-10'>
+            <Link href='/'>
+               {/* eslint-disable-next-line @next/next/no-img-element */}
+               <img src='/image/LOGO.png' alt='MoiMoi.STD' className='h-10 md:h-16 w-auto object-contain py-2' />
+            </Link>
+        </div>
+
+        {/* Right: CTA Buttons (Desktop) */}
+        <div className='hidden md:flex flex-1 items-center justify-end space-x-4'>
             {session ? (
              <Link href='/studio'>
                 <button className='text-gray-600 hover:text-pink-600 font-medium transition flex items-center mb-0 gap-2'>
@@ -49,16 +50,18 @@ export default function Header() {
            )}
           
           <Link href='/studio'>
-            <button className='px-6 py-2 font-medium text-white transition bg-pink-600 rounded-full hover:bg-pink-700 shadow-lg shadow-pink-200'>
-              Tạo Thiệp Ngay
+            <button className='px-5 py-2 font-medium text-white transition bg-pink-600 rounded-full hover:bg-pink-700 shadow-lg shadow-pink-200'>
+              Tạo Thiệp
             </button>
           </Link>
         </div>
 
-        {/* Mobile Menu Icon */}
-        <button className='md:hidden p-2 text-gray-800' onClick={() => setMobileMenuOpen(true)}>
-          <Menu className='w-6 h-6' />
-        </button>
+        {/* Mobile Menu Icon (Right aligned on mobile) */}
+        <div className='flex md:hidden flex-1 justify-end'>
+            <button className='p-2 text-gray-800' onClick={() => setMobileMenuOpen(true)}>
+            <Menu className='w-6 h-6' />
+            </button>
+        </div>
       </div>
 
       {/* Mobile Menu Overlay */}
