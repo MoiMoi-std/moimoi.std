@@ -5,6 +5,10 @@ module.exports = {
     extend: {
       colors: {
         'accent-1': '#333'
+      },
+      fontFamily: {
+        sans: ['SDK SC Web', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        heavy: ['SDK SC Web', 'sans-serif']
       }
     }
   },
