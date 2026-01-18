@@ -1,6 +1,19 @@
 import { useSession, useSessionContext } from '@supabase/auth-helpers-react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ArrowLeft, Edit3, LayoutDashboard, LogOut, Menu, Settings, Users, X } from 'lucide-react'
+import {
+  ArrowLeft,
+  CreditCard,
+  DollarSign,
+  Edit3,
+  Headset,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Settings,
+  Shield,
+  Users,
+  X
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import React, { ReactNode, useEffect, useState } from 'react'
@@ -39,7 +52,12 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
     { label: 'Tổng Quan', href: '/studio', icon: LayoutDashboard },
     { label: 'Chỉnh Sửa Thiệp', href: '/studio/editor', icon: Edit3 },
     { label: 'Khách Mời', href: '/studio/guests', icon: Users },
-    { label: 'Cài Đặt', href: '/studio/settings', icon: Settings }
+    { label: 'Nâng cấp gói', href: '/studio/upgrade', icon: CreditCard },
+    { label: 'Cài Đặt', href: '/studio/settings', icon: Settings },
+    // Dev items
+    { label: 'Quản trị (Admin)', href: '/admin', icon: Shield },
+    { label: 'Kế toán (Finance)', href: '/finance', icon: DollarSign },
+    { label: 'CSKH (Support)', href: '/care', icon: Headset }
   ]
 
   return (

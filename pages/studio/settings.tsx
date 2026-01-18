@@ -1,23 +1,16 @@
 import { ArrowRight, CheckCircle, Globe, Rocket } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import StudioEmptyState from '../../components/studio/StudioEmptyState'
 import StudioLayout from '../../components/studio/StudioLayout'
+import StudioLoading from '../../components/studio/StudioLoading'
 import { useToast } from '../../components/ui/ToastProvider'
-import { Wedding, dataService } from '../../lib/data-service'
+import { dataService } from '../../lib/data-service'
+import { useWedding } from '../../lib/useWedding'
 
 const Settings = () => {
-  const [wedding, setWedding] = useState<Wedding | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { wedding, setWedding, loading } = useWedding()
   const [deploying, setDeploying] = useState(false)
-  const { toast, success, error } = useToast()
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await dataService.getWedding()
-      setWedding(data)
-      setLoading(false)
-    }
-    fetchData()
-  }, [])
+  const { success, error } = useToast()
 
   const handlePublish = async () => {
     if (!wedding) return
@@ -44,16 +37,14 @@ const Settings = () => {
   if (loading)
     return (
       <StudioLayout>
-        <div className='flex items-center justify-center h-full'>
-          <div className='text-pink-600 animate-pulse text-lg'>Đang tải cài đặt...</div>
-        </div>
+        <StudioLoading message='Đang tải cài đặt...' />
       </StudioLayout>
     )
 
   if (!wedding)
     return (
       <StudioLayout>
-        <div className='text-center mt-10 text-gray-500'>Vui lòng tạo đám cưới trước.</div>
+        <StudioEmptyState />
       </StudioLayout>
     )
 

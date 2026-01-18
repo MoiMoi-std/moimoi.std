@@ -1,27 +1,20 @@
 import { CreditCard, Image as ImageIcon, Info, Save } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import StudioEmptyState from '../../components/studio/StudioEmptyState'
 import StudioLayout from '../../components/studio/StudioLayout'
+import StudioLoading from '../../components/studio/StudioLoading'
 import TabAlbum from '../../components/studio/TabAlbum'
 import TabBank from '../../components/studio/TabBank'
 import TabInfo from '../../components/studio/TabInfo'
 import { useToast } from '../../components/ui/ToastProvider'
-import { Wedding, dataService } from '../../lib/data-service'
+import { dataService } from '../../lib/data-service'
+import { useWedding } from '../../lib/useWedding'
 
 const Editor = () => {
-  const [wedding, setWedding] = useState<Wedding | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { wedding, setWedding, loading } = useWedding()
   const [activeTab, setActiveTab] = useState<'info' | 'album' | 'bank'>('info')
   const [saving, setSaving] = useState(false)
   const { success, error } = useToast()
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await dataService.getWedding()
-      setWedding(data)
-      setLoading(false)
-    }
-    fetchData()
-  }, [])
 
   const handleInfoChange = (key: string, value: string) => {
     if (!wedding) return
@@ -55,16 +48,14 @@ const Editor = () => {
   if (loading)
     return (
       <StudioLayout>
-        <div className='flex items-center justify-center h-full'>
-          <div className='text-pink-600 animate-pulse text-lg'>Đang tải trình chỉnh sửa...</div>
-        </div>
+        <StudioLoading message='Đang tải trình chỉnh sửa...' />
       </StudioLayout>
     )
 
   if (!wedding)
     return (
       <StudioLayout>
-        <div className='text-center mt-10 text-gray-500'>Vui lòng tạo đám cưới trước.</div>
+        <StudioEmptyState />
       </StudioLayout>
     )
 

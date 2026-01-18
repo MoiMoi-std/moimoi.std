@@ -1,31 +1,22 @@
 import { ArrowRight, Calendar, Clock, Edit, Gift, Heart, MapPin, Share2, Sparkles, Users } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import StudioLayout from '../../components/studio/StudioLayout'
+import StudioLoading from '../../components/studio/StudioLoading'
 import { useToast } from '../../components/ui/ToastProvider'
-import { Wedding, dataService } from '../../lib/data-service'
+import { dataService } from '../../lib/data-service'
+import { useWedding } from '../../lib/useWedding'
 
 const Dashboard = () => {
-  const [wedding, setWedding] = useState<Wedding | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const { wedding, setWedding, loading } = useWedding()
   const [timeRemaining, setTimeRemaining] = useState<{
     days: number
     hours: number
     minutes: number
     seconds: number
   } | null>(null)
+  const [creating, setCreating] = useState(false)
   const { toast } = useToast()
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const data = await dataService.getWedding()
-      setWedding(data)
-      setLoading(false)
-    }
-    fetchData()
-  }, [])
 
   useEffect(() => {
     if (wedding?.content?.wedding_date) {
@@ -51,11 +42,7 @@ const Dashboard = () => {
   if (loading)
     return (
       <StudioLayout>
-        <div className='flex flex-col items-center justify-center h-full gap-4'>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src='/image/logo-notext.png' alt='MoiMoi' className='w-16 h-16 object-contain animate-bounce' />
-          <div className='text-pink-600 animate-pulse text-lg font-medium'>Đang tải studio của bạn...</div>
-        </div>
+        <StudioLoading message='Đang tải studio của bạn...' />
       </StudioLayout>
     )
 
@@ -74,16 +61,18 @@ const Dashboard = () => {
           </p>
           <button
             onClick={async () => {
-              setLoading(true)
+              if (creating) return
+              setCreating(true)
               await dataService.createWedding()
               const data = await dataService.getWedding()
               setWedding(data)
-              setLoading(false)
+              setCreating(false)
               toast('Đã khởi tạo đám cưới thành công!', 'success')
             }}
-            className='px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-500 text-white rounded-full font-bold shadow-lg hover:shadow-pink-300 hover:scale-105 transition-all flex items-center gap-2'
+            disabled={creating}
+            className='px-8 py-4 bg-gradient-to-r from-pink-600 to-rose-500 text-white rounded-full font-bold shadow-lg hover:shadow-pink-300 hover:scale-105 transition-all flex items-center gap-2 disabled:opacity-60 disabled:hover:scale-100'
           >
-            <Sparkles size={20} /> Bắt Đầu Ngay
+            <Sparkles size={20} /> {creating ? 'Đang khởi tạo...' : 'Bắt Đầu Ngay'}
           </button>
         </div>
       </StudioLayout>

@@ -161,5 +161,15 @@ export const dataService = {
   exportRSVPs: async (weddingId: string): Promise<void> => {
     console.log(`Exporting RSVPs for ${weddingId}`)
     console.log(`Export functionality would generate an Excel file here.`)
+  },
+
+  createRSVP: async (rsvp: Database['public']['Tables']['rsvps']['Insert']): Promise<RSVP | null> => {
+    const { data, error } = await supabase.from('rsvps').insert(rsvp).select().single()
+
+    if (error) {
+      console.error('Error creating RSVP:', error)
+      return null
+    }
+    return data
   }
 }
