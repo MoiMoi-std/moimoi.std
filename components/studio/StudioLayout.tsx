@@ -46,7 +46,11 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
     <div className='min-h-screen bg-[#FDFBF7] flex flex-col md:flex-row font-sans text-slate-800'>
       {/* Mobile Header */}
       <div className='md:hidden bg-white/80 backdrop-blur-md border-b p-4 flex justify-between items-center sticky top-0 z-50'>
-        <h1 className='text-xl font-bold font-serif text-pink-600'>MoiMoi Studio</h1>
+        <div className='flex items-center gap-2'>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src='/image/logo-notext.png' alt='MoiMoi' className='h-8 w-auto' />
+            <h1 className='text-xl font-bold font-serif text-pink-600'>MoiMoi Studio</h1>
+        </div>
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className='p-2 text-gray-600 hover:text-pink-600'>
           {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -66,9 +70,11 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         }`}
       >
-        <div className='p-8'>
-          <h1 className='text-2xl font-bold font-serif text-pink-600'>MoiMoi Studio</h1>
-          <p className='text-xs text-gray-400 mt-1 uppercase tracking-wider'>Không Gian Sáng Tạo</p>
+        <div className='p-8 flex flex-col items-center text-center border-b border-pink-50'>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src='/image/logo-notext.png' alt='MoiMoi' className='h-12 w-auto mb-3' />
+          <h1 className='text-xl font-bold font-serif text-pink-600'>MoiMoi Studio</h1>
+          <p className='text-[10px] text-gray-400 mt-1 uppercase tracking-widest'>Không Gian Sáng Tạo</p>
         </div>
 
         <nav className='flex-1 px-4 space-y-2 py-4'>

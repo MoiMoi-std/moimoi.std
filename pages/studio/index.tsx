@@ -46,8 +46,10 @@ const Dashboard = () => {
   if (loading)
     return (
       <StudioLayout>
-        <div className='flex items-center justify-center h-full'>
-          <div className='text-pink-600 animate-pulse text-lg'>Đang tải studio của bạn...</div>
+        <div className='flex flex-col items-center justify-center h-full gap-4'>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src='/image/logo-notext.png' alt='MoiMoi' className='w-16 h-16 object-contain animate-bounce' />
+          <div className='text-pink-600 animate-pulse text-lg font-medium'>Đang tải studio của bạn...</div>
         </div>
       </StudioLayout>
     )
@@ -56,8 +58,9 @@ const Dashboard = () => {
     return (
       <StudioLayout>
           <div className='flex flex-col items-center justify-center h-[70vh] text-center'>
-            <div className='w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center mb-6 animate-pulse'>
-                <Sparkles className='text-pink-500' size={40} />
+            <div className='w-24 h-24 bg-pink-50 rounded-full flex items-center justify-center mb-6 animate-pulse'>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src='/image/logo-notext.png' alt='MoiMoi' className='w-12 h-12 object-contain' />
             </div>
           <h2 className='text-3xl font-serif font-bold text-gray-900 mb-4'>Chào mừng bạn đến với MoiMoi Studio!</h2>
           <p className='text-gray-500 max-w-md mb-8'>Hãy bắt đầu hành trình tạo nên đám cưới trong mơ của bạn. Thiết lập thông tin và gửi lời mời đến những người thân yêu.</p>
@@ -91,7 +94,9 @@ const Dashboard = () => {
         <div className='relative z-10 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6'>
             <div className='max-w-2xl'>
                 <div className='inline-flex items-center px-3 py-1 rounded-full bg-pink-100 text-pink-700 text-xs font-bold uppercase tracking-wider mb-3'>
-                    <Sparkles size={14} className='mr-1' /> Studio Đám Cưới
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src='/image/logo-notext.png' alt='MoiMoi' className='w-4 h-4 object-contain mr-2' />
+                    Studio Đám Cưới
                 </div>
                 <h2 className='font-serif font-bold text-gray-900 mb-2 leading-tight'>
                     <span className='block text-xl md:text-2xl text-gray-500 mb-1 font-sans font-medium'>Xin chào,</span>
