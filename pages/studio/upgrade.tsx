@@ -191,7 +191,7 @@ export default function UpgradePage() {
                 />
               </div>
             </div>
-            <p className='mt-3 text-xs text-gray-400'>
+            <p className='mt-3 text-sm text-gray-400'>
               Thay đổi sẽ lưu vào localStorage để đồng bộ giữa landing và studio.
             </p>
           </div>
@@ -209,7 +209,7 @@ export default function UpgradePage() {
                 } ${plan.isActive === false ? 'opacity-60' : ''}`}
               >
                 {plan.highlight && (
-                  <div className='absolute top-0 right-0 bg-gradient-to-l from-pink-500 to-rose-500 text-white text-xs font-bold px-4 py-1 rounded-bl-xl uppercase tracking-wider'>
+                  <div className='absolute top-0 right-0 bg-gradient-to-l from-pink-500 to-rose-500 text-white text-sm font-bold px-4 py-1 rounded-bl-xl uppercase tracking-wider'>
                     Phổ Biến Nhất
                   </div>
                 )}
@@ -229,7 +229,7 @@ export default function UpgradePage() {
                     <div className='mt-2 text-sm font-semibold text-gray-500'>Thời gian: {plan.duration}</div>
                   )}
                   {discountActive && plan.discountEndsAt && (
-                    <div className='mt-3 inline-flex items-center gap-2 text-xs font-semibold text-pink-600 bg-pink-50 px-3 py-1 rounded-full'>
+                    <div className='mt-3 inline-flex items-center gap-2 text-sm font-semibold text-pink-600 bg-pink-50 px-3 py-1 rounded-full'>
                       <Clock size={14} /> Ưu đãi đến {new Date(plan.discountEndsAt).toLocaleDateString('vi-VN')}
                     </div>
                   )}
@@ -271,11 +271,11 @@ export default function UpgradePage() {
                     )}
                   </button>
                   {currentPlan !== plan.id && (
-                    <div className='flex items-center justify-center gap-2 text-xs text-gray-400'>
+                    <div className='flex items-center justify-center gap-2 text-sm text-gray-400'>
                       <Sparkles size={14} /> Demo kích hoạt gói để test nhanh.
                     </div>
                   )}
-                  <p className='text-center text-xs text-gray-400'>Hoàn tiền 100% nếu không hài lòng trong 7 ngày.</p>
+                  <p className='text-center text-sm text-gray-400'>Hoàn tiền 100% nếu không hài lòng trong 7 ngày.</p>
                 </div>
 
                 {isAdminMode && (
@@ -302,7 +302,7 @@ export default function UpgradePage() {
                     </div>
                     <div className='grid gap-3 md:grid-cols-3'>
                       <label className='flex flex-col gap-2'>
-                        <span className='text-xs font-bold text-gray-500 uppercase'>Tên gói</span>
+                        <span className='text-sm font-bold text-gray-500 uppercase'>Tên gói</span>
                         <input
                           value={plan.name}
                           onChange={(e) => updatePlan(plan.id, { name: e.target.value })}
@@ -310,7 +310,7 @@ export default function UpgradePage() {
                         />
                       </label>
                       <label className='flex flex-col gap-2'>
-                        <span className='text-xs font-bold text-gray-500 uppercase'>Giá</span>
+                        <span className='text-sm font-bold text-gray-500 uppercase'>Giá</span>
                         <input
                           type='number'
                           min={0}
@@ -320,7 +320,7 @@ export default function UpgradePage() {
                         />
                       </label>
                       <label className='flex flex-col gap-2'>
-                        <span className='text-xs font-bold text-gray-500 uppercase'>Thời gian</span>
+                        <span className='text-sm font-bold text-gray-500 uppercase'>Thời gian</span>
                         <input
                           value={plan.duration || ''}
                           onChange={(e) => updatePlan(plan.id, { duration: e.target.value || undefined })}
@@ -329,7 +329,7 @@ export default function UpgradePage() {
                       </label>
                     </div>
                     <label className='flex flex-col gap-2'>
-                      <span className='text-xs font-bold text-gray-500 uppercase'>Mô tả</span>
+                      <span className='text-sm font-bold text-gray-500 uppercase'>Mô tả</span>
                       <input
                         value={plan.description}
                         onChange={(e) => updatePlan(plan.id, { description: e.target.value })}
@@ -338,7 +338,7 @@ export default function UpgradePage() {
                     </label>
                     <div className='grid gap-3 md:grid-cols-2'>
                       <label className='flex flex-col gap-2'>
-                        <span className='text-xs font-bold text-gray-500 uppercase'>Giảm giá</span>
+                        <span className='text-sm font-bold text-gray-500 uppercase'>Giảm giá</span>
                         <input
                           type='number'
                           min={0}
@@ -348,7 +348,7 @@ export default function UpgradePage() {
                         />
                       </label>
                       <label className='flex flex-col gap-2'>
-                        <span className='text-xs font-bold text-gray-500 uppercase'>Hết hạn ưu đãi</span>
+                        <span className='text-sm font-bold text-gray-500 uppercase'>Hết hạn ưu đãi</span>
                         <input
                           type='datetime-local'
                           value={plan.discountEndsAt ? plan.discountEndsAt.slice(0, 16) : ''}
@@ -363,7 +363,7 @@ export default function UpgradePage() {
                     </div>
                     <div className='grid gap-3 md:grid-cols-2'>
                       <label className='flex flex-col gap-2'>
-                        <span className='text-xs font-bold text-gray-500 uppercase'>Tính năng (mỗi dòng)</span>
+                        <span className='text-sm font-bold text-gray-500 uppercase'>Tính năng (mỗi dòng)</span>
                         <textarea
                           rows={4}
                           value={plan.features.join('\n')}
@@ -379,7 +379,7 @@ export default function UpgradePage() {
                         />
                       </label>
                       <label className='flex flex-col gap-2'>
-                        <span className='text-xs font-bold text-gray-500 uppercase'>Không bao gồm (mỗi dòng)</span>
+                        <span className='text-sm font-bold text-gray-500 uppercase'>Không bao gồm (mỗi dòng)</span>
                         <textarea
                           rows={4}
                           value={plan.notIncluded.join('\n')}

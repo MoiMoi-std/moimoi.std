@@ -6,8 +6,8 @@ import { useToast } from '@/components/ui/ToastProvider'
 import { dataService, Template } from '@/lib/data-service'
 import { useWedding } from '@/lib/useWedding'
 import { Check, Eye, EyeOff, LayoutTemplate, Search, Sparkles } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
+import { useEffect, useMemo, useState } from 'react'
 
 const PLAN_OPTIONS = ['Sinh Viên', 'Gói Cơ Bản', 'Gói Nâng Cao', 'Gói Cao Cấp']
 
@@ -315,7 +315,7 @@ export default function TemplatesPage() {
                   )}
                 </div>
                 <p className='text-sm text-gray-500'>Gợi ý phong cách: {template.repo_branch}</p>
-                <div className='flex flex-wrap gap-2 text-xs'>
+                <div className='flex flex-wrap gap-2 text-sm'>
                   <span className='px-2 py-1 rounded-full bg-gray-100 text-gray-600'>
                     Giá: {formatPrice(meta.price)}
                   </span>
@@ -334,7 +334,7 @@ export default function TemplatesPage() {
                   <Sparkles size={16} /> Áp Dụng Mẫu
                 </button>
                 {!isAdminMode && hasPlanLimit && (
-                  <div className='text-xs text-gray-500 bg-pink-50/60 border border-pink-100 rounded-lg p-3'>
+                  <div className='text-sm text-gray-500 bg-pink-50/60 border border-pink-100 rounded-lg p-3'>
                     Mẫu này thuộc gói trả phí. Nâng cấp để mở khóa và được giảm giá bằng với gói đã mua trước đó.
                   </div>
                 )}
@@ -344,7 +344,7 @@ export default function TemplatesPage() {
                       <span className='font-medium text-gray-600'>Trạng thái hiển thị</span>
                       <button
                         onClick={() => updateMeta(template.id, { is_active: !meta.is_active })}
-                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold ${
+                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
                           meta.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
                         }`}
                       >
@@ -354,7 +354,7 @@ export default function TemplatesPage() {
                     </div>
                     <div className='grid grid-cols-2 gap-3'>
                       <label className='flex flex-col gap-1'>
-                        <span className='text-xs font-bold text-gray-500 uppercase'>Giá (VNĐ)</span>
+                        <span className='text-sm font-bold text-gray-500 uppercase'>Giá (VNĐ)</span>
                         <input
                           type='number'
                           min={0}
@@ -364,7 +364,7 @@ export default function TemplatesPage() {
                         />
                       </label>
                       <label className='flex flex-col gap-1'>
-                        <span className='text-xs font-bold text-gray-500 uppercase'>Thứ tự</span>
+                        <span className='text-sm font-bold text-gray-500 uppercase'>Thứ tự</span>
                         <input
                           type='number'
                           min={0}
@@ -375,7 +375,7 @@ export default function TemplatesPage() {
                       </label>
                     </div>
                     <div className='space-y-2'>
-                      <div className='text-xs font-bold text-gray-500 uppercase'>Gói áp dụng</div>
+                      <div className='text-sm font-bold text-gray-500 uppercase'>Gói áp dụng</div>
                       <div className='flex flex-wrap gap-2'>
                         {PLAN_OPTIONS.map((plan) => {
                           const checked = meta.allowed_plans.includes(plan)
@@ -399,12 +399,12 @@ export default function TemplatesPage() {
                           )
                         })}
                       </div>
-                      <p className='text-xs text-gray-400'>
+                      <p className='text-sm text-gray-400'>
                         Không chọn gói nào đồng nghĩa với việc áp dụng cho tất cả gói.
                       </p>
                     </div>
                     <label className='flex flex-col gap-1'>
-                      <span className='text-xs font-bold text-gray-500 uppercase'>Tags</span>
+                      <span className='text-sm font-bold text-gray-500 uppercase'>Tags</span>
                       <input
                         type='text'
                         value={meta.tags.join(', ')}

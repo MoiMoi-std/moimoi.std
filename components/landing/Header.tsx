@@ -73,27 +73,27 @@ export default function Header() {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className='fixed inset-0 z-50 bg-white p-6 md:hidden flex flex-col'>
+        <div className='fixed inset-0 z-[100] bg-white p-6 md:hidden flex flex-col h-screen w-screen overflow-y-auto'>
           <div className='flex items-center justify-between mb-8'>
             <img src='/image/LOGO.png' alt='MoiMoi' className='h-10 w-auto' />
-            <button onClick={() => setMobileMenuOpen(false)} className='p-2 text-gray-500'>
+            <button onClick={() => setMobileMenuOpen(false)} className='p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors'>
               <X size={24} />
             </button>
           </div>
 
-          <div className='flex flex-col space-y-6 text-lg font-medium text-gray-800'>
-            <Link href='#features' onClick={() => setMobileMenuOpen(false)}>
+          <div className='flex flex-col space-y-6 text-lg font-medium text-gray-800 flex-1'>
+            <Link href='#features' onClick={() => setMobileMenuOpen(false)} className='py-2 border-b border-gray-50'>
               Tính năng
             </Link>
-            <Link href='#templates' onClick={() => setMobileMenuOpen(false)}>
+            <Link href='#templates' onClick={() => setMobileMenuOpen(false)} className='py-2 border-b border-gray-50'>
               Mẫu thiệp
             </Link>
-            <Link href='#pricing' onClick={() => setMobileMenuOpen(false)}>
+            <Link href='#pricing' onClick={() => setMobileMenuOpen(false)} className='py-2 border-b border-gray-50'>
               Bảng giá
             </Link>
           </div>
 
-          <div className='mt-auto space-y-4'>
+          <div className='mt-auto space-y-4 pb-8'>
             {session ? (
               <Link href='/studio' onClick={() => setMobileMenuOpen(false)}>
                 <button className='w-full py-3 bg-pink-50 text-pink-600 rounded-xl font-bold flex items-center justify-center gap-2'>

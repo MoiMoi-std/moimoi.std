@@ -25,12 +25,12 @@ const LoginPage = () => {
       <div className='absolute top-0 right-0 w-96 h-96 bg-pink-100 rounded-full blur-3xl opacity-50 -mr-20 -mt-20'></div>
       <div className='absolute bottom-0 left-0 w-96 h-96 bg-purple-100 rounded-full blur-3xl opacity-50 -ml-20 -mb-20'></div>
 
-      <div className='w-full max-w-md p-10 bg-white rounded-3xl shadow-xl shadow-pink-100/50 border border-white z-10'>
+      <div className='w-full max-w-md p-6 md:p-10 bg-white rounded-3xl shadow-xl shadow-pink-100/50 border border-white z-10'>
         <div className='mb-8 text-center'>
           <div className='w-16 h-16 bg-pink-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl'>
             🔐
           </div>
-          <h1 className='text-3xl font-serif font-bold text-gray-900'>Chào Mừng Trở Lại</h1>
+          <h1 className='text-2xl md:text-3xl font-serif font-bold text-gray-900'>Chào Mừng Trở Lại</h1>
           <p className='text-gray-500 mt-2'>Đăng nhập để quản lý đám cưới của bạn</p>
         </div>
 
