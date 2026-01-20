@@ -728,7 +728,7 @@ const Guests = () => {
                             </h3>
                             {/* Mobile Checkbox (if needed) or Status for Mobile Layout */}
                           </div>
-                          
+
                           {/* Details Row: Inline on Desktop */}
                           <div className='flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 mb-3'>
                             {visibleColumns.phone && (
@@ -782,60 +782,60 @@ const Guests = () => {
 
                         {/* Right Side: Status & Actions */}
                         <div className='flex flex-row sm:flex-col sm:items-end justify-between sm:justify-start gap-3 border-t sm:border-t-0 pt-3 sm:pt-0 sm:pl-4 sm:border-l border-gray-50 min-w-[120px]'>
-                           {/* Status Badge */}
-                           <div className='flex items-center gap-2'>
-                              {isAdminMode && (
-                                <div onClick={(e) => e.stopPropagation()} className='sm:hidden'>
-                                  <input 
-                                    type='checkbox' 
-                                    checked={isSelected} 
-                                    onChange={() => toggleRsvpSelection(rsvp.id)}
-                                    className='w-5 h-5 rounded border-gray-300 text-pink-600 focus:ring-pink-500' 
-                                  />
-                                </div>
-                              )}
-                              
-                              {rsvp.is_attending ? (
-                                <span className='inline-flex items-center px-2.5 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-bold border border-green-100 whitespace-nowrap'>
-                                  Tham dự
-                                </span>
-                              ) : (
-                                <span className='inline-flex items-center px-2.5 py-1 rounded-lg bg-red-50 text-red-700 text-xs font-bold border border-red-100 whitespace-nowrap'>
-                                  Vắng mặt
-                                </span>
-                              )}
-                              
-                              {isAdminMode && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation()
-                                    const updatedRsvps = rsvps.map((r) =>
-                                      r.id === rsvp.id ? { ...r, is_attending: !r.is_attending } : r
-                                    )
-                                    setRsvps(updatedRsvps)
-                                    setFilteredRsvps(updatedRsvps)
-                                  }}
-                                  className='hidden sm:block text-xs text-gray-400 hover:text-pink-600 underline decoration-dotted'
-                                >
-                                  Đổi
-                                </button>
-                              )}
-                           </div>
+                          {/* Status Badge */}
+                          <div className='flex items-center gap-2'>
+                            {isAdminMode && (
+                              <div onClick={(e) => e.stopPropagation()} className='sm:hidden'>
+                                <input
+                                  type='checkbox'
+                                  checked={isSelected}
+                                  onChange={() => toggleRsvpSelection(rsvp.id)}
+                                  className='w-5 h-5 rounded border-gray-300 text-pink-600 focus:ring-pink-500'
+                                />
+                              </div>
+                            )}
+
+                            {rsvp.is_attending ? (
+                              <span className='inline-flex items-center px-2.5 py-1 rounded-lg bg-green-50 text-green-700 text-xs font-bold border border-green-100 whitespace-nowrap'>
+                                Tham dự
+                              </span>
+                            ) : (
+                              <span className='inline-flex items-center px-2.5 py-1 rounded-lg bg-red-50 text-red-700 text-xs font-bold border border-red-100 whitespace-nowrap'>
+                                Vắng mặt
+                              </span>
+                            )}
+
+                            {isAdminMode && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation()
+                                  const updatedRsvps = rsvps.map((r) =>
+                                    r.id === rsvp.id ? { ...r, is_attending: !r.is_attending } : r
+                                  )
+                                  setRsvps(updatedRsvps)
+                                  setFilteredRsvps(updatedRsvps)
+                                }}
+                                className='hidden sm:block text-xs text-gray-400 hover:text-pink-600 underline decoration-dotted'
+                              >
+                                Đổi
+                              </button>
+                            )}
+                          </div>
 
                           {/* Actions Row */}
                           <div className='flex gap-1 justify-end mt-auto'>
                             {isAdminMode && (
-                               <div className='hidden sm:flex items-center justify-center w-8 h-8 mr-2 absolute top-4 right-4'>
-                                  <div
-                                    className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors cursor-pointer ${
-                                      isSelected
-                                        ? 'bg-pink-500 border-pink-500 text-white'
-                                        : 'bg-white border-gray-300 text-transparent hover:border-pink-300'
-                                    }`}
-                                  >
-                                    <Check size={14} strokeWidth={3} />
-                                  </div>
-                               </div>
+                              <div className='hidden sm:flex items-center justify-center w-8 h-8 mr-2 absolute top-4 right-4'>
+                                <div
+                                  className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors cursor-pointer ${
+                                    isSelected
+                                      ? 'bg-pink-500 border-pink-500 text-white'
+                                      : 'bg-white border-gray-300 text-transparent hover:border-pink-300'
+                                  }`}
+                                >
+                                  <Check size={14} strokeWidth={3} />
+                                </div>
+                              </div>
                             )}
 
                             <button
@@ -858,7 +858,7 @@ const Guests = () => {
                             >
                               <QrCode size={16} />
                             </button>
-                            
+
                             {isAdminMode && (
                               <>
                                 <button

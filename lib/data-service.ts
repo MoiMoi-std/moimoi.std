@@ -135,7 +135,7 @@ export const dataService = {
       console.warn('Template fetch failed, using mock data:', dbResult.error)
       return mockTemplates
     }
-    
+
     const dbTemplates = dbResult.data || []
     if (dbTemplates.length === 0) return mockTemplates
 
@@ -242,10 +242,48 @@ const createMockTemplates = (count: number): Template[] => {
 }
 
 const createMockGuests = (count: number, weddingId: string): RSVP[] => {
-  const firstNames = ['An', 'Bình', 'Chi', 'Dũng', 'Em', 'Giang', 'Hà', 'Khánh', 'Lan', 'Minh', 'Nam', 'Oanh', 'Phúc', 'Quân', 'Sơn', 'Thảo', 'Uyên', 'Vinh', 'Xuân', 'Yến']
+  const firstNames = [
+    'An',
+    'Bình',
+    'Chi',
+    'Dũng',
+    'Em',
+    'Giang',
+    'Hà',
+    'Khánh',
+    'Lan',
+    'Minh',
+    'Nam',
+    'Oanh',
+    'Phúc',
+    'Quân',
+    'Sơn',
+    'Thảo',
+    'Uyên',
+    'Vinh',
+    'Xuân',
+    'Yến'
+  ]
   const middleNames = ['Văn', 'Thị', 'Đức', 'Ngọc', 'Hữu', 'Phương', 'Thanh', 'Hoàng', 'Minh', 'Thu']
-  const lastNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đỗ', 'Hồ', 'Ngô', 'Dương', 'Lý']
-  
+  const lastNames = [
+    'Nguyễn',
+    'Trần',
+    'Lê',
+    'Phạm',
+    'Hoàng',
+    'Huỳnh',
+    'Phan',
+    'Vũ',
+    'Võ',
+    'Đặng',
+    'Bùi',
+    'Đỗ',
+    'Hồ',
+    'Ngô',
+    'Dương',
+    'Lý'
+  ]
+
   const wishes = [
     'Chúc mừng hạnh phúc hai bạn!',
     'Chúc hai bạn trăm năm hạnh phúc, sớm sinh quý tử.',
@@ -253,7 +291,7 @@ const createMockGuests = (count: number, weddingId: string): RSVP[] => {
     'Happy Wedding! Chúc mừng ngày trọng đại.',
     'Rất tiếc không thể tham dự, chúc hai bạn hạnh phúc.',
     '',
-    'Chúc mừng đám cưới!',
+    'Chúc mừng đám cưới!'
   ]
 
   return Array.from({ length: count }, (_, index) => {
@@ -270,7 +308,11 @@ const createMockGuests = (count: number, weddingId: string): RSVP[] => {
       updated_at: new Date().toISOString(),
       wedding_id: weddingId,
       guest_name: fullName,
-      phone: hasPhone ? `09${Math.floor(Math.random() * 100000000).toString().padStart(8, '0')}` : null,
+      phone: hasPhone
+        ? `09${Math.floor(Math.random() * 100000000)
+            .toString()
+            .padStart(8, '0')}`
+        : null,
       email: null,
       party_size: Math.floor(Math.random() * 3) + 1, // 1-4 people
       is_attending: isAttending,

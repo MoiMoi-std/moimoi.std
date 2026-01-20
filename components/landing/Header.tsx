@@ -76,7 +76,10 @@ export default function Header() {
         <div className='fixed inset-0 z-[100] bg-white p-6 md:hidden flex flex-col h-screen w-screen overflow-y-auto'>
           <div className='flex items-center justify-between mb-8'>
             <img src='/image/LOGO.png' alt='MoiMoi' className='h-10 w-auto' />
-            <button onClick={() => setMobileMenuOpen(false)} className='p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors'>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className='p-2 text-gray-500 hover:bg-gray-100 rounded-full transition-colors'
+            >
               <X size={24} />
             </button>
           </div>
