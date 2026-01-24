@@ -155,7 +155,7 @@ export default function FinanceDashboard() {
   const [journalPage, setJournalPage] = useState(1)
   const [showAddModal, setShowAddModal] = useState(false)
   const [entries, setEntries] = useState(JOURNAL_ENTRIES)
-  
+
   // Form state
   const [formData, setFormData] = useState({
     purpose: '',
@@ -191,7 +191,7 @@ export default function FinanceDashboard() {
   const exportToExcel = () => {
     // Tạo CSV content
     const headers = ['Mã GD', 'Mục đích', 'Số tiền', 'Nội dung', 'Loại', 'Ngày']
-    const rows = entries.map(entry => [
+    const rows = entries.map((entry) => [
       entry.id,
       entry.purpose,
       entry.amount.toLocaleString('vi-VN'),
@@ -199,10 +199,10 @@ export default function FinanceDashboard() {
       entry.type === 'income' ? 'Thu' : 'Chi',
       entry.date
     ])
-    
+
     let csvContent = headers.join(',') + '\n'
-    rows.forEach(row => {
-      csvContent += row.map(cell => `"${cell}"`).join(',') + '\n'
+    rows.forEach((row) => {
+      csvContent += row.map((cell) => `"${cell}"`).join(',') + '\n'
     })
 
     // Download file
@@ -433,9 +433,7 @@ export default function FinanceDashboard() {
                         <td className='px-6 py-4 font-mono text-sm text-gray-600'>{entry.id}</td>
                         <td className='px-6 py-4 font-medium text-gray-900'>{entry.purpose}</td>
                         <td className='px-6 py-4'>
-                          <span
-                            className={`font-bold ${entry.amount > 0 ? 'text-green-600' : 'text-red-600'}`}
-                          >
+                          <span className={`font-bold ${entry.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {entry.amount > 0 ? '+' : ''}
                             {entry.amount.toLocaleString('vi-VN')} ₫
                           </span>
