@@ -54,6 +54,7 @@ export type Database = {
           max_rsvps: number | null
           features: Json | null
           promotion_end_date: string | null
+          is_active: boolean
           created_at: string
         }
         Insert: {
@@ -65,6 +66,7 @@ export type Database = {
           max_rsvps?: number | null
           features?: Json | null
           promotion_end_date?: string | null
+          is_active?: boolean
           created_at?: string
         }
         Update: {
@@ -76,6 +78,7 @@ export type Database = {
           max_rsvps?: number | null
           features?: Json | null
           promotion_end_date?: string | null
+          is_active?: boolean
           created_at?: string
         }
         Relationships: []

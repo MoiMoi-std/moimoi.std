@@ -86,14 +86,21 @@ export const packageService = {
   },
 
   /**
-   * DELETE: Xóa package
+   * PATCH: Toggle is_active status
    */
-  deletePackage: async (id: number): Promise<void> => {
-    const { error } = await supabase.from('packages').delete().eq('id', id)
+  toggleActive: async (id: number, isActive: boolean): Promise<Package> => {
+    const { data, error } = await supabase
+      .from('packages')
+      .update({ is_active: isActive })
+      .eq('id', id)
+      .select()
+      .single()
 
     if (error) {
-      console.error('Error deleting package:', error)
+      console.error('Error toggling package active status:', error)
       throw error
     }
+
+    return data
   }
 }

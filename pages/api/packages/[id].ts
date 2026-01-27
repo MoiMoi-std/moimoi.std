@@ -2,6 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { packageService } from '../../../lib/package-service'
 
 /**
+ * GET    /api/packages/[id] - Lấy thông tin 1 package
  * PUT    /api/packages/[id] - Cập nhật package
  * DELETE /api/packages/[id] - Xóa package
  */
@@ -25,6 +26,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
   }
 
+  // // GET: Lấy thông tin 1 package
+  // if (req.method === 'GET') {
+  //   try {
+  //     const packageData = await packageService.getPackageById(packageId)
+
+  //     if (!packageData) {
+  //       return res.status(404).json({
+  //         success: false,
+  //         error: 'Package not found'
+  //       })
+  //     }
+
+  //     return res.status(200).json({
+  //       success: true,
+  //       data: packageData
+  //     })
+  //   } catch (error: any) {
+  //     console.error('GET Error:', error)
+  //     return res.status(500).json({
+  //       success: false,
+  //       error: 'Internal server error',
+  //       message: error.message
+  //     })
+  //   }
+  // }
+
   // PUT/PATCH: Cập nhật package
   if (req.method === 'PUT' || req.method === 'PATCH') {
     try {
@@ -47,25 +74,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
       }
 
-      return res.status(500).json({
-        success: false,
-        error: 'Internal server error',
-        message: error.message
-      })
-    }
-  }
-
-  // DELETE: Xóa package
-  if (req.method === 'DELETE') {
-    try {
-      await packageService.deletePackage(packageId)
-
-      return res.status(200).json({
-        success: true,
-        message: 'Package deleted successfully'
-      })
-    } catch (error: any) {
-      console.error('DELETE Error:', error)
       return res.status(500).json({
         success: false,
         error: 'Internal server error',
