@@ -96,13 +96,6 @@ const Editor = () => {
       </StudioLayout>
     )
 
-  if (!wedding)
-    return (
-      <StudioLayout>
-        <StudioEmptyState />
-      </StudioLayout>
-    )
-
   return (
     <StudioLayout>
       <div className='mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between'>
@@ -201,9 +194,9 @@ const Editor = () => {
 
           {/* Tab Content */}
           <div className='p-8 animate-in fade-in slide-in-from-bottom-2 duration-300'>
-            {activeTab === 'info' && <TabInfo content={wedding.content} onChange={handleInfoChange} />}
-            {activeTab === 'album' && <TabAlbum images={wedding.content.images || []} onChange={handleImagesChange} />}
-            {activeTab === 'bank' && <TabBank content={wedding.content} onChange={handleInfoChange} />}
+            {activeTab === 'info' && <TabInfo content={wedding?.content} onChange={handleInfoChange} />}
+            {activeTab === 'album' && <TabAlbum images={wedding?.content?.images || []} onChange={handleImagesChange} />}
+            {activeTab === 'bank' && <TabBank content={wedding?.content} onChange={handleInfoChange} />}
             {activeTab === 'admin' && (
               <div className='space-y-6'>
                 <div className='bg-pink-50/60 border border-pink-100 rounded-2xl p-5'>
@@ -276,7 +269,7 @@ const Editor = () => {
           </div>
         </div>
 
-        <LivePreview content={wedding.content} />
+        <LivePreview content={wedding?.content} />
       </div>
     </StudioLayout>
   )

@@ -2,10 +2,27 @@ import React from 'react'
 import { WeddingContent } from '@/lib/data-service'
 
 interface LivePreviewProps {
-  content: WeddingContent
+  content?: WeddingContent
 }
 
 const LivePreview: React.FC<LivePreviewProps> = ({ content }) => {
+  if (!content) {
+    return (
+      <div className='sticky top-6'>
+        <div className='bg-white rounded-3xl shadow-xl border border-pink-100 p-5'>
+          <div className='text-xs font-bold text-gray-500 uppercase tracking-wider mb-3'>Live Preview</div>
+          <div className='mx-auto w-[280px] rounded-[32px] border-[10px] border-gray-900 bg-gray-900 shadow-2xl'>
+            <div className='bg-[#FDFBF7] rounded-[22px] overflow-hidden'>
+              <div className='h-44 bg-gray-200 flex items-center justify-center text-gray-400'>
+                Chưa có dữ liệu
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const cover = content.images?.[0]
   const names = `${content.groom_name || 'Chú rể'} & ${content.bride_name || 'Cô dâu'}`
 
