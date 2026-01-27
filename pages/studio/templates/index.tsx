@@ -16,6 +16,7 @@ type TemplateAdminMeta = {
   price: number
   allowed_plans: string[]
   sort_order: number
+  tags?: any[]
 }
 
 const DEFAULT_META: TemplateAdminMeta = {
