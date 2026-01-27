@@ -1,6 +1,6 @@
 import Pagination from '@/components/common/Pagination'
 import StudioLayout from '@/components/studio/StudioLayout'
-import { ArrowUpRight, CreditCard, DollarSign, Download, FileText, Filter, PlusCircle, X } from 'lucide-react'
+import { ArrowUpRight, CreditCard, DollarSign, Download, FileText, Filter, PlusCircle, Search, X } from 'lucide-react'
 import { useState } from 'react'
 
 const TRANSACTIONS = [
@@ -154,7 +154,9 @@ export default function FinanceDashboard() {
   const [currentPage, setCurrentPage] = useState(1)
   const [journalPage, setJournalPage] = useState(1)
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showFilterModal, setShowFilterModal] = useState(false)
   const [entries, setEntries] = useState(JOURNAL_ENTRIES)
+  const [searchTerm, setSearchTerm] = useState('')
 
   // Form state
   const [formData, setFormData] = useState({
@@ -163,6 +165,26 @@ export default function FinanceDashboard() {
     content: '',
     type: 'income' as 'income' | 'expense',
     date: new Date().toISOString().split('T')[0]
+  })
+
+  // Filter state
+  const [filterData, setFilterData] = useState({
+    startDate: '',
+    endDate: '',
+    type: 'all' as 'all' | 'income' | 'expense'
+  })
+
+  // Filtered entries
+  const filteredEntries = entries.filter((entry) => {
+    const entryDate = new Date(entry.date)
+    const start = filterData.startDate ? new Date(filterData.startDate) : null
+    const end = filterData.endDate ? new Date(filterData.endDate) : null
+
+    const dateMatch = (!start || entryDate >= start) && (!end || entryDate <= end)
+    const typeMatch = filterData.type === 'all' || entry.type === filterData.type
+    const searchMatch = searchTerm === '' || entry.id.toLowerCase().includes(searchTerm.toLowerCase())
+
+    return dateMatch && typeMatch && searchMatch
   })
 
   const itemsPerPage = 5
@@ -319,7 +341,7 @@ export default function FinanceDashboard() {
                       <th className='px-6 py-4'>Số Tiền</th>
                       <th className='px-6 py-4'>Cổng TT</th>
                       <th className='px-6 py-4'>Trạng Thái</th>
-                      <th className='px-6 py-4'>Ngày</th>
+                      <th className='px-6 py-4 min-w-[140px]'>Ngày</th>
                       {/* <th className='px-6 py-4 text-right'>Action</th> */}
                     </tr>
                   </thead>
@@ -348,7 +370,7 @@ export default function FinanceDashboard() {
                             </span>
                           )}
                         </td>
-                        <td className='px-6 py-4 text-sm text-gray-500'>{trx.date}</td>
+                        <td className='px-6 py-4 text-sm text-gray-500 min-w-[140px] whitespace-nowrap'>{trx.date}</td>
                         {/* <td className='px-6 py-4 text-right'>
                           <div className='flex justify-end gap-2'>
                             {trx.status === 'Pending' ? (
@@ -396,14 +418,27 @@ export default function FinanceDashboard() {
             <div>
               <div className='p-6 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4'>
                 <h2 className='text-lg font-bold'>Nhật Ký Thu Chi</h2>
-                <div className='flex gap-2'>
+                <div className='flex gap-2 flex-wrap'>
+                  <div className='relative'>
+                    <Search className='absolute left-3 top-2.5 text-gray-400' size={18} />
+                    <input
+                      type='text'
+                      placeholder='Tìm mã giao dịch...'
+                      className='pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-200 text-sm'
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
                   <button
                     onClick={() => setShowAddModal(true)}
-                    className='flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 shadow-sm'
+                    className='flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-lg text-sm font-bold hover:bg-pink-700 shadow-sm'
                   >
                     <PlusCircle size={16} /> Thêm Giao Dịch
                   </button>
-                  <button className='flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50'>
+                  <button
+                    onClick={() => setShowFilterModal(true)}
+                    className='flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50'
+                  >
                     <Filter size={16} /> Lọc
                   </button>
                   <button
@@ -424,11 +459,11 @@ export default function FinanceDashboard() {
                       <th className='px-6 py-4'>Số Tiền</th>
                       <th className='px-6 py-4'>Nội Dung</th>
                       <th className='px-6 py-4'>Loại</th>
-                      <th className='px-6 py-4'>Ngày</th>
+                      <th className='px-6 py-4 min-w-[140px]'>Ngày</th>
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-gray-50'>
-                    {entries.slice((journalPage - 1) * itemsPerPage, journalPage * itemsPerPage).map((entry) => (
+                    {filteredEntries.slice((journalPage - 1) * itemsPerPage, journalPage * itemsPerPage).map((entry) => (
                       <tr key={entry.id} className='hover:bg-gray-50'>
                         <td className='px-6 py-4 font-mono text-sm text-gray-600'>{entry.id}</td>
                         <td className='px-6 py-4 font-medium text-gray-900'>{entry.purpose}</td>
@@ -450,7 +485,7 @@ export default function FinanceDashboard() {
                             </span>
                           )}
                         </td>
-                        <td className='px-6 py-4 text-sm text-gray-500'>{entry.date}</td>
+                        <td className='px-6 py-4 text-sm text-gray-500 min-w-[140px] whitespace-nowrap'>{entry.date}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -459,7 +494,7 @@ export default function FinanceDashboard() {
 
               <Pagination
                 currentPage={journalPage}
-                totalItems={entries.length}
+                totalItems={filteredEntries.length}
                 itemsPerPage={itemsPerPage}
                 onPageChange={setJournalPage}
                 itemLabel='giao dịch'
@@ -475,11 +510,11 @@ export default function FinanceDashboard() {
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
           <div className='absolute inset-0 bg-black/40 backdrop-blur-sm' onClick={() => setShowAddModal(false)}></div>
           <div className='bg-white rounded-2xl shadow-2xl w-full max-w-lg z-10 overflow-hidden'>
-            <div className='px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50'>
-              <h3 className='font-bold text-lg'>Thêm Giao Dịch Thu Chi</h3>
+            <div className='px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-pink-600'>
+              <h3 className='font-bold text-lg text-white'>Thêm Giao Dịch Thu Chi</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className='text-gray-400 hover:text-gray-600 text-2xl leading-none'
+                className='text-white hover:text-pink-100 text-2xl leading-none'
               >
                 <X size={24} />
               </button>
@@ -492,7 +527,7 @@ export default function FinanceDashboard() {
                     onClick={() => setFormData({ ...formData, type: 'income' })}
                     className={`px-4 py-3 rounded-lg font-bold text-sm transition-all ${
                       formData.type === 'income'
-                        ? 'bg-green-600 text-white shadow-lg'
+                        ? 'bg-pink-600 text-white shadow-lg'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                   >
@@ -563,10 +598,106 @@ export default function FinanceDashboard() {
               </button>
               <button
                 onClick={handleAddEntry}
-                className='px-4 py-2 bg-green-600 text-white font-bold text-sm hover:bg-green-700 rounded-lg shadow-lg shadow-green-200'
+                className='px-4 py-2 bg-pink-600 text-white font-bold text-sm hover:bg-pink-700 rounded-lg shadow-lg shadow-pink-200'
                 disabled={!formData.purpose || !formData.amount || !formData.content}
               >
                 Lưu Giao Dịch
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter Modal */}
+      {showFilterModal && (
+        <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
+          <div className='absolute inset-0 bg-black/40 backdrop-blur-sm' onClick={() => setShowFilterModal(false)}></div>
+          <div className='bg-white rounded-2xl shadow-2xl w-full max-w-lg z-10 overflow-hidden'>
+            <div className='px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-pink-600'>
+              <h3 className='font-bold text-lg text-white'>Lọc Giao Dịch</h3>
+              <button
+                onClick={() => setShowFilterModal(false)}
+                className='text-white hover:text-pink-100 text-2xl leading-none'
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className='p-6 space-y-4'>
+              <div>
+                <label className='block text-sm font-bold text-gray-700 mb-2'>Loại Giao Dịch</label>
+                <div className='grid grid-cols-3 gap-3'>
+                  <button
+                    onClick={() => setFilterData({ ...filterData, type: 'all' })}
+                    className={`px-4 py-3 rounded-lg font-bold text-sm transition-all ${
+                      filterData.type === 'all'
+                        ? 'bg-pink-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Tất cả
+                  </button>
+                  <button
+                    onClick={() => setFilterData({ ...filterData, type: 'income' })}
+                    className={`px-4 py-3 rounded-lg font-bold text-sm transition-all ${
+                      filterData.type === 'income'
+                        ? 'bg-pink-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Thu
+                  </button>
+                  <button
+                    onClick={() => setFilterData({ ...filterData, type: 'expense' })}
+                    className={`px-4 py-3 rounded-lg font-bold text-sm transition-all ${
+                      filterData.type === 'expense'
+                        ? 'bg-red-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    Chi
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className='block text-sm font-bold text-gray-700 mb-2'>Từ Ngày</label>
+                <input
+                  type='date'
+                  value={filterData.startDate}
+                  onChange={(e) => setFilterData({ ...filterData, startDate: e.target.value })}
+                  className='w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+                />
+              </div>
+
+              <div>
+                <label className='block text-sm font-bold text-gray-700 mb-2'>Đến Ngày</label>
+                <input
+                  type='date'
+                  value={filterData.endDate}
+                  onChange={(e) => setFilterData({ ...filterData, endDate: e.target.value })}
+                  className='w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500'
+                />
+              </div>
+            </div>
+            <div className='px-6 py-4 bg-gray-50 border-t border-gray-100 flex justify-end gap-3'>
+              <button
+                onClick={() => {
+                  setFilterData({ startDate: '', endDate: '', type: 'all' })
+                  setSearchTerm('')
+                  setShowFilterModal(false)
+                }}
+                className='px-4 py-2 text-gray-600 font-bold text-sm hover:bg-gray-100 rounded-lg'
+              >
+                Xóa Bộ Lọc
+              </button>
+              <button
+                onClick={() => {
+                  setShowFilterModal(false)
+                  setJournalPage(1) // Reset to first page when filter applied
+                }}
+                className='px-4 py-2 bg-pink-600 text-white font-bold text-sm hover:bg-pink-700 rounded-lg shadow-lg shadow-pink-200'
+              >
+                Áp Dụng
               </button>
             </div>
           </div>
