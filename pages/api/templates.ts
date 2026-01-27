@@ -13,19 +13,13 @@ const supabase = createClient(
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === 'GET') {
     try {
-      const { package_id, is_active } = req.query
+      const { package_id } = req.query
 
       // Lấy tất cả templates
-      let templatesQuery = supabase
+      const { data: templates, error: templatesError } = await supabase
         .from('templates')
         .select('*')
         .order('id', { ascending: true })
-
-      if (is_active !== undefined) {
-        templatesQuery = templatesQuery.eq('is_active', is_active === 'true')
-      }
-
-      const { data: templates, error: templatesError } = await templatesQuery
 
       if (templatesError) throw templatesError
 

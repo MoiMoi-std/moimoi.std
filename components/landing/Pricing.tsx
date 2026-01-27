@@ -1,17 +1,81 @@
-import { Plan, formatVnd, getPlans, isDiscountActive } from '@/lib/plan-store'
+import { Plan, formatVnd } from '@/lib/plan-store'
 import { Check, Clock, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
+interface ApiPackage {
+  id: number
+  name: string
+  price: number
+  original_price: number
+  duration_months: number
+  description?: string
+  features?: string[]
+  is_active: boolean
+}
+
 export default function Pricing() {
   const [plans, setPlans] = useState<Plan[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    setPlans(getPlans())
+    const fetchPackages = async () => {
+      try {
+        const response = await fetch('/api/packages')
+        if (!response.ok) {
+          console.error('Failed to fetch packages')
+          return
+        }
+        const result = await response.json()
+        const packages: ApiPackage[] = result.data || []
+        
+        // Map API data to Plan format
+        const mappedPlans: Plan[] = packages
+          .filter((pkg) => pkg.is_active)
+          .map((pkg) => ({
+            id: pkg.id.toString(),
+            name: pkg.name,
+            price: pkg.price,
+            discountPrice: pkg.original_price > pkg.price ? pkg.price : undefined,
+            duration: `${pkg.duration_months} tháng`,
+            description: pkg.description || 'Gói dịch vụ thiệp cưới trực tuyến',
+            features: pkg.features || [
+              'Thiết kế thiệp cưới online',
+              'Quản lý danh sách khách mời',
+              'Thu thập xác nhận tham dự',
+              'Hỗ trợ kỹ thuật 24/7'
+            ],
+            notIncluded: [],
+            isActive: pkg.is_active,
+            highlight: false // Có thể thêm logic để highlight package nào đó
+          }))
+        
+        setPlans(mappedPlans)
+      } catch (error) {
+        console.error('Error fetching packages:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchPackages()
   }, [])
 
   const visiblePlans = useMemo(() => {
     return plans.filter((plan) => plan.isActive !== false)
   }, [plans])
+
+  if (loading) {
+    return (
+      <section id='pricing' className='py-20 bg-gray-50'>
+        <div className='container px-4 mx-auto'>
+          <div className='mb-16 text-center'>
+            <h2 className='mb-4 text-3xl font-bold text-gray-900 md:text-4xl'>Bảng Giá Dịch Vụ</h2>
+            <p className='max-w-2xl mx-auto text-gray-600'>Đang tải...</p>
+          </div>
+        </div>
+      </section>
+    )
+  }
 
   return (
     <section id='pricing' className='py-20 bg-gray-50'>
@@ -26,8 +90,10 @@ export default function Pricing() {
 
         <div className='grid max-w-7xl gap-8 mx-auto md:grid-cols-2 lg:grid-cols-4'>
           {visiblePlans.map((plan) => {
-            const discountActive = isDiscountActive(plan)
-            const displayPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
+            const hasDiscount = plan.discountPrice && plan.discountPrice < plan.price
+            const displayPrice = hasDiscount ? plan.discountPrice : plan.price
+            const originalPrice = hasDiscount ? plan.price : plan.discountPrice
+            
             return (
               <div
                 key={plan.id}
@@ -44,17 +110,12 @@ export default function Pricing() {
                 )}
 
                 <h3 className='mb-2 text-xl font-bold text-gray-900'>{plan.name}</h3>
-                <div className='mb-2 text-4xl font-bold text-pink-600'>{formatVnd(displayPrice)}</div>
+                <div className='mb-2 text-4xl font-bold text-pink-600'>{formatVnd(displayPrice || 0)}</div>
                 {plan.duration && (
                   <div className='mb-2 text-sm font-semibold text-gray-500'>Thời gian: {plan.duration}</div>
                 )}
-                {discountActive && (
-                  <div className='text-xs text-gray-400 line-through mb-1 opacity-70'>{formatVnd(plan.price)}</div>
-                )}
-                {discountActive && plan.discountEndsAt && (
-                  <div className='inline-flex items-center gap-2 text-xs font-semibold text-pink-600 bg-pink-50 px-3 py-1 rounded-full mb-3'>
-                    <Clock size={14} /> Ưu đãi đến {new Date(plan.discountEndsAt).toLocaleDateString('vi-VN')}
-                  </div>
+                {hasDiscount && originalPrice && (
+                  <div className='text-xs text-gray-400 line-through mb-1 opacity-70'>{formatVnd(originalPrice)}</div>
                 )}
                 <p className='mb-6 text-sm text-gray-500'>{plan.description}</p>
 
