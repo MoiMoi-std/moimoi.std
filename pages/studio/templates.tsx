@@ -159,18 +159,10 @@ export default function TemplatesPage() {
     setCurrentPage(1)
   }, [searchTerm, selectedStyle, statusFilter, planFilter, isAdminMode])
 
-  if (loading || loadingTemplates) {
+  if (loadingTemplates) {
     return (
       <StudioLayout>
         <StudioLoading message='Đang tải thư viện mẫu...' />
-      </StudioLayout>
-    )
-  }
-
-  if (!wedding) {
-    return (
-      <StudioLayout>
-        <StudioEmptyState />
       </StudioLayout>
     )
   }
@@ -181,9 +173,11 @@ export default function TemplatesPage() {
       toast(`Mẫu này thuộc gói: ${meta.allowed_plans.join(', ')}. Hãy nâng cấp để mở khóa đầy đủ.`, 'info')
     }
     try {
-      await dataService.updateWeddingTemplate(wedding.id, templateId)
-      setWedding({ ...wedding, template_id: templateId })
-      success('Đã áp dụng mẫu thiệp!')
+      if (wedding) {
+        await dataService.updateWeddingTemplate(wedding.id, templateId)
+        setWedding({ ...wedding, template_id: templateId })
+        success('Đã áp dụng mẫu thiệp!')
+      }
     } catch (e) {
       error('Không thể áp dụng mẫu. Vui lòng thử lại.')
     }
@@ -286,7 +280,7 @@ export default function TemplatesPage() {
       <div className='mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
         {pagedTemplates.map((template) => {
           const meta = template.meta
-          const isActive = wedding.template_id === template.id
+          const isActive = wedding?.template_id === template.id
           const hasPlanLimit = meta.allowed_plans.length > 0
           return (
             <div
