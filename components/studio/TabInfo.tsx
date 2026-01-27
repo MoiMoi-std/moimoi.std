@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Wedding } from '../../lib/data-service'
 
 interface TabInfoProps {
@@ -7,8 +7,29 @@ interface TabInfoProps {
 }
 
 const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
+  const [formData, setFormData] = useState({
+    groom_name: content?.groom_name || '',
+    bride_name: content?.bride_name || '',
+    wedding_date: content?.wedding_date || '',
+    wedding_time: content?.wedding_time || '',
+    address: content?.address || '',
+    map_url: content?.map_url || '',
+  })
+
+  useEffect(() => {
+    setFormData({
+      groom_name: content?.groom_name || '',
+      bride_name: content?.bride_name || '',
+      wedding_date: content?.wedding_date || '',
+      wedding_time: content?.wedding_time || '',
+      address: content?.address || '',
+      map_url: content?.map_url || '',
+    })
+  }, [content])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
     onChange(name, value)
   }
 
@@ -22,7 +43,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
           <input
             type='text'
             name='groom_name'
-            value={content?.groom_name || ''}
+            value={formData.groom_name}
             onChange={handleChange}
             className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
             placeholder='Nguyễn Văn A'
@@ -33,7 +54,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
           <input
             type='text'
             name='bride_name'
-            value={content?.bride_name || ''}
+            value={formData.bride_name}
             onChange={handleChange}
             className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
             placeholder='Lê Thị B'
@@ -47,7 +68,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
           <input
             type='date'
             name='wedding_date'
-            value={content?.wedding_date || ''}
+            value={formData.wedding_date}
             onChange={handleChange}
             className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
           />
@@ -57,7 +78,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
           <input
             type='time'
             name='wedding_time'
-            value={content?.wedding_time || ''}
+            value={formData.wedding_time}
             onChange={handleChange}
             className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
           />
@@ -69,7 +90,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
         <input
           type='text'
           name='address'
-          value={content?.address || ''}
+          value={formData.address}
           onChange={handleChange}
           className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
           placeholder='Số 123, Đường ABC, Quận 1, TP.HCM'
@@ -81,7 +102,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
         <input
           type='text'
           name='map_url'
-          value={content?.map_url || ''}
+          value={formData.map_url}
           onChange={handleChange}
           className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
           placeholder='https://maps.google.com/...'
