@@ -195,7 +195,9 @@ const Editor = () => {
           {/* Tab Content */}
           <div className='p-8 animate-in fade-in slide-in-from-bottom-2 duration-300'>
             {activeTab === 'info' && <TabInfo content={wedding?.content} onChange={handleInfoChange} />}
-            {activeTab === 'album' && <TabAlbum images={wedding?.content?.images || []} onChange={handleImagesChange} />}
+            {activeTab === 'album' && (
+              <TabAlbum images={wedding?.content?.images || []} onChange={handleImagesChange} />
+            )}
             {activeTab === 'bank' && <TabBank content={wedding?.content} onChange={handleInfoChange} />}
             {activeTab === 'admin' && (
               <div className='space-y-6'>

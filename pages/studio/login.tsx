@@ -119,7 +119,9 @@ const LoginPage = () => {
         {message && (
           <div
             className={`mb-4 p-3 rounded-lg text-sm ${
-              message.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-green-50 text-green-700 border border-green-200'
+              message.type === 'error'
+                ? 'bg-red-50 text-red-700 border border-red-200'
+                : 'bg-green-50 text-green-700 border border-green-200'
             }`}
           >
             {message.text}
@@ -185,7 +187,11 @@ const LoginPage = () => {
             </button>
             <div className='text-center text-sm text-gray-600'>
               Chưa có tài khoản?{' '}
-              <button type='button' onClick={() => setView('sign-up')} className='text-pink-600 hover:text-pink-700 font-bold'>
+              <button
+                type='button'
+                onClick={() => setView('sign-up')}
+                className='text-pink-600 hover:text-pink-700 font-bold'
+              >
                 Đăng ký ngay
               </button>
             </div>
@@ -254,7 +260,11 @@ const LoginPage = () => {
             </button>
             <div className='text-center text-sm text-gray-600'>
               Đã có tài khoản?{' '}
-              <button type='button' onClick={() => setView('sign-in')} className='text-pink-600 hover:text-pink-700 font-bold'>
+              <button
+                type='button'
+                onClick={() => setView('sign-in')}
+                className='text-pink-600 hover:text-pink-700 font-bold'
+              >
                 Đăng nhập
               </button>
             </div>
@@ -290,7 +300,11 @@ const LoginPage = () => {
               )}
             </button>
             <div className='text-center text-sm text-gray-600'>
-              <button type='button' onClick={() => setView('sign-in')} className='text-pink-600 hover:text-pink-700 font-bold'>
+              <button
+                type='button'
+                onClick={() => setView('sign-in')}
+                className='text-pink-600 hover:text-pink-700 font-bold'
+              >
                 ← Quay lại đăng nhập
               </button>
             </div>

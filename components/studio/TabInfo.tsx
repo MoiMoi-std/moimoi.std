@@ -13,7 +13,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
     wedding_date: content?.wedding_date || '',
     wedding_time: content?.wedding_time || '',
     address: content?.address || '',
-    map_url: content?.map_url || '',
+    map_url: content?.map_url || ''
   })
 
   useEffect(() => {
@@ -23,13 +23,13 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
       wedding_date: content?.wedding_date || '',
       wedding_time: content?.wedding_time || '',
       address: content?.address || '',
-      map_url: content?.map_url || '',
+      map_url: content?.map_url || ''
     })
   }, [content])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
     onChange(name, value)
   }
 

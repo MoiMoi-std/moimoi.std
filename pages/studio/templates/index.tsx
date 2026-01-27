@@ -63,7 +63,7 @@ export default function TemplatesPage() {
         }
         const result = await response.json()
         const data = result.success && result.data ? result.data : []
-        
+
         setTemplates(data)
         setTemplateMeta((prev) => {
           const next = { ...prev }
@@ -73,7 +73,7 @@ export default function TemplatesPage() {
               const packages = template.packages || []
               const allowed_plans = packages.map((pkg: any) => pkg.name)
               const price = packages.length > 0 ? packages[0].price : 0
-              
+
               next[template.id] = {
                 ...DEFAULT_META,
                 is_active: template.is_active !== undefined ? template.is_active : true,

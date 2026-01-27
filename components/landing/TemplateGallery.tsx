@@ -100,11 +100,7 @@ export default function TemplateGallery() {
                 >
                   {template.thumbnail_url ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={template.thumbnail_url}
-                      alt={template.name}
-                      className='w-full h-full object-cover'
-                    />
+                    <img src={template.thumbnail_url} alt={template.name} className='w-full h-full object-cover' />
                   ) : (
                     <div className='absolute inset-0 flex items-center justify-center font-medium text-gray-400'>
                       Ảnh Mẫu: {template.name}
@@ -123,7 +119,7 @@ export default function TemplateGallery() {
                   <h3 className='text-lg font-bold text-gray-900'>{template.name}</h3>
                   <span className='px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded-md'>{template.repo_branch}</span>
                 </div>
-                
+
                 {/* Packages Info */}
                 <div className='mt-2'>
                   {template.packages && template.packages.length > 0 ? (

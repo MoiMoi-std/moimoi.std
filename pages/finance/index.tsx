@@ -463,31 +463,35 @@ export default function FinanceDashboard() {
                     </tr>
                   </thead>
                   <tbody className='divide-y divide-gray-50'>
-                    {filteredEntries.slice((journalPage - 1) * itemsPerPage, journalPage * itemsPerPage).map((entry) => (
-                      <tr key={entry.id} className='hover:bg-gray-50'>
-                        <td className='px-6 py-4 font-mono text-sm text-gray-600'>{entry.id}</td>
-                        <td className='px-6 py-4 font-medium text-gray-900'>{entry.purpose}</td>
-                        <td className='px-6 py-4'>
-                          <span className={`font-bold ${entry.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {entry.amount > 0 ? '+' : ''}
-                            {entry.amount.toLocaleString('vi-VN')} ₫
-                          </span>
-                        </td>
-                        <td className='px-6 py-4 text-sm text-gray-600'>{entry.content}</td>
-                        <td className='px-6 py-4'>
-                          {entry.type === 'income' ? (
-                            <span className='inline-flex items-center px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-bold'>
-                              Thu
+                    {filteredEntries
+                      .slice((journalPage - 1) * itemsPerPage, journalPage * itemsPerPage)
+                      .map((entry) => (
+                        <tr key={entry.id} className='hover:bg-gray-50'>
+                          <td className='px-6 py-4 font-mono text-sm text-gray-600'>{entry.id}</td>
+                          <td className='px-6 py-4 font-medium text-gray-900'>{entry.purpose}</td>
+                          <td className='px-6 py-4'>
+                            <span className={`font-bold ${entry.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {entry.amount > 0 ? '+' : ''}
+                              {entry.amount.toLocaleString('vi-VN')} ₫
                             </span>
-                          ) : (
-                            <span className='inline-flex items-center px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-bold'>
-                              Chi
-                            </span>
-                          )}
-                        </td>
-                        <td className='px-6 py-4 text-sm text-gray-500 min-w-[140px] whitespace-nowrap'>{entry.date}</td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td className='px-6 py-4 text-sm text-gray-600'>{entry.content}</td>
+                          <td className='px-6 py-4'>
+                            {entry.type === 'income' ? (
+                              <span className='inline-flex items-center px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-bold'>
+                                Thu
+                              </span>
+                            ) : (
+                              <span className='inline-flex items-center px-2 py-1 rounded bg-red-100 text-red-700 text-xs font-bold'>
+                                Chi
+                              </span>
+                            )}
+                          </td>
+                          <td className='px-6 py-4 text-sm text-gray-500 min-w-[140px] whitespace-nowrap'>
+                            {entry.date}
+                          </td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
               </div>
@@ -611,7 +615,10 @@ export default function FinanceDashboard() {
       {/* Filter Modal */}
       {showFilterModal && (
         <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
-          <div className='absolute inset-0 bg-black/40 backdrop-blur-sm' onClick={() => setShowFilterModal(false)}></div>
+          <div
+            className='absolute inset-0 bg-black/40 backdrop-blur-sm'
+            onClick={() => setShowFilterModal(false)}
+          ></div>
           <div className='bg-white rounded-2xl shadow-2xl w-full max-w-lg z-10 overflow-hidden'>
             <div className='px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-pink-600'>
               <h3 className='font-bold text-lg text-white'>Lọc Giao Dịch</h3>

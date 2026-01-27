@@ -149,9 +149,7 @@ export default function AddTemplatePage() {
                     <label
                       key={pkg.id}
                       className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${
-                        checked
-                          ? 'border-pink-300 bg-pink-50'
-                          : 'border-gray-200 bg-white hover:border-pink-200'
+                        checked ? 'border-pink-300 bg-pink-50' : 'border-gray-200 bg-white hover:border-pink-200'
                       }`}
                     >
                       <input

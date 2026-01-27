@@ -34,14 +34,14 @@ export const dataService = {
       .from('weddings')
       .select('*, template:templates(*)')
       .eq('host_id', user.id)
-      .maybeSingle()  
+      .maybeSingle()
 
     if (error) {
       console.error('Error fetching wedding:', error)
       return null
     }
 
-     // Kiểm tra data trước khi truy cập properties
+    // Kiểm tra data trước khi truy cập properties
     if (!data) {
       return null
     }

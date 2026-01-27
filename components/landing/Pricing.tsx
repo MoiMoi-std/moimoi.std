@@ -27,7 +27,7 @@ export default function Pricing() {
         }
         const result = await response.json()
         const packages: ApiPackage[] = result.data || []
-        
+
         // Map API data to Plan format
         const mappedPlans: Plan[] = packages
           .filter((pkg) => pkg.is_active)
@@ -48,7 +48,7 @@ export default function Pricing() {
             isActive: pkg.is_active,
             highlight: false // Có thể thêm logic để highlight package nào đó
           }))
-        
+
         setPlans(mappedPlans)
       } catch (error) {
         console.error('Error fetching packages:', error)
@@ -56,7 +56,7 @@ export default function Pricing() {
         setLoading(false)
       }
     }
-    
+
     fetchPackages()
   }, [])
 
@@ -93,7 +93,7 @@ export default function Pricing() {
             const hasDiscount = plan.discountPrice && plan.discountPrice < plan.price
             const displayPrice = hasDiscount ? plan.discountPrice : plan.price
             const originalPrice = hasDiscount ? plan.price : plan.discountPrice
-            
+
             return (
               <div
                 key={plan.id}

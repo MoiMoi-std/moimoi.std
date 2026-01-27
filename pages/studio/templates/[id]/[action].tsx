@@ -44,10 +44,7 @@ export default function EditTemplatePage() {
 
     const loadData = async () => {
       try {
-        const [templateRes, packagesRes] = await Promise.all([
-          fetch(`/api/templates/${id}`),
-          fetch('/api/packages')
-        ])
+        const [templateRes, packagesRes] = await Promise.all([fetch(`/api/templates/${id}`), fetch('/api/packages')])
 
         if (templateRes.ok) {
           const result = await templateRes.json()
@@ -223,9 +220,7 @@ export default function EditTemplatePage() {
                     <label
                       key={pkg.id}
                       className={`flex items-center gap-3 p-4 border rounded-xl cursor-pointer transition-all ${
-                        checked
-                          ? 'border-pink-300 bg-pink-50'
-                          : 'border-gray-200 bg-white hover:border-pink-200'
+                        checked ? 'border-pink-300 bg-pink-50' : 'border-gray-200 bg-white hover:border-pink-200'
                       }`}
                     >
                       <input
