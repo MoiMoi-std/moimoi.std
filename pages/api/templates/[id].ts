@@ -1,10 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
 /**
  * GET /api/templates/[id] - Lấy chi tiết template kèm packages
@@ -40,9 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (ptError) throw ptError
 
-      const packages = packageTemplates
-        ?.map((pt: any) => pt.packages)
-        .filter(Boolean) || []
+      const packages = packageTemplates?.map((pt: any) => pt.packages).filter(Boolean) || []
 
       return res.status(200).json({
         success: true,
@@ -80,10 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Cập nhật template nếu có dữ liệu
       if (Object.keys(updateData).length > 0) {
-        const { error: updateError } = await supabase
-          .from('templates')
-          .update(updateData)
-          .eq('id', templateId)
+        const { error: updateError } = await supabase.from('templates').update(updateData).eq('id', templateId)
 
         if (updateError) throw updateError
       }
@@ -91,10 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Cập nhật quan hệ với packages nếu có package_ids
       if (package_ids !== undefined && Array.isArray(package_ids)) {
         // Xóa tất cả quan hệ cũ
-        const { error: deleteError } = await supabase
-          .from('package_templates')
-          .delete()
-          .eq('template_id', templateId)
+        const { error: deleteError } = await supabase.from('package_templates').delete().eq('template_id', templateId)
 
         if (deleteError) throw deleteError
 
@@ -105,9 +94,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             package_id: pkgId
           }))
 
-          const { error: insertError } = await supabase
-            .from('package_templates')
-            .insert(insertData)
+          const { error: insertError } = await supabase.from('package_templates').insert(insertData)
 
           if (insertError) throw insertError
         }
@@ -130,9 +117,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (ptError) throw ptError
 
-      const packages = packageTemplates
-        ?.map((pt: any) => pt.packages)
-        .filter(Boolean) || []
+      const packages = packageTemplates?.map((pt: any) => pt.packages).filter(Boolean) || []
 
       return res.status(200).json({
         success: true,

@@ -30,12 +30,8 @@ const mapApiPackageToPlan = (pkg: ApiPackage): Plan => ({
   name: pkg.name,
   price: pkg.original_price || pkg.price,
   discountPrice: pkg.price < pkg.original_price ? pkg.price : undefined,
-  discountEndsAt: pkg.promotion_end_date !== '2100-01-01T00:00:00+00:00' 
-    ? pkg.promotion_end_date 
-    : undefined,
-  duration: pkg.duration_months >= 60 
-    ? 'Vĩnh viễn' 
-    : `${pkg.duration_months} tháng`,
+  discountEndsAt: pkg.promotion_end_date !== '2100-01-01T00:00:00+00:00' ? pkg.promotion_end_date : undefined,
+  duration: pkg.duration_months >= 60 ? 'Vĩnh viễn' : `${pkg.duration_months} tháng`,
   description: `Tối đa ${pkg.max_rsvps} khách mời`,
   features: pkg.features || [],
   notIncluded: [],
@@ -47,7 +43,7 @@ const fetchPackages = async (): Promise<Plan[]> => {
   try {
     const response = await fetch('/api/packages')
     const result = await response.json()
-    
+
     if (result.success && result.data) {
       return result.data.map(mapApiPackageToPlan)
     }
@@ -94,13 +90,13 @@ export default function UpgradePage() {
 
   const handleUpgrade = async (planId: string) => {
     if (paying) return
-    
+
     // Kiểm tra wedding khi thanh toán
     if (!wedding) {
       error('Vui lòng tạo đám cưới trước khi nâng cấp gói.')
       return
     }
-    
+
     setPaying(true)
     try {
       const updated = await dataService.updateWedding(wedding.id, {
@@ -251,10 +247,12 @@ export default function UpgradePage() {
                   <div className='mt-8 border-t border-gray-100 pt-6'>
                     <div className='flex flex-wrap gap-3 items-center'>
                       <button
-                        onClick={() => router.push({
-                          pathname: `/studio/upgrade/${plan.id}/edit`,
-                          query: { packageData: JSON.stringify(plan) }
-                        })}
+                        onClick={() =>
+                          router.push({
+                            pathname: `/studio/upgrade/${plan.id}/edit`,
+                            query: { packageData: JSON.stringify(plan) }
+                          })
+                        }
                         className='flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50'
                       >
                         <Edit size={16} />

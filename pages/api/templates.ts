@@ -1,10 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!)
 
 /**
  * GET /api/templates - Lấy tất cả templates kèm packages
@@ -47,9 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let result = templatesWithPackages
       if (package_id && typeof package_id === 'string') {
         const pkgId = parseInt(package_id)
-        result = templatesWithPackages.filter((t) =>
-          t.packages.some((p: any) => p.id === pkgId)
-        )
+        result = templatesWithPackages.filter((t) => t.packages.some((p: any) => p.id === pkgId))
       }
 
       return res.status(200).json({
@@ -69,13 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'POST') {
     try {
-      const {
-        name,
-        repo_branch,
-        thumbnail_url,
-        is_active,
-        package_ids
-      } = req.body
+      const { name, repo_branch, thumbnail_url, is_active, package_ids } = req.body
 
       if (!name || !repo_branch) {
         return res.status(400).json({ error: 'Name and repo_branch are required' })
@@ -102,9 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           package_id: pkgId
         }))
 
-        const { error: ptError } = await supabase
-          .from('package_templates')
-          .insert(insertData)
+        const { error: ptError } = await supabase.from('package_templates').insert(insertData)
 
         if (ptError) throw ptError
       }
@@ -117,9 +104,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (ptError) throw ptError
 
-      const packages = packageTemplates
-        ?.map((pt: any) => pt.packages)
-        .filter(Boolean) || []
+      const packages = packageTemplates?.map((pt: any) => pt.packages).filter(Boolean) || []
 
       return res.status(201).json({
         success: true,
