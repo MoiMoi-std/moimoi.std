@@ -15,6 +15,7 @@ const Editor = () => {
   const { wedding, setWedding, loading } = useWedding()
   const [activeTab, setActiveTab] = useState<'info' | 'album' | 'bank' | 'admin'>('info')
   const [saving, setSaving] = useState(false)
+  const [publishing, setPublishing] = useState(false)
   const [isAdminMode, setIsAdminMode] = useState(false)
   const [adminJsonDraft, setAdminJsonDraft] = useState('')
   const [customFieldKey, setCustomFieldKey] = useState('')
@@ -48,6 +49,31 @@ const Editor = () => {
       error('Lưu thất bại. Vui lòng thử lại.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handlePublish = async () => {
+    if (!wedding) return
+    setPublishing(true)
+    try {
+      // Lưu content trước
+      await dataService.updateWedding(wedding.id, wedding.content)
+      
+      // Cập nhật deployment_status sang published
+      const supabase = (await import('../../lib/initSupabase')).supabase
+      const { error: publishError } = await supabase
+        .from('weddings')
+        .update({ deployment_status: 'published' })
+        .eq('id', wedding.id)
+      
+      if (publishError) throw publishError
+      
+      setWedding({ ...wedding, deployment_status: 'published' })
+      success('Xuất bản thành công! Thiệp của bạn đã được công khai.')
+    } catch (e) {
+      error('Xuất bản thất bại. Vui lòng thử lại.')
+    } finally {
+      setPublishing(false)
     }
   }
 
@@ -122,14 +148,27 @@ const Editor = () => {
           </label>
           <button
             onClick={handleSave}
-            disabled={saving}
-            className='flex items-center justify-center px-6 py-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 disabled:opacity-50 font-medium'
+            disabled={saving || publishing}
+            className='flex items-center justify-center px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all shadow-lg shadow-gray-200 disabled:opacity-50 font-medium'
           >
             {saving ? (
               'Đang lưu...'
             ) : (
               <>
-                <Save size={18} className='mr-2' /> Lưu thay đổi
+                <Save size={18} className='mr-2' /> Lưu bản nháp
+              </>
+            )}
+          </button>
+          <button
+            onClick={handlePublish}
+            disabled={saving || publishing}
+            className='flex items-center justify-center px-6 py-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 disabled:opacity-50 font-medium'
+          >
+            {publishing ? (
+              'Đang xuất bản...'
+            ) : (
+              <>
+                <Save size={18} className='mr-2' /> Xuất Bản
               </>
             )}
           </button>

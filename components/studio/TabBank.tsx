@@ -171,8 +171,17 @@ const TabBank: React.FC<TabBankProps> = ({ content, onChange }) => {
 
       {/* Bank Modal */}
       {showBankModal && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
-          <div className='bg-white rounded-lg w-full max-w-md max-h-[80vh] flex flex-col'>
+        <div 
+          className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'
+          onClick={() => {
+            setShowBankModal(false)
+            setSearchQuery('')
+          }}
+        >
+          <div 
+            className='bg-white rounded-lg w-full max-w-md max-h-[80vh] flex flex-col'
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
             <div className='p-4 border-b flex items-center justify-between'>
               <h2 className='text-lg font-semibold text-gray-900'>Chọn ngân hàng</h2>
@@ -203,7 +212,7 @@ const TabBank: React.FC<TabBankProps> = ({ content, onChange }) => {
             </div>
 
             {/* Bank List */}
-            <div className='flex-1 overflow-y-auto'>
+            <div className='overflow-y-auto' style={{ maxHeight: 'calc(80vh - 180px)' }}>
               {filteredBanks.map((bank) => (
                 <button
                   key={bank.code}

@@ -3,7 +3,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- 2. ENUMS (Định nghĩa các giá trị cố định)
 CREATE TYPE subscription_tier AS ENUM ('BASIC', 'PRO', 'PREMIUM');
-CREATE TYPE deploy_status AS ENUM ('DRAFT', 'BUILDING', 'PUBLISHED', 'FAILED');
+CREATE TYPE deploy_status AS ENUM ('draft', 'building', 'published', 'failed');
 
 -- 3. TABLES (Bảng dữ liệu)
 
@@ -103,7 +103,7 @@ CREATE POLICY "Host xem và sửa đám cưới của mình" ON weddings
   FOR ALL USING (auth.uid() = host_id);
   
 CREATE POLICY "Khách vãng lai xem đám cưới đã publish (thông qua Slug)" ON weddings
-  FOR SELECT USING (deployment_status = 'PUBLISHED');
+  FOR SELECT USING (deployment_status = 'published');
 
 -- Policy cho RSVPS:
 CREATE POLICY "Host xem toàn bộ RSVP của đám cưới mình" ON rsvps
