@@ -26,25 +26,25 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
   return (
     <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
       <h1>💍 Thiệp Cưới</h1>
-      
+
       {/* Template Info */}
       {template && (
-        <div style={{ 
-          background: '#f0f9ff', 
-          padding: '16px', 
-          borderRadius: '8px',
-          marginBottom: '16px',
-          border: '1px solid #bae6fd'
-        }}>
-          <h3 style={{ margin: '0 0 8px', color: '#0369a1' }}>
-            🎨 Template: {template.name}
-          </h3>
+        <div
+          style={{
+            background: '#f0f9ff',
+            padding: '16px',
+            borderRadius: '8px',
+            marginBottom: '16px',
+            border: '1px solid #bae6fd'
+          }}
+        >
+          <h3 style={{ margin: '0 0 8px', color: '#0369a1' }}>🎨 Template: {template.name}</h3>
           <p style={{ margin: 0, fontSize: '14px', color: '#64748b' }}>
             Code: <code>{template.code}</code> | ID: {template.id}
           </p>
           {template.thumbnail_url && (
-            <img 
-              src={template.thumbnail_url} 
+            <img
+              src={template.thumbnail_url}
               alt={template.name}
               style={{ width: '100px', marginTop: '12px', borderRadius: '4px' }}
             />
@@ -54,23 +54,21 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
 
       {/* Package Info */}
       {wedding.package && (
-        <div style={{ 
-          background: '#fdf4ff', 
-          padding: '16px', 
-          borderRadius: '8px',
-          marginBottom: '24px',
-          border: '1px solid #e879f9'
-        }}>
-          <h3 style={{ margin: '0 0 8px', color: '#a21caf' }}>
-            📦 Package: {wedding.package.name}
-          </h3>
+        <div
+          style={{
+            background: '#fdf4ff',
+            padding: '16px',
+            borderRadius: '8px',
+            marginBottom: '24px',
+            border: '1px solid #e879f9'
+          }}
+        >
+          <h3 style={{ margin: '0 0 8px', color: '#a21caf' }}>📦 Package: {wedding.package.name}</h3>
           <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#64748b' }}>
             ID: {wedding.package.id} | Active: {wedding.package.is_active ? '✅' : '❌'}
           </p>
           {wedding.package.description && (
-            <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#86198f' }}>
-              {wedding.package.description}
-            </p>
+            <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#86198f' }}>{wedding.package.description}</p>
           )}
           {wedding.package.price && (
             <p style={{ margin: 0, fontSize: '16px', fontWeight: 'bold', color: '#a21caf' }}>
@@ -84,37 +82,44 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
       <div style={{ marginTop: '24px' }}>
         <h2>Chú rể: {mergedContent.groom_name}</h2>
         <h2>Cô dâu: {mergedContent.bride_name}</h2>
-        
-        <p><strong>Ngày cưới:</strong> {mergedContent.event_date}</p>
-        <p><strong>Giờ:</strong> {mergedContent.wedding_time}</p>
-        <p><strong>Địa điểm:</strong> {mergedContent.address}</p>
-        
+
+        <p>
+          <strong>Ngày cưới:</strong> {mergedContent.event_date}
+        </p>
+        <p>
+          <strong>Giờ:</strong> {mergedContent.wedding_time}
+        </p>
+        <p>
+          <strong>Địa điểm:</strong> {mergedContent.address}
+        </p>
+
         {/* Style từ Template */}
-        <p><strong>Primary Color:</strong> 
-          <span style={{ 
-            display: 'inline-block',
-            width: '20px', 
-            height: '20px', 
-            background: mergedContent.primary_color || '#ccc',
-            marginLeft: '8px',
-            borderRadius: '4px',
-            verticalAlign: 'middle'
-          }}></span>
+        <p>
+          <strong>Primary Color:</strong>
+          <span
+            style={{
+              display: 'inline-block',
+              width: '20px',
+              height: '20px',
+              background: mergedContent.primary_color || '#ccc',
+              marginLeft: '8px',
+              borderRadius: '4px',
+              verticalAlign: 'middle'
+            }}
+          ></span>
           {mergedContent.primary_color}
         </p>
-        <p><strong>Font Family:</strong> {mergedContent.font_family}</p>
-        
+        <p>
+          <strong>Font Family:</strong> {mergedContent.font_family}
+        </p>
+
         {mergedContent.cover_image && (
-          <img 
-            src={mergedContent.cover_image} 
-            alt="Cover" 
-            style={{ width: '100%', marginTop: '20px' }}
-          />
+          <img src={mergedContent.cover_image} alt='Cover' style={{ width: '100%', marginTop: '20px' }} />
         )}
       </div>
 
       <hr style={{ margin: '40px 0' }} />
-      
+
       {/* Debug: Template Info */}
       <h3>🎨 TEMPLATE DATA:</h3>
       <pre style={{ background: '#fef3c7', padding: '20px', overflow: 'auto', borderRadius: '8px' }}>

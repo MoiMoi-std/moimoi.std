@@ -171,14 +171,14 @@ const TabBank: React.FC<TabBankProps> = ({ content, onChange }) => {
 
       {/* Bank Modal */}
       {showBankModal && (
-        <div 
+        <div
           className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'
           onClick={() => {
             setShowBankModal(false)
             setSearchQuery('')
           }}
         >
-          <div 
+          <div
             className='bg-white rounded-lg w-full max-w-md max-h-[80vh] flex flex-col'
             onClick={(e) => e.stopPropagation()}
           >

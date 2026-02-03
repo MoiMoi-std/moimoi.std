@@ -58,16 +58,16 @@ const Editor = () => {
     try {
       // Lưu content trước
       await dataService.updateWedding(wedding.id, wedding.content)
-      
+
       // Cập nhật deployment_status sang published
       const supabase = (await import('../../lib/initSupabase')).supabase
       const { error: publishError } = await supabase
         .from('weddings')
         .update({ deployment_status: 'published' })
         .eq('id', wedding.id)
-      
+
       if (publishError) throw publishError
-      
+
       setWedding({ ...wedding, deployment_status: 'published' })
       success('Xuất bản thành công! Thiệp của bạn đã được công khai.')
     } catch (e) {
