@@ -19,6 +19,7 @@ const LoginPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [slug, setSlug] = useState('')
 
   useEffect(() => {
     if (session) {
@@ -56,16 +57,53 @@ const LoginPage = () => {
       return
     }
 
-    const { error } = await supabase.auth.signUp({
+    if (!slug.trim()) {
+      setMessage({ type: 'error', text: 'Vui lòng nhập slug cho thiệp cưới' })
+      setLoading(false)
+      return
+    }
+
+    // Validate slug format (chỉ cho phép chữ cái thường, số và dấu gạch ngang)
+    const slugRegex = /^[a-z0-9-]+$/
+    if (!slugRegex.test(slug)) {
+      setMessage({ type: 'error', text: 'Slug chỉ được chứa chữ cái thường, số và dấu gạch ngang' })
+      setLoading(false)
+      return
+    }
+
+    const { data: authData, error } = await supabase.auth.signUp({
       email,
       password
     })
 
     if (error) {
       setMessage({ type: 'error', text: error.message })
-    } else {
-      setMessage({ type: 'success', text: 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.' })
+      setLoading(false)
+      return
     }
+
+    // Tạo wedding record với slug và package_id mặc định
+    if (authData.user) {
+      const { error: weddingError } = await supabase.from('weddings').insert({
+        host_id: authData.user.id,
+        slug: slug.toLowerCase().trim(),
+        package_id: 5,
+        content: {}
+      })
+
+      if (weddingError) {
+        // Nếu slug bị trùng hoặc lỗi khác
+        if (weddingError.code === '23505') {
+          setMessage({ type: 'error', text: 'Slug này đã được sử dụng. Vui lòng chọn slug khác.' })
+        } else {
+          setMessage({ type: 'error', text: 'Có lỗi khi tạo thiệp cưới: ' + weddingError.message })
+        }
+        setLoading(false)
+        return
+      }
+    }
+
+    setMessage({ type: 'success', text: 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.' })
     setLoading(false)
   }
 
@@ -211,6 +249,21 @@ const LoginPage = () => {
                 placeholder='example@email.com'
                 required
               />
+            </div>
+            <div>
+              <label className='block text-sm font-bold text-pink-600 mb-2'>Slug Thiệp Cưới</label>
+              <div className='relative'>
+                <input
+                  type='text'
+                  value={slug}
+                  onChange={(e) => setSlug(e.target.value.toLowerCase())}
+                  className='w-full px-4 py-3 bg-white border border-pink-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-400'
+                  placeholder='vd: cuoi-nam-linh-2026'
+                  required
+                  pattern='[a-z0-9-]+'
+                />
+              </div>
+              <p className='text-xs text-gray-500 mt-1'>URL thiệp: moimoi.io/{slug || 'slug-cua-ban'}</p>
             </div>
             <div>
               <label className='block text-sm font-bold text-pink-600 mb-2'>Mật khẩu</label>
