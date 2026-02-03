@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Wedding } from '../../lib/data-service'
 
 interface TabInfoProps {
-  content: Wedding['content']
+  content?: Wedding['content']
   onChange: (key: string, value: string) => void
 }
 

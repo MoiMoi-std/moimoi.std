@@ -193,16 +193,16 @@ const Editor = () => {
           </div>
 
           {/* Tab Content */}
-          <div className='p-8 animate-in fade-in slide-in-from-bottom-2 duration-300'>
-            {activeTab === 'info' && wedding?.content && (
-              <TabInfo content={wedding.content} onChange={handleInfoChange} />
-            )}
-            {activeTab === 'album' && (
+          <div className='p-8'>
+            <div className={activeTab === 'info' ? 'block' : 'hidden'}>
+              <TabInfo content={wedding?.content} onChange={handleInfoChange} />
+            </div>
+            <div className={activeTab === 'album' ? 'block' : 'hidden'}>
               <TabAlbum images={wedding?.content?.images || []} onChange={handleImagesChange} />
-            )}
-            {activeTab === 'bank' && wedding?.content && (
-              <TabBank content={wedding.content} onChange={handleInfoChange} />
-            )}
+            </div>
+            <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
+              <TabBank content={wedding?.content} onChange={handleInfoChange} />
+            </div>
             {activeTab === 'admin' && (
               <div className='space-y-6'>
                 <div className='bg-pink-50/60 border border-pink-100 rounded-2xl p-5'>

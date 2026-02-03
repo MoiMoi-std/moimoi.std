@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 interface TabAlbumProps {
   images: string[]
@@ -6,20 +6,83 @@ interface TabAlbumProps {
 }
 
 const TabAlbum: React.FC<TabAlbumProps> = ({ images, onChange }) => {
+  const [albumImages, setAlbumImages] = useState<string[]>(images || [])
   const [isUploading, setIsUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleUpload = () => {
+  const handleUploadClick = () => {
+    console.log('Upload button clicked')
+    console.log('File input ref:', fileInputRef.current)
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('File change event triggered')
+    const files = event.target.files
+    console.log('Files selected:', files?.length)
+    if (!files || files.length === 0) return
+
+    // Validate image files only
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml']
+    const invalidFiles: string[] = []
+    const validFiles: File[] = []
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      if (validImageTypes.includes(file.type)) {
+        validFiles.push(file)
+      } else {
+        invalidFiles.push(file.name)
+      }
+    }
+
+    if (invalidFiles.length > 0) {
+      alert(`Chỉ chấp nhận file ảnh (JPG, PNG, GIF, WEBP, SVG).\n\nFile không hợp lệ:\n${invalidFiles.join('\n')}`)
+      if (validFiles.length === 0) {
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+        return
+      }
+    }
+
     setIsUploading(true)
-    // Simulate upload delay
-    setTimeout(() => {
-      const newImage = `https://via.placeholder.com/400x300?text=Anh+Moi+${images.length + 1}`
-      onChange([...images, newImage])
+
+    try {
+      const newImageUrls: string[] = []
+
+      for (const file of validFiles) {
+        // Convert file to base64 URL for preview
+        const reader = new FileReader()
+        const imageUrl = await new Promise<string>((resolve, reject) => {
+          reader.onload = (e) => {
+            resolve(e.target?.result as string)
+          }
+          reader.onerror = reject
+          reader.readAsDataURL(file)
+        })
+
+        newImageUrls.push(imageUrl)
+      }
+
+      const updatedImages = [...albumImages, ...newImageUrls]
+      setAlbumImages(updatedImages)
+      onChange(updatedImages)
+    } catch (error) {
+      console.error('Error uploading images:', error)
+      alert('Có lỗi xảy ra khi tải ảnh lên')
+    } finally {
       setIsUploading(false)
-    }, 1000)
+      // Reset input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
   }
 
   const removeImage = (indexToRemove: number) => {
-    const newImages = images.filter((_, index) => index !== indexToRemove)
+    const newImages = albumImages.filter((_, index) => index !== indexToRemove)
+    setAlbumImages(newImages)
     onChange(newImages)
   }
 
@@ -28,7 +91,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onChange }) => {
       <h3 className='text-lg font-medium text-gray-900 border-b pb-2'>Album Ảnh Cưới</h3>
 
       <div className='grid grid-cols-2 md:grid-cols-4 gap-4'>
-        {images.map((img, index) => (
+        {albumImages.map((img, index) => (
           <div key={index} className='relative group aspect-w-4 aspect-h-3 bg-gray-100 rounded-lg overflow-hidden'>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={img} alt={`Album ${index}`} className='object-cover w-full h-full' />
@@ -45,7 +108,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onChange }) => {
         ))}
 
         <div
-          onClick={handleUpload}
+          onClick={handleUploadClick}
           className='aspect-w-4 aspect-h-3 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-colors'
         >
           <div className='text-center p-4'>
@@ -61,9 +124,8 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onChange }) => {
         </div>
       </div>
 
-      <p className='text-sm text-gray-500 italic'>
-        * Lưu ý: Đây là phiên bản thử nghiệm, bấm &quot;Thêm Ảnh&quot; sẽ giả lập việc tải ảnh lên.
-      </p>
+      {/* Hidden file input */}
+      <input ref={fileInputRef} type='file' accept='image/*' multiple onChange={handleFileChange} className='hidden' />
     </div>
   )
 }
