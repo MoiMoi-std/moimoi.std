@@ -131,28 +131,21 @@ export const dataService = {
   },
 
   getTemplates: async (): Promise<Template[]> => {
-    const [dbResult, mockTemplates] = await Promise.all([
-      supabase.from('templates').select('*'),
-      Promise.resolve(createMockTemplates(36))
-    ])
-
-    if (dbResult.error) {
-      console.warn('Template fetch failed, using mock data:', dbResult.error)
-      return mockTemplates
-    }
-
-    const dbTemplates = dbResult.data || []
-    if (dbTemplates.length === 0) return mockTemplates
-
-    const merged = new Map<number, Template>()
-    dbTemplates.forEach((template) => merged.set(template.id, template))
-    mockTemplates.forEach((template) => {
-      if (!merged.has(template.id)) {
-        merged.set(template.id, template)
+    try {
+      const response = await fetch('/api/templates')
+      if (!response.ok) {
+        console.error('Templates API failed:', response.status)
+        return []
       }
-    })
-
-    return Array.from(merged.values())
+      const result = await response.json()
+      if (result.success && result.data) {
+        return result.data
+      }
+      return []
+    } catch (error) {
+      console.error('Template fetch failed:', error)
+      return []
+    }
   },
 
   deployWedding: async (

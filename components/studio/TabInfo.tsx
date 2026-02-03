@@ -16,6 +16,17 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
     map_url: content?.map_url || ''
   })
 
+  useEffect(() => {
+    setFormData({
+      groom_name: content?.groom_name || '',
+      bride_name: content?.bride_name || '',
+      wedding_date: content?.wedding_date || '',
+      wedding_time: content?.wedding_time || '',
+      address: content?.address || '',
+      map_url: content?.map_url || ''
+    })
+  }, [content])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))

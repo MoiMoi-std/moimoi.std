@@ -16,22 +16,14 @@ type TemplateAdminMeta = {
   price: number
   allowed_plans: string[]
   sort_order: number
-  tags: string[]
+  tags?: any[]
 }
 
 const DEFAULT_META: TemplateAdminMeta = {
   is_active: true,
   price: 0,
   allowed_plans: [],
-  sort_order: 0,
-  tags: []
-}
-
-const MOCK_TEMPLATE_META: Record<number, Partial<TemplateAdminMeta>> = {
-  1: { price: 150000, allowed_plans: ['Sinh Viên'], tags: ['vintage', 'hoa'] },
-  2: { price: 500000, allowed_plans: ['Gói Cơ Bản'], tags: ['minimal', 'modern'] },
-  3: { price: 699000, allowed_plans: ['Gói Nâng Cao'], tags: ['luxury'] },
-  4: { price: 1299000, allowed_plans: ['Gói Cao Cấp'], tags: ['premium', 'gold'] }
+  sort_order: 0
 }
 
 const formatPrice = (price: number) => {
@@ -63,22 +55,44 @@ export default function TemplatesPage() {
   useEffect(() => {
     const loadTemplates = async () => {
       setLoadingTemplates(true)
-      const data = await dataService.getTemplates()
-      setTemplates(data)
-      setTemplateMeta((prev) => {
-        const next = { ...prev }
-        data.forEach((template, index) => {
-          if (!next[template.id]) {
-            next[template.id] = {
-              ...DEFAULT_META,
-              sort_order: index + 1,
-              ...(MOCK_TEMPLATE_META[template.id] || {})
+      try {
+        const response = await fetch('/api/templates')
+        if (!response.ok) {
+          error('Không thể tải danh sách templates')
+          setLoadingTemplates(false)
+          return
+        }
+        const result = await response.json()
+        const data = result.success && result.data ? result.data : []
+
+        setTemplates(data)
+        setTemplateMeta((prev) => {
+          const next = { ...prev }
+          data.forEach((template: any, index: number) => {
+            if (!next[template.id]) {
+              // Extract packages info from API response
+              const packages = template.packages || []
+              const allowed_plans = packages.map((pkg: any) => pkg.name)
+              const price = packages.length > 0 ? packages[0].price : 0
+
+              next[template.id] = {
+                ...DEFAULT_META,
+                is_active: template.is_active !== undefined ? template.is_active : true,
+                sort_order: index + 1,
+                price: price,
+                allowed_plans: allowed_plans,
+                tags: template.tags || []
+              }
             }
-          }
+          })
+          return next
         })
-        return next
-      })
-      setLoadingTemplates(false)
+      } catch (err) {
+        error('Lỗi khi tải templates')
+        console.error('Load templates error:', err)
+      } finally {
+        setLoadingTemplates(false)
+      }
     }
     loadTemplates()
   }, [])
@@ -130,9 +144,7 @@ export default function TemplatesPage() {
     if (searchTerm.trim()) {
       const keyword = searchTerm.toLowerCase()
       data = data.filter((template) => {
-        const nameMatch = template.name.toLowerCase().includes(keyword)
-        const tagMatch = template.meta.tags.some((tag) => tag.toLowerCase().includes(keyword))
-        return nameMatch || tagMatch
+        return template.name.toLowerCase().includes(keyword)
       })
     }
 
@@ -191,22 +203,32 @@ export default function TemplatesPage() {
           <p className='text-gray-500'>Chọn mẫu thiệp phù hợp với phong cách của bạn</p>
           {isAdminMode && <p className='mt-2 text-xs text-pink-600 font-semibold'>Đang bật chế độ quản trị (mock)</p>}
         </div>
-        <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
-          <span>Chế độ quản trị</span>
-          <button
-            type='button'
-            onClick={() => setIsAdminMode((prev) => !prev)}
-            className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
-              isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
-            }`}
-          >
-            <span
-              className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
-                isAdminMode ? 'translate-x-7' : 'translate-x-1'
+        <div className='flex items-center gap-3'>
+          <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
+            <span>Chế độ quản trị</span>
+            <button
+              type='button'
+              onClick={() => setIsAdminMode((prev) => !prev)}
+              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
+                isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
               }`}
-            />
-          </button>
-        </label>
+            >
+              <span
+                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
+                  isAdminMode ? 'translate-x-7' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </label>
+          {isAdminMode && (
+            <button
+              onClick={() => router.push('/studio/templates/add')}
+              className='px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-500 text-white rounded-xl text-sm font-bold'
+            >
+              + Thêm Template
+            </button>
+          )}
+        </div>
       </div>
 
       <div className='mt-6 flex flex-wrap items-center gap-3'>
@@ -267,14 +289,6 @@ export default function TemplatesPage() {
         >
           Mẹo chọn mẫu
         </button>
-        {isAdminMode && (
-          <button
-            onClick={() => toast('Đã lưu thay đổi (mock).', 'success')}
-            className='px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-500 text-white rounded-xl text-sm font-bold'
-          >
-            Lưu thay đổi
-          </button>
-        )}
       </div>
 
       <div className='mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
@@ -327,93 +341,17 @@ export default function TemplatesPage() {
                 >
                   <Sparkles size={16} /> Áp Dụng Mẫu
                 </button>
+                {isAdminMode && (
+                  <button
+                    onClick={() => router.push(`/studio/templates/${template.id}/edit`)}
+                    className='w-full py-2.5 border-2 border-pink-500 text-pink-600 rounded-xl font-bold hover:bg-pink-50'
+                  >
+                    Chỉnh sửa
+                  </button>
+                )}
                 {!isAdminMode && hasPlanLimit && (
                   <div className='text-sm text-gray-500 bg-pink-50/60 border border-pink-100 rounded-lg p-3'>
                     Mẫu này thuộc gói trả phí. Nâng cấp để mở khóa và được giảm giá bằng với gói đã mua trước đó.
-                  </div>
-                )}
-                {isAdminMode && (
-                  <div className='mt-4 border-t border-gray-100 pt-4 space-y-4 text-sm'>
-                    <div className='flex items-center justify-between'>
-                      <span className='font-medium text-gray-600'>Trạng thái hiển thị</span>
-                      <button
-                        onClick={() => updateMeta(template.id, { is_active: !meta.is_active })}
-                        className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
-                          meta.is_active ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {meta.is_active ? <Eye size={14} /> : <EyeOff size={14} />}
-                        {meta.is_active ? 'Đang hiển thị' : 'Đang ẩn'}
-                      </button>
-                    </div>
-                    <div className='grid grid-cols-2 gap-3'>
-                      <label className='flex flex-col gap-1'>
-                        <span className='text-sm font-bold text-gray-500 uppercase'>Giá (VNĐ)</span>
-                        <input
-                          type='number'
-                          min={0}
-                          value={meta.price}
-                          onChange={(e) => updateMeta(template.id, { price: Number(e.target.value) })}
-                          className='border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-100'
-                        />
-                      </label>
-                      <label className='flex flex-col gap-1'>
-                        <span className='text-sm font-bold text-gray-500 uppercase'>Thứ tự</span>
-                        <input
-                          type='number'
-                          min={0}
-                          value={meta.sort_order}
-                          onChange={(e) => updateMeta(template.id, { sort_order: Number(e.target.value) })}
-                          className='border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-100'
-                        />
-                      </label>
-                    </div>
-                    <div className='space-y-2'>
-                      <div className='text-sm font-bold text-gray-500 uppercase'>Gói áp dụng</div>
-                      <div className='flex flex-wrap gap-2'>
-                        {PLAN_OPTIONS.map((plan) => {
-                          const checked = meta.allowed_plans.includes(plan)
-                          return (
-                            <label
-                              key={plan}
-                              className={`flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-semibold cursor-pointer ${
-                                checked
-                                  ? 'border-pink-300 bg-pink-50 text-pink-700'
-                                  : 'border-gray-200 bg-white text-gray-600'
-                              }`}
-                            >
-                              <input
-                                type='checkbox'
-                                checked={checked}
-                                onChange={() => togglePlan(template.id, plan)}
-                                className='accent-pink-500'
-                              />
-                              {plan}
-                            </label>
-                          )
-                        })}
-                      </div>
-                      <p className='text-sm text-gray-400'>
-                        Không chọn gói nào đồng nghĩa với việc áp dụng cho tất cả gói.
-                      </p>
-                    </div>
-                    <label className='flex flex-col gap-1'>
-                      <span className='text-sm font-bold text-gray-500 uppercase'>Tags</span>
-                      <input
-                        type='text'
-                        value={meta.tags.join(', ')}
-                        onChange={(e) =>
-                          updateMeta(template.id, {
-                            tags: e.target.value
-                              .split(',')
-                              .map((tag) => tag.trim())
-                              .filter(Boolean)
-                          })
-                        }
-                        placeholder='vd: vintage, hoa, luxury'
-                        className='border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-100'
-                      />
-                    </label>
                   </div>
                 )}
               </div>

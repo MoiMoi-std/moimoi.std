@@ -1,6 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
 import { ExternalLink } from 'lucide-react'
-import { dataService, Template } from '@/lib/data-service'
+
+interface Template {
+  id: number
+  name: string
+  repo_branch: string
+  thumbnail_url?: string
+  is_active: boolean
+  packages?: any[]
+}
 
 const CATEGORIES = ['Tất cả', 'Vintage', 'Modern', 'Minimal', 'Luxury', 'Traditional']
 const CARD_COLORS = ['bg-amber-100', 'bg-gray-100', 'bg-yellow-50', 'bg-pink-50', 'bg-blue-50', 'bg-red-50']
@@ -22,9 +30,19 @@ export default function TemplateGallery() {
   useEffect(() => {
     const loadTemplates = async () => {
       setLoading(true)
-      const data = await dataService.getTemplates()
-      setTemplates(data)
-      setLoading(false)
+      try {
+        const response = await fetch('/api/templates')
+        if (response.ok) {
+          const result = await response.json()
+          setTemplates(result.data || [])
+        } else {
+          console.error('Failed to fetch templates')
+        }
+      } catch (error) {
+        console.error('Error fetching templates:', error)
+      } finally {
+        setLoading(false)
+      }
     }
     loadTemplates()
   }, [])
@@ -74,13 +92,20 @@ export default function TemplateGallery() {
           <div className='grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3'>
             {visibleTemplates.map((template, index) => (
               <div key={template.id} className='cursor-pointer group'>
-                {/* Card Image Placeholder */}
+                {/* Card Image */}
                 <div
-                  className={`aspect-[3/4] rounded-2xl ${CARD_COLORS[index % CARD_COLORS.length]} relative overflow-hidden mb-4 shadow-sm border border-gray-100 transition-transform group-hover:-translate-y-2`}
+                  className={`aspect-[3/4] rounded-2xl relative overflow-hidden mb-4 shadow-sm border border-gray-100 transition-transform group-hover:-translate-y-2 ${
+                    !template.thumbnail_url ? CARD_COLORS[index % CARD_COLORS.length] : ''
+                  }`}
                 >
-                  <div className='absolute inset-0 flex items-center justify-center font-medium text-gray-400'>
-                    Ảnh Mẫu: {template.name}
-                  </div>
+                  {template.thumbnail_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={template.thumbnail_url} alt={template.name} className='w-full h-full object-cover' />
+                  ) : (
+                    <div className='absolute inset-0 flex items-center justify-center font-medium text-gray-400'>
+                      Ảnh Mẫu: {template.name}
+                    </div>
+                  )}
 
                   {/* Hover Overlay */}
                   <div className='absolute inset-0 flex items-center justify-center gap-3 transition-opacity opacity-0 bg-black/40 group-hover:opacity-100'>
@@ -93,6 +118,26 @@ export default function TemplateGallery() {
                 <div className='flex items-center justify-between'>
                   <h3 className='text-lg font-bold text-gray-900'>{template.name}</h3>
                   <span className='px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded-md'>{template.repo_branch}</span>
+                </div>
+
+                {/* Packages Info */}
+                <div className='mt-2'>
+                  {template.packages && template.packages.length > 0 ? (
+                    <div className='flex flex-wrap gap-1'>
+                      {template.packages.map((pkg: any) => (
+                        <span
+                          key={pkg.id}
+                          className='inline-flex items-center px-2 py-1 text-xs font-semibold text-pink-700 bg-pink-50 rounded-full'
+                        >
+                          {pkg.name}
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className='inline-flex items-center px-2 py-1 text-xs font-semibold text-green-700 bg-green-50 rounded-full'>
+                      Tất cả gói
+                    </span>
+                  )}
                 </div>
               </div>
             ))}
