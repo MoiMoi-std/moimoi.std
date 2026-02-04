@@ -7,19 +7,18 @@ interface TabAlbumProps {
 
 const TabAlbum: React.FC<TabAlbumProps> = ({ images, onChange }) => {
   const [albumImages, setAlbumImages] = useState<string[]>(images || [])
-  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  
+  useEffect(() => {
+    setAlbumImages(images || [])
+  }, [images])
 
   const handleUploadClick = () => {
-    console.log('Upload button clicked')
-    console.log('File input ref:', fileInputRef.current)
     fileInputRef.current?.click()
   }
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    console.log('File change event triggered')
     const files = event.target.files
-    console.log('Files selected:', files?.length)
     if (!files || files.length === 0) return
 
     // Validate image files only
@@ -46,41 +45,33 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onChange }) => {
       }
     }
 
-    setIsUploading(true)
+    // Convert to base64 for preview only
+    const newImageUrls: string[] = []
+    
+    for (const file of validFiles) {
+      const reader = new FileReader()
+      const imageUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = (e) => {
+          resolve(e.target?.result as string)
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+      newImageUrls.push(imageUrl)
+    }
 
-    try {
-      const newImageUrls: string[] = []
+    const updatedImages = [...albumImages, ...newImageUrls]
+    setAlbumImages(updatedImages)
+    onChange(updatedImages)
 
-      for (const file of validFiles) {
-        // Convert file to base64 URL for preview
-        const reader = new FileReader()
-        const imageUrl = await new Promise<string>((resolve, reject) => {
-          reader.onload = (e) => {
-            resolve(e.target?.result as string)
-          }
-          reader.onerror = reject
-          reader.readAsDataURL(file)
-        })
-
-        newImageUrls.push(imageUrl)
-      }
-
-      const updatedImages = [...albumImages, ...newImageUrls]
-      setAlbumImages(updatedImages)
-      onChange(updatedImages)
-    } catch (error) {
-      console.error('Error uploading images:', error)
-      alert('Có lỗi xảy ra khi tải ảnh lên')
-    } finally {
-      setIsUploading(false)
-      // Reset input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
     }
   }
 
   const removeImage = (indexToRemove: number) => {
+    // Just remove from state, actual Cloudinary deletion happens on Save
     const newImages = albumImages.filter((_, index) => index !== indexToRemove)
     setAlbumImages(newImages)
     onChange(newImages)
@@ -112,14 +103,8 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onChange }) => {
           className='aspect-w-4 aspect-h-3 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-colors'
         >
           <div className='text-center p-4'>
-            {isUploading ? (
-              <span className='text-pink-600'>Đang tải...</span>
-            ) : (
-              <>
-                <div className='text-3xl mb-2'>📷</div>
-                <span className='text-sm text-gray-500 font-medium'>Thêm Ảnh</span>
-              </>
-            )}
+            <div className='text-3xl mb-2'>📷</div>
+            <span className='text-sm text-gray-500 font-medium'>Thêm Ảnh</span>
           </div>
         </div>
       </div>

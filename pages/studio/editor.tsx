@@ -9,6 +9,7 @@ import TabBank from '../../components/studio/TabBank'
 import TabInfo from '../../components/studio/TabInfo'
 import { useToast } from '../../components/ui/ToastProvider'
 import { dataService } from '../../lib/data-service'
+import { processImages } from '../../lib/image-processor'
 import { useWedding } from '../../lib/useWedding'
 
 const Editor = () => {
@@ -21,7 +22,15 @@ const Editor = () => {
   const [customFieldKey, setCustomFieldKey] = useState('')
   const [customFieldValue, setCustomFieldValue] = useState('')
   const [adminLogs, setAdminLogs] = useState<string[]>([])
+  const [originalImages, setOriginalImages] = useState<string[]>([])
   const { success, error } = useToast()
+
+  // Store original images when wedding loads
+  useEffect(() => {
+    if (wedding?.content?.images) {
+      setOriginalImages(wedding.content.images)
+    }
+  }, [wedding?.id])
 
   const handleInfoChange = (key: string, value: string) => {
     if (!wedding) return
@@ -43,9 +52,25 @@ const Editor = () => {
     if (!wedding) return
     setSaving(true)
     try {
-      await dataService.updateWedding(wedding.id, wedding.content)
+      const previousImages = originalImages
+      const currentImages = wedding.content.images || []
+      
+      const { newImages, uploadedCount, deletedCount } = await processImages(currentImages, previousImages)
+      
+      if (uploadedCount > 0 || deletedCount > 0) {
+        console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
+      }
+      
+      const updatedContent = { ...wedding.content, images: newImages }
+      await dataService.updateWedding(wedding.id, updatedContent)
+      
+      // Update local state and original images
+      setWedding({ ...wedding, content: updatedContent })
+      setOriginalImages(newImages)
+      
       success('Lưu thay đổi thành công!')
     } catch (e) {
+      console.error('Save error:', e)
       error('Lưu thất bại. Vui lòng thử lại.')
     } finally {
       setSaving(false)
@@ -56,10 +81,18 @@ const Editor = () => {
     if (!wedding) return
     setPublishing(true)
     try {
-      // Lưu content trước
-      await dataService.updateWedding(wedding.id, wedding.content)
+      const previousImages = originalImages
+      const currentImages = wedding.content.images || []
+      
+      const { newImages, uploadedCount, deletedCount } = await processImages(currentImages, previousImages)
+      
+      if (uploadedCount > 0 || deletedCount > 0) {
+        console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
+      }
+      
+      const updatedContent = { ...wedding.content, images: newImages }
+      await dataService.updateWedding(wedding.id, updatedContent)
 
-      // Cập nhật deployment_status sang published
       const supabase = (await import('../../lib/initSupabase')).supabase
       const { error: publishError } = await supabase
         .from('weddings')
@@ -68,9 +101,12 @@ const Editor = () => {
 
       if (publishError) throw publishError
 
-      setWedding({ ...wedding, deployment_status: 'published' })
+      setWedding({ ...wedding, content: updatedContent, deployment_status: 'published' })
+      setOriginalImages(newImages)
+      
       success('Xuất bản thành công! Thiệp của bạn đã được công khai.')
     } catch (e) {
+      console.error('Publish error:', e)
       error('Xuất bản thất bại. Vui lòng thử lại.')
     } finally {
       setPublishing(false)
