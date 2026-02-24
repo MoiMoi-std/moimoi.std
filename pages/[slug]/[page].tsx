@@ -1,5 +1,12 @@
+import { createClient } from '@supabase/supabase-js'
 import { GetServerSideProps } from 'next'
+import Head from 'next/head'
 import { useState } from 'react'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
 interface GuestPageProps {
   wedding: any
@@ -9,320 +16,642 @@ interface GuestPageProps {
 
 export default function GuestPage({ wedding, guestName, slug }: GuestPageProps) {
   const [wish, setWish] = useState('')
+  const [phone, setPhone] = useState('')
   const [isAttending, setIsAttending] = useState<boolean | null>(null)
   const [partySize, setPartySize] = useState(1)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
-  // 404 nếu không tìm thấy wedding
+  // 404
   if (!wedding) {
     return (
-      <div style={{ padding: '100px', textAlign: 'center' }}>
-        <h1>404 - Wedding not found</h1>
-        <p>Không tìm thấy thiệp cưới.</p>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#fdf2f8',
+          fontFamily: 'Inter, sans-serif'
+        }}
+      >
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '16px' }}>💔</div>
+          <h1 style={{ color: '#9f1239', marginBottom: '8px' }}>Không tìm thấy thiệp cưới</h1>
+          <p style={{ color: '#6b7280' }}>Link mời có thể đã hết hạn hoặc không hợp lệ.</p>
+        </div>
       </div>
     )
   }
 
   const { content, template } = wedding
-
-  // Merge content
-  const mergedContent = {
-    ...(template?.default_content || {}),
-    ...content
-  }
-
-  // Format tên khách mời (capitalize)
+  const mergedContent = { ...(template?.default_content || {}), ...content }
+  const primary = mergedContent.primary_color || '#e11d48'
   const formattedName = guestName
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ')
 
-  // Submit lời chúc
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
+    setSubmitError('')
 
     try {
-      const response = await fetch('/api/rsvp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wedding_id: wedding.id,
-          guest_name: formattedName,
-          is_attending: isAttending,
-          party_size: partySize,
-          wishes: wish
-        })
+      const { error } = await supabase.from('rsvps').insert({
+        wedding_id: wedding.id,
+        guest_name: formattedName,
+        phone: phone.trim() || null,
+        is_attending: isAttending,
+        party_size: isAttending ? partySize : 1,
+        wishes: wish.trim() || null
       })
 
-      if (response.ok) {
-        setSubmitted(true)
-      }
-    } catch (error) {
-      console.error('Error submitting RSVP:', error)
+      if (error) throw error
+      setSubmitted(true)
+    } catch (err: any) {
+      console.error('RSVP error:', err)
+      setSubmitError('Có lỗi xảy ra, vui lòng thử lại!')
     } finally {
       setLoading(false)
     }
   }
 
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '14px 16px',
+    border: '1.5px solid #e5e7eb',
+    borderRadius: '12px',
+    fontSize: '15px',
+    outline: 'none',
+    background: '#fafafa',
+    boxSizing: 'border-box',
+    fontFamily: 'inherit',
+    color: '#111827'
+  }
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    marginBottom: '6px',
+    fontWeight: '600',
+    fontSize: '13px',
+    color: '#374151',
+    letterSpacing: '0.04em'
+  }
+
   return (
-    <div
-      style={{
-        padding: '40px 20px',
-        maxWidth: '600px',
-        margin: '0 auto',
-        fontFamily: mergedContent.font_family || 'Georgia, serif'
-      }}
-    >
-      {/* Header với tên khách */}
-      <div
-        style={{
-          textAlign: 'center',
-          marginBottom: '40px',
-          padding: '40px',
-          background: `linear-gradient(135deg, ${mergedContent.primary_color || '#e11d48'}20, ${mergedContent.primary_color || '#e11d48'}40)`,
-          borderRadius: '16px'
-        }}
-      >
-        <p style={{ margin: '0 0 8px', fontSize: '14px', color: '#666' }}>Trân trọng kính mời</p>
-        <h1
-          style={{
-            margin: 0,
-            fontSize: '2.5rem',
-            color: mergedContent.primary_color || '#e11d48'
-          }}
-        >
-          {formattedName}
-        </h1>
-        <p style={{ margin: '16px 0 0', fontSize: '14px', color: '#666' }}>đến dự lễ thành hôn của chúng tôi</p>
-      </div>
-
-      {/* Thông tin cô dâu chú rể */}
-      <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-        <h2 style={{ margin: '0 0 8px', color: '#333' }}>
-          {mergedContent.groom_name} 💍 {mergedContent.bride_name}
-        </h2>
-      </div>
-
-      {/* Thông tin sự kiện */}
-      <div
-        style={{
-          background: '#f8f8f8',
-          padding: '24px',
-          borderRadius: '12px',
-          marginBottom: '40px'
-        }}
-      >
-        <p style={{ margin: '0 0 12px' }}>
-          📅 <strong>Ngày:</strong> {mergedContent.event_date}
-        </p>
-        <p style={{ margin: '0 0 12px' }}>
-          ⏰ <strong>Giờ:</strong> {mergedContent.wedding_time}
-        </p>
-        <p style={{ margin: 0 }}>
-          📍 <strong>Địa điểm:</strong> {mergedContent.address}
-        </p>
-      </div>
-
-      {/* Cover Image */}
-      {mergedContent.cover_image && (
-        <img
-          src={mergedContent.cover_image}
-          alt='Wedding'
-          style={{
-            width: '100%',
-            borderRadius: '12px',
-            marginBottom: '40px'
-          }}
+    <>
+      <Head>
+        <title>Thiệp mời — {formattedName}</title>
+        <meta name='viewport' content='width=device-width, initial-scale=1' />
+        <link
+          href='https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap'
+          rel='stylesheet'
         />
-      )}
+        <style>{`
+          *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+          body { background: #fdf2f8; -webkit-font-smoothing: antialiased; }
+          input:focus, textarea:focus, select:focus {
+            border-color: ${primary} !important;
+            background: #fff !important;
+            box-shadow: 0 0 0 3px ${primary}20 !important;
+            outline: none;
+          }
+          @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(24px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          @keyframes floatY {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-10px); }
+          }
+          @keyframes shimmer {
+            0%   { background-position: -200% center; }
+            100% { background-position:  200% center; }
+          }
+          .anim-fade { animation: fadeUp 0.55s cubic-bezier(.22,.68,0,1.2) both; }
+          .anim-fade:nth-child(2) { animation-delay: .08s; }
+          .anim-fade:nth-child(3) { animation-delay: .16s; }
+          .anim-fade:nth-child(4) { animation-delay: .24s; }
+          .float { animation: floatY 3.2s ease-in-out infinite; display: inline-block; }
+          .btn-attend:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(34,197,94,.25); }
+          .btn-decline:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(239,68,68,.25); }
+          .btn-submit:not(:disabled):hover { transform: translateY(-2px); }
+        `}</style>
+      </Head>
 
-      {/* Form gửi lời chúc */}
-      {!submitted ? (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: 'linear-gradient(155deg,#fdf2f8 0%,#fce7f3 45%,#fdf4ff 100%)',
+          fontFamily: "'Inter', sans-serif"
+        }}
+      >
+        {/* ── Hero ── */}
+        <div style={{ position: 'relative', overflow: 'hidden', padding: '64px 20px 72px', textAlign: 'center' }}>
+          {/* background blobs */}
+          <div
+            style={{
+              position: 'absolute',
+              top: -80,
+              right: -80,
+              width: 260,
+              height: 260,
+              borderRadius: '50%',
+              background: `${primary}12`,
+              pointerEvents: 'none'
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              bottom: -50,
+              left: -50,
+              width: 180,
+              height: 180,
+              borderRadius: '50%',
+              background: `${primary}0d`,
+              pointerEvents: 'none'
+            }}
+          />
+
+          <div
+            className='float'
+            style={{ fontSize: '3.2rem', marginBottom: '22px', filter: 'drop-shadow(0 4px 12px rgba(0,0,0,.12))' }}
+          >
+            💍
+          </div>
+
+          <p
+            style={{
+              fontSize: '11px',
+              fontWeight: '600',
+              color: '#9ca3af',
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              marginBottom: '14px'
+            }}
+          >
+            TRÂN TRỌNG KÍNH MỜI
+          </p>
+
+          <h1
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 'clamp(2rem, 7vw, 3.4rem)',
+              fontWeight: '700',
+              color: primary,
+              lineHeight: 1.15,
+              marginBottom: '14px',
+              textShadow: `0 2px 30px ${primary}35`
+            }}
+          >
+            {formattedName}
+          </h1>
+
+          <p style={{ fontSize: '15px', color: '#9ca3af', fontWeight: '300', marginBottom: '10px' }}>
+            tới tham dự lễ thành hôn của
+          </p>
+
+          <h2
+            style={{
+              fontFamily: "'Playfair Display', Georgia, serif",
+              fontSize: 'clamp(1.25rem, 4vw, 1.75rem)',
+              fontWeight: '700',
+              color: '#1f2937',
+              letterSpacing: '0.01em'
+            }}
+          >
+            {mergedContent.groom_name} &amp; {mergedContent.bride_name}
+          </h2>
+
+          {/* divider */}
+          <div
+            style={{
+              margin: '24px auto 0',
+              width: '60px',
+              height: '2px',
+              background: `linear-gradient(90deg, transparent, ${primary}, transparent)`
+            }}
+          />
+        </div>
+
+        {/* ── Cards ── */}
         <div
           style={{
-            background: '#fff',
-            padding: '24px',
-            borderRadius: '12px',
-            border: '1px solid #eee'
+            maxWidth: '540px',
+            margin: '0 auto',
+            padding: '0 16px 70px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
           }}
         >
-          <h3 style={{ margin: '0 0 24px', textAlign: 'center' }}>💌 Gửi lời chúc</h3>
-
-          <form onSubmit={handleSubmit}>
-            {/* Xác nhận tham dự */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                Bạn có tham dự được không?
-              </label>
-              <div style={{ display: 'flex', gap: '12px' }}>
-                <button
-                  type='button'
-                  onClick={() => setIsAttending(true)}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    border: isAttending === true ? '2px solid #22c55e' : '1px solid #ddd',
-                    borderRadius: '8px',
-                    background: isAttending === true ? '#dcfce7' : '#fff',
-                    cursor: 'pointer',
-                    fontSize: '16px'
-                  }}
-                >
-                  ✅ Có, tôi sẽ đến
-                </button>
-                <button
-                  type='button'
-                  onClick={() => setIsAttending(false)}
-                  style={{
-                    flex: 1,
-                    padding: '12px',
-                    border: isAttending === false ? '2px solid #ef4444' : '1px solid #ddd',
-                    borderRadius: '8px',
-                    background: isAttending === false ? '#fef2f2' : '#fff',
-                    cursor: 'pointer',
-                    fontSize: '16px'
-                  }}
-                >
-                  ❌ Xin lỗi, tôi bận
-                </button>
-              </div>
-            </div>
-
-            {/* Số người tham dự */}
-            {isAttending && (
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Số người tham dự</label>
-                <select
-                  value={partySize}
-                  onChange={(e) => setPartySize(Number(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '1px solid #ddd',
-                    borderRadius: '8px',
-                    fontSize: '16px'
-                  }}
-                >
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <option key={n} value={n}>
-                      {n} người
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Lời chúc */}
-            <div style={{ marginBottom: '20px' }}>
-              <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>
-                Lời chúc đến cô dâu chú rể
-              </label>
-              <textarea
-                value={wish}
-                onChange={(e) => setWish(e.target.value)}
-                placeholder='Chúc hai bạn trăm năm hạnh phúc...'
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '1px solid #ddd',
-                  borderRadius: '8px',
-                  fontSize: '16px',
-                  minHeight: '120px',
-                  resize: 'vertical',
-                  boxSizing: 'border-box'
-                }}
+          {/* Cover image */}
+          {mergedContent.cover_image && (
+            <div
+              className='anim-fade'
+              style={{ borderRadius: '20px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,.13)' }}
+            >
+              <img
+                src={mergedContent.cover_image}
+                alt='Wedding Cover'
+                style={{ width: '100%', display: 'block', maxHeight: '300px', objectFit: 'cover' }}
               />
             </div>
+          )}
 
-            {/* Submit button */}
-            <button
-              type='submit'
-              disabled={loading || isAttending === null}
+          {/* Event info */}
+          <div
+            className='anim-fade'
+            style={{
+              background: 'rgba(255,255,255,.82)',
+              backdropFilter: 'blur(16px)',
+              borderRadius: '20px',
+              padding: '26px 24px',
+              border: '1px solid rgba(255,255,255,.95)',
+              boxShadow: '0 4px 24px rgba(0,0,0,.05)'
+            }}
+          >
+            <p
               style={{
-                width: '100%',
-                padding: '16px',
-                background: mergedContent.primary_color || '#e11d48',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '18px',
-                fontWeight: 'bold',
-                cursor: loading || isAttending === null ? 'not-allowed' : 'pointer',
-                opacity: loading || isAttending === null ? 0.6 : 1
+                fontSize: '11px',
+                fontWeight: '700',
+                color: primary,
+                letterSpacing: '0.14em',
+                textTransform: 'uppercase',
+                textAlign: 'center',
+                marginBottom: '18px'
               }}
             >
-              {loading ? 'Đang gửi...' : '💌 Gửi lời chúc'}
-            </button>
-          </form>
-        </div>
-      ) : (
-        <div
-          style={{
-            textAlign: 'center',
-            padding: '40px',
-            background: '#dcfce7',
-            borderRadius: '12px'
-          }}
-        >
-          <h3 style={{ margin: '0 0 16px', color: '#166534' }}>✅ Cảm ơn bạn!</h3>
-          <p style={{ margin: 0, color: '#166534' }}>Lời chúc của bạn đã được gửi đến cô dâu chú rể.</p>
-        </div>
-      )}
+              ✨ Thông tin sự kiện
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {[
+                { icon: '📅', label: 'Ngày cưới', value: mergedContent.event_date },
+                { icon: '⏰', label: 'Giờ', value: mergedContent.wedding_time },
+                { icon: '📍', label: 'Địa điểm', value: mergedContent.address }
+              ].map(({ icon, label, value }) => (
+                <div
+                  key={label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    padding: '12px 14px',
+                    background: `${primary}08`,
+                    borderRadius: '12px'
+                  }}
+                >
+                  <span style={{ fontSize: '20px', flexShrink: 0, lineHeight: 1 }}>{icon}</span>
+                  <div>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: '700',
+                        color: primary,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.1em',
+                        display: 'block',
+                        marginBottom: '2px'
+                      }}
+                    >
+                      {label}
+                    </span>
+                    <span style={{ fontSize: '15px', color: '#111827', fontWeight: '500', lineHeight: 1.4 }}>
+                      {value || '—'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-      {/* Debug Info */}
-      <hr style={{ margin: '40px 0' }} />
-      <details>
-        <summary style={{ cursor: 'pointer', color: '#666' }}>🔍 Debug Info</summary>
-        <pre
-          style={{ background: '#f5f5f5', padding: '16px', borderRadius: '8px', overflow: 'auto', fontSize: '12px' }}
-        >
-          {JSON.stringify({ slug, guestName, formattedName, wedding }, null, 2)}
-        </pre>
-      </details>
-    </div>
+          {/* RSVP Form / Success */}
+          {!submitted ? (
+            <div
+              className='anim-fade'
+              style={{
+                background: 'rgba(255,255,255,.92)',
+                backdropFilter: 'blur(16px)',
+                borderRadius: '20px',
+                padding: '28px 24px',
+                border: '1px solid rgba(255,255,255,.95)',
+                boxShadow: '0 4px 24px rgba(0,0,0,.05)'
+              }}
+            >
+              <p
+                style={{
+                  fontSize: '11px',
+                  fontWeight: '700',
+                  color: primary,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase',
+                  textAlign: 'center',
+                  marginBottom: '4px'
+                }}
+              >
+                💌 Xác nhận tham dự
+              </p>
+              <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '13px', marginBottom: '24px' }}>
+                Vui lòng điền thông tin để chúng tôi chuẩn bị tốt hơn
+              </p>
+
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                {/* Tham dự? */}
+                <div>
+                  <label style={labelStyle}>Bạn có tham dự không? *</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <button
+                      type='button'
+                      className='btn-attend'
+                      onClick={() => setIsAttending(true)}
+                      style={{
+                        padding: '13px 8px',
+                        borderRadius: '12px',
+                        border: isAttending === true ? '2px solid #22c55e' : '1.5px solid #e5e7eb',
+                        background: isAttending === true ? '#f0fdf4' : '#fafafa',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: isAttending === true ? '#15803d' : '#6b7280',
+                        transition: 'all .2s',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      ✅ Có, tôi sẽ đến
+                    </button>
+                    <button
+                      type='button'
+                      className='btn-decline'
+                      onClick={() => setIsAttending(false)}
+                      style={{
+                        padding: '13px 8px',
+                        borderRadius: '12px',
+                        border: isAttending === false ? '2px solid #ef4444' : '1.5px solid #e5e7eb',
+                        background: isAttending === false ? '#fef2f2' : '#fafafa',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        color: isAttending === false ? '#dc2626' : '#6b7280',
+                        transition: 'all .2s',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      ❌ Xin lỗi, tôi bận
+                    </button>
+                  </div>
+                </div>
+
+                {/* Số điện thoại */}
+                <div>
+                  <label style={labelStyle}>
+                    Số điện thoại&nbsp;
+                    <span
+                      style={{
+                        color: '#9ca3af',
+                        fontSize: '12px',
+                        fontWeight: '400',
+                        textTransform: 'none',
+                        letterSpacing: 0
+                      }}
+                    >
+                      (tùy chọn)
+                    </span>
+                  </label>
+                  <input
+                    type='tel'
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder='0901 234 567'
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* Số người tham dự — luôn hiển thị */}
+                <div>
+                  <label style={labelStyle}>Số người tham dự</label>
+                  <div style={{ display: 'flex' }}>
+                    {[1, 2, 3, 4, 5].map((n, i) => (
+                      <button
+                        key={n}
+                        type='button'
+                        onClick={() => setPartySize(n)}
+                        style={{
+                          flex: 1,
+                          padding: '12px 4px',
+                          border: '1.5px solid',
+                          borderColor: partySize === n ? primary : '#e5e7eb',
+                          borderRight: i < 4 ? 'none' : '1.5px solid',
+                          borderRightColor: partySize === n ? primary : '#e5e7eb',
+                          borderRadius: i === 0 ? '10px 0 0 10px' : i === 4 ? '0 10px 10px 0' : '0',
+                          background: partySize === n ? primary : '#fafafa',
+                          color: partySize === n ? '#fff' : '#6b7280',
+                          fontWeight: '700',
+                          fontSize: '15px',
+                          cursor: 'pointer',
+                          transition: 'all .18s',
+                          fontFamily: 'inherit'
+                        }}
+                      >
+                        {n}
+                      </button>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '5px' }}>người tham dự</p>
+                </div>
+
+                {/* Lời chúc */}
+                <div>
+                  <label style={labelStyle}>
+                    Lời chúc&nbsp;
+                    <span
+                      style={{
+                        color: '#9ca3af',
+                        fontSize: '12px',
+                        fontWeight: '400',
+                        textTransform: 'none',
+                        letterSpacing: 0
+                      }}
+                    >
+                      (tùy chọn)
+                    </span>
+                  </label>
+                  <textarea
+                    value={wish}
+                    onChange={(e) => setWish(e.target.value)}
+                    placeholder='Chúc hai bạn trăm năm hạnh phúc, vạn sự như ý...'
+                    rows={4}
+                    style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.65 }}
+                  />
+                </div>
+
+                {/* Submit */}
+                <button
+                  type='submit'
+                  className='btn-submit'
+                  disabled={loading || isAttending === null}
+                  style={{
+                    width: '100%',
+                    padding: '16px',
+                    background:
+                      isAttending === null || loading
+                        ? '#e5e7eb'
+                        : `linear-gradient(135deg, ${primary} 0%, ${primary}cc 100%)`,
+                    color: isAttending === null || loading ? '#9ca3af' : '#fff',
+                    border: 'none',
+                    borderRadius: '14px',
+                    fontSize: '16px',
+                    fontWeight: '700',
+                    cursor: loading || isAttending === null ? 'not-allowed' : 'pointer',
+                    letterSpacing: '0.03em',
+                    transition: 'all .25s',
+                    boxShadow: isAttending !== null && !loading ? `0 6px 22px ${primary}45` : 'none',
+                    fontFamily: 'inherit'
+                  }}
+                >
+                  {loading ? '⏳ Đang gửi...' : '💌 Gửi xác nhận'}
+                </button>
+
+                {/* Error */}
+                {submitError && (
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      background: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      borderRadius: '10px',
+                      color: '#dc2626',
+                      fontSize: '14px',
+                      textAlign: 'center',
+                      fontWeight: '500'
+                    }}
+                  >
+                    ❌ {submitError}
+                  </div>
+                )}
+              </form>
+            </div>
+          ) : (
+            /* ── Success Screen ── */
+            <div
+              className='anim-fade'
+              style={{
+                background: 'rgba(255,255,255,.95)',
+                borderRadius: '24px',
+                padding: '52px 28px',
+                textAlign: 'center',
+                boxShadow: '0 10px 48px rgba(0,0,0,.08)',
+                border: '1px solid rgba(255,255,255,.95)'
+              }}
+            >
+              <div className='float' style={{ fontSize: '4rem', marginBottom: '22px' }}>
+                {isAttending ? '🎊' : '💝'}
+              </div>
+              <h3
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '1.55rem',
+                  fontWeight: '700',
+                  color: isAttending ? '#15803d' : primary,
+                  marginBottom: '12px',
+                  lineHeight: 1.3
+                }}
+              >
+                {isAttending ? 'Hẹn gặp bạn tại đám cưới!' : 'Cảm ơn bạn đã phản hồi!'}
+              </h3>
+              <p style={{ color: '#6b7280', fontSize: '15px', lineHeight: 1.75, maxWidth: '300px', margin: '0 auto' }}>
+                {isAttending
+                  ? `Chúng tôi rất vui được đón tiếp ${formattedName}. Hẹn gặp trong ngày vui! 🥂`
+                  : 'Rất tiếc khi bạn không thể tham dự. Mong có dịp gặp nhau trong tương lai! 💕'}
+              </p>
+              {wish && (
+                <div
+                  style={{
+                    marginTop: '28px',
+                    padding: '16px 20px',
+                    background: `${primary}08`,
+                    borderRadius: '14px',
+                    borderLeft: `3px solid ${primary}`,
+                    textAlign: 'left'
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: '700',
+                      color: primary,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                      marginBottom: '8px'
+                    }}
+                  >
+                    Lời chúc của bạn
+                  </p>
+                  <p style={{ color: '#374151', fontStyle: 'italic', fontSize: '14px', lineHeight: 1.7 }}>
+                    &ldquo;{wish}&rdquo;
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
   )
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { slug, page } = context.params as { slug: string; page: string }
 
-  const { createClient } = require('@supabase/supabase-js')
-  const supabase = createClient(
+  // Decode Base64 URL-safe → tên thật của khách
+  let guestName = page
+  try {
+    const base64 = page.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = base64 + '=='.slice(0, (4 - (base64.length % 4)) % 4)
+    guestName = decodeURIComponent(escape(atob(padded)))
+  } catch {
+    // Nếu decode thất bại (ví dụ: URL cũ dạng slug), dùng thẳng page
+    guestName = page
+  }
+
+  const { createClient: createServerClient } = require('@supabase/supabase-js')
+  const supabaseServer = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   )
 
   // Query 1: Lấy wedding data
-  const { data: weddingData, error: weddingError } = await supabase
+  const { data: weddingData, error: weddingError } = await supabaseServer
     .from('weddings')
     .select('*')
     .eq('slug', slug)
     .single()
 
   if (weddingError || !weddingData) {
-    return { props: { wedding: null, guestName: page, slug } }
+    return { props: { wedding: null, guestName, slug } }
   }
 
   // Query 2: Lấy template data
   let templateData = null
   if (weddingData.template_id) {
-    const { data: template } = await supabase.from('templates').select('*').eq('id', weddingData.template_id).single()
+    const { data: template } = await supabaseServer
+      .from('templates')
+      .select('*')
+      .eq('id', weddingData.template_id)
+      .single()
     templateData = template
   }
 
   // Query 3: Lấy package data
   let packageData = null
   if (weddingData.package_id) {
-    const { data: pkg } = await supabase.from('packages').select('*').eq('id', weddingData.package_id).single()
+    const { data: pkg } = await supabaseServer.from('packages').select('*').eq('id', weddingData.package_id).single()
     packageData = pkg
   }
 
   return {
     props: {
       slug,
-      guestName: page, // "phat" từ URL
+      guestName, // tên thật sau khi decode Base64
       wedding: {
         ...weddingData,
         content: weddingData.content || {},
