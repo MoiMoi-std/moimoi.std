@@ -39,3 +39,4 @@ package-lock.json
 /.history
 
 package-lock.json
+styles/app.css
