@@ -3,7 +3,6 @@ import {
   Copy,
   Download,
   Edit,
-  FileSpreadsheet,
   Link as LinkIcon,
   MessageSquare,
   Phone,
@@ -11,7 +10,6 @@ import {
   Search,
   Share2,
   Trash2,
-  Upload,
   UserPlus,
   Users,
   X
@@ -25,16 +23,8 @@ import { useToast } from '../../components/ui/ToastProvider'
 import { RSVP, dataService } from '../../lib/data-service'
 import { useWedding } from '../../lib/useWedding'
 
-interface ImportedGuest {
-  guest_name: string
-  phone?: string
-  party_size: number
-}
-
 interface LinkFormData {
   name: string
-  phone: string
-  partySize: number
 }
 
 const Guests = () => {
@@ -42,11 +32,10 @@ const Guests = () => {
   const [filteredRsvps, setFilteredRsvps] = useState<RSVP[]>([])
   const { wedding, loading: weddingLoading } = useWedding()
   const [loading, setLoading] = useState(true)
-  const [linkFormData, setLinkFormData] = useState<LinkFormData>({ name: '', phone: '', partySize: 2 })
+  const [linkFormData, setLinkFormData] = useState<LinkFormData>({ name: '' })
   const [generatedLink, setGeneratedLink] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
-  const [importedGuests, setImportedGuests] = useState<ImportedGuest[]>([])
-  const [editingGuest, setEditingGuest] = useState<{ index: number; guest: ImportedGuest } | null>(null)
+
   const [editingRSVP, setEditingRSVP] = useState<RSVP | null>(null)
   const [qrGuest, setQrGuest] = useState<{ name: string; link: string } | null>(null)
   const [isAdminMode, setIsAdminMode] = useState(false)
@@ -106,15 +95,18 @@ const Guests = () => {
     }
   }, [qrGuest])
 
+  // Mã hóa tên khách thành Base64 URL-safe để tránh bị đoán
+  const encodeGuestName = (name: string) =>
+    btoa(unescape(encodeURIComponent(name)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+
   const generateLink = () => {
     if (!linkFormData.name.trim() || !wedding) return
 
-    const params = new URLSearchParams()
-    params.set('g', linkFormData.name)
-    if (linkFormData.phone) params.set('p', linkFormData.phone)
-    if (linkFormData.partySize > 1) params.set('n', linkFormData.partySize.toString())
-
-    const link = `https://moimoi.vn/${wedding.slug}?${params.toString()}`
+    const encoded = encodeGuestName(linkFormData.name)
+    const link = `http://localhost:3000/${wedding.slug}/${encoded}`
     setGeneratedLink(link)
   }
 
@@ -129,87 +121,29 @@ const Guests = () => {
       })
   }
 
-  const handleExport = async () => {
-    if (wedding) {
-      await dataService.exportRSVPs(wedding.id)
-      toast('Đang xuất file! Vui lòng kiểm tra thư mục tải xuống.', 'info')
+  const handleExport = () => {
+    if (!rsvps.length) {
+      toast('Không có dữ liệu để xuất.', 'info')
+      return
     }
-  }
 
-  const downloadTemplate = () => {
-    const csvContent = 'Tên Khách Mời,Số Điện Thoại,Số Lượng\nNguyễn Văn A,0901234567,2\nTrần Thị B,0987654321,4'
+    const headers = ['Tên Khách Mời', 'Số Điện Thoại', 'Tham Dự', 'Số Người', 'Lời Chúc', 'Thời Gian Gửi']
+    const rows = rsvps.map((r) => [
+      r.guest_name,
+      r.phone || '',
+      r.is_attending === true ? 'Có' : r.is_attending === false ? 'Không' : 'Chưa trả lời',
+      r.party_size ?? '',
+      (r.wishes || '').replace(/,/g, ' '),
+      r.created_at ? new Date(r.created_at).toLocaleString('vi-VN') : ''
+    ])
+
+    const csvContent = [headers, ...rows].map((row) => row.map((cell) => `"${cell}"`).join(',')).join('\n')
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
-    link.download = 'mau_danh_sach_khach_moi.csv'
-    link.click()
-    toast('Đã tải xuống mẫu Excel!', 'success')
-  }
-
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      try {
-        const text = event.target?.result as string
-        const lines = text.split('\n').filter((line) => line.trim())
-
-        const guests: ImportedGuest[] = lines
-          .slice(1)
-          .map((line) => {
-            const [name, phone, size] = line.split(',').map((s) => s.trim())
-            return {
-              guest_name: name || '',
-              phone: phone || undefined,
-              party_size: parseInt(size) || 1
-            }
-          })
-          .filter((g) => g.guest_name)
-
-        setImportedGuests(guests)
-        toast(`Đã nhập ${guests.length} khách mời!`, 'success')
-      } catch (err) {
-        error('Lỗi đọc file. Vui lòng kiểm tra định dạng!')
-      }
-    }
-    reader.readAsText(file)
-    e.target.value = ''
-  }
-
-  const handleEditImportedGuest = (index: number) => {
-    setEditingGuest({ index, guest: { ...importedGuests[index] } })
-  }
-
-  const handleSaveImportedEdit = () => {
-    if (!editingGuest) return
-    const newGuests = [...importedGuests]
-    newGuests[editingGuest.index] = editingGuest.guest
-    setImportedGuests(newGuests)
-    setEditingGuest(null)
-    toast('Đã cập nhật thông tin!', 'success')
-  }
-
-  const handleDeleteImportedGuest = (index: number) => {
-    setImportedGuests(importedGuests.filter((_, i) => i !== index))
-    toast('Đã xóa khách mời!', 'info')
-  }
-
-  const handleConfirmImport = async () => {
-    if (!wedding || importedGuests.length === 0) return
-
-    try {
-      // TODO: Call API to save imported guests
-      toast(`Đã thêm ${importedGuests.length} khách mời vào danh sách!`, 'success')
-      setImportedGuests([])
-
-      const rsvpData = await dataService.getRSVPs(wedding.id)
-      setRsvps(rsvpData)
-      setFilteredRsvps(rsvpData)
-    } catch (err) {
-      error('Có lỗi xảy ra khi lưu danh sách!')
-    }
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `danh_sach_khach_moi_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    toast(`Đã xuất ${rsvps.length} khách mời!`, 'success')
   }
 
   const handleEditRSVP = (rsvp: RSVP) => {
@@ -309,10 +243,8 @@ const Guests = () => {
 
   const handleShowQR = (rsvp: RSVP) => {
     if (!wedding) return
-    const params = new URLSearchParams()
-    params.set('g', rsvp.guest_name)
-    if (rsvp.phone) params.set('p', rsvp.phone)
-    const link = `https://moimoi.vn/${wedding.slug}?${params.toString()}`
+    const encoded = encodeGuestName(rsvp.guest_name)
+    const link = `http://localhost:3000/${wedding.slug}/${encoded}`
     setQrGuest({ name: rsvp.guest_name, link })
   }
 
@@ -328,10 +260,8 @@ const Guests = () => {
 
   const getGuestLink = (rsvp: RSVP) => {
     if (!wedding) return ''
-    const params = new URLSearchParams()
-    params.set('g', rsvp.guest_name)
-    if (rsvp.phone) params.set('p', rsvp.phone)
-    return `https://moimoi.vn/${wedding.slug}?${params.toString()}`
+    const encoded = encodeGuestName(rsvp.guest_name)
+    return `http://localhost:3000/${wedding.slug}/${encoded}`
   }
 
   useEffect(() => {
@@ -378,12 +308,6 @@ const Guests = () => {
           <p className='text-gray-500 mt-1'>Theo dõi RSVP và tạo liên kết mời ({rsvps.length} khách)</p>
         </div>
         <div className='flex flex-wrap items-center gap-3'>
-          <button
-            onClick={downloadTemplate}
-            className='flex items-center px-6 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl hover:bg-green-100 transition-all shadow-sm'
-          >
-            <FileSpreadsheet size={18} className='mr-2' /> Tải Mẫu Excel
-          </button>
           <button
             onClick={handleExport}
             className='flex items-center px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm'
@@ -482,113 +406,6 @@ const Guests = () => {
         </div>
       )}
 
-      {/* Import Excel Section */}
-      {importedGuests.length === 0 && (
-        <div className='bg-gradient-to-br from-pink-50 to-rose-50 rounded-3xl p-8 mb-8 border border-pink-100'>
-          <div className='flex flex-col md:flex-row items-center gap-6'>
-            <div className='flex-1'>
-              <div className='flex items-center gap-2 mb-3'>
-                <Upload className='text-pink-600' size={24} />
-                <h3 className='text-xl font-bold text-gray-900'>Nhập Hàng Loạt Từ Excel</h3>
-              </div>
-              <p className='text-gray-600 mb-4'>
-                Tải lên file Excel/CSV để thêm nhiều khách mời cùng lúc. Bạn có thể chỉnh sửa thông tin trước khi xác
-                nhận.
-              </p>
-              <div className='flex gap-3'>
-                <label className='cursor-pointer'>
-                  <input type='file' accept='.csv,.xlsx,.xls' onChange={handleFileUpload} className='hidden' />
-                  <div className='flex items-center gap-2 px-6 py-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-all font-bold shadow-lg shadow-pink-200'>
-                    <Upload size={18} /> Chọn File Excel
-                  </div>
-                </label>
-                <button
-                  onClick={downloadTemplate}
-                  className='flex items-center gap-2 px-6 py-3 bg-white border-2 border-pink-200 text-pink-700 rounded-xl hover:bg-pink-50 transition-all font-bold'
-                >
-                  <FileSpreadsheet size={18} /> Tải Mẫu
-                </button>
-              </div>
-            </div>
-            <div className='w-full md:w-64 bg-white rounded-2xl p-4 border border-pink-100 shadow-sm'>
-              <div className='text-sm font-bold text-pink-600 uppercase mb-2'>Định dạng file</div>
-              <div className='space-y-1 text-sm text-gray-600'>
-                <div>• Tên Khách Mời</div>
-                <div>• Số Điện Thoại (tùy chọn)</div>
-                <div>• Số Lượng Người</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Preview Imported Guests */}
-      {importedGuests.length > 0 && (
-        <div className='bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden mb-8'>
-          <div className='p-6 border-b border-gray-100 flex justify-between items-center'>
-            <div>
-              <h3 className='text-lg font-bold text-gray-900'>Danh Sách Đã Nhập ({importedGuests.length} khách)</h3>
-              <p className='text-sm text-gray-500'>Kiểm tra và chỉnh sửa thông tin trước khi xác nhận</p>
-            </div>
-            <div className='flex gap-3'>
-              <button
-                onClick={() => setImportedGuests([])}
-                className='px-4 py-2 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 font-medium'
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleConfirmImport}
-                className='px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow-lg shadow-green-200'
-              >
-                Xác Nhận Thêm Vào Danh Sách
-              </button>
-            </div>
-          </div>
-          <div className='overflow-x-auto'>
-            <table className='w-full'>
-              <thead className='bg-gray-50 text-gray-600 text-sm font-bold uppercase'>
-                <tr>
-                  <th className='px-6 py-3 text-left'>STT</th>
-                  <th className='px-6 py-3 text-left'>Tên Khách Mời</th>
-                  <th className='px-6 py-3 text-left'>Số Điện Thoại</th>
-                  <th className='px-6 py-3 text-left'>Số Lượng</th>
-                  <th className='px-6 py-3 text-right'>Thao Tác</th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-gray-50'>
-                {importedGuests.map((guest, idx) => (
-                  <tr key={idx} className='hover:bg-gray-50'>
-                    <td className='px-6 py-4 text-gray-500 font-mono text-sm'>{idx + 1}</td>
-                    <td className='px-6 py-4 font-bold text-gray-900'>{guest.guest_name}</td>
-                    <td className='px-6 py-4 text-gray-600 font-mono'>{guest.phone || '-'}</td>
-                    <td className='px-6 py-4 text-gray-900 font-medium'>{guest.party_size}</td>
-                    <td className='px-6 py-4 text-right'>
-                      <div className='flex gap-2 justify-end'>
-                        <button
-                          onClick={() => handleEditImportedGuest(idx)}
-                          className='p-2 text-pink-600 hover:bg-pink-50 rounded-lg transition-colors'
-                          title='Chỉnh sửa'
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteImportedGuest(idx)}
-                          className='p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors'
-                          title='Xóa'
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
       <div className='space-y-8'>
         {/* Link Generator - Full Width */}
         <div className='bg-white p-6 rounded-3xl shadow-sm border border-pink-100'>
@@ -599,8 +416,8 @@ const Guests = () => {
           <h3 className='text-lg font-bold text-gray-900 mb-4'>Tạo Link Cá Nhân Hóa</h3>
           <p className='text-sm text-gray-500 mb-4'>Nhập đầy đủ thông tin khách để tạo link mời riêng.</p>
 
-          <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-            <div>
+          <div className='flex gap-4'>
+            <div className='flex-1'>
               <label className='block text-sm font-bold text-gray-700 mb-1'>Tên Khách Mời (*)</label>
               <div className='relative'>
                 <UserPlus className='absolute left-3 top-3 text-gray-400' size={20} />
@@ -609,31 +426,9 @@ const Guests = () => {
                   className='w-full pl-10 pr-4 py-3 bg-gray-50 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all'
                   placeholder='Ví dụ: Anh Nam & Chị Lan'
                   value={linkFormData.name}
-                  onChange={(e) => setLinkFormData({ ...linkFormData, name: e.target.value })}
+                  onChange={(e) => setLinkFormData({ name: e.target.value })}
                 />
               </div>
-            </div>
-
-            <div>
-              <label className='block text-sm font-bold text-gray-700 mb-1'>Số Điện Thoại (tùy chọn)</label>
-              <input
-                type='tel'
-                className='w-full px-4 py-3 bg-gray-50 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all'
-                placeholder='0901234567'
-                value={linkFormData.phone}
-                onChange={(e) => setLinkFormData({ ...linkFormData, phone: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <label className='block text-sm font-bold text-gray-700 mb-1'>Số Lượng Người</label>
-              <input
-                type='number'
-                min='1'
-                className='w-full px-4 py-3 bg-gray-50 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all'
-                value={linkFormData.partySize}
-                onChange={(e) => setLinkFormData({ ...linkFormData, partySize: parseInt(e.target.value) || 1 })}
-              />
             </div>
           </div>
 
@@ -905,82 +700,6 @@ const Guests = () => {
           )}
         </div>
       </div>
-
-      {/* Edit Imported Guest Modal */}
-      {editingGuest && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50'>
-          <div className='bg-white rounded-2xl max-w-md w-full shadow-2xl'>
-            <div className='p-6 border-b border-gray-100 flex justify-between items-center'>
-              <h3 className='text-lg font-bold text-gray-900'>Chỉnh Sửa Thông Tin</h3>
-              <button
-                onClick={() => setEditingGuest(null)}
-                className='p-2 hover:bg-gray-100 rounded-lg transition-colors'
-              >
-                <X size={20} />
-              </button>
-            </div>
-            <div className='p-6 space-y-4'>
-              <div>
-                <label className='block text-sm font-bold text-gray-700 mb-2'>Tên Khách Mời</label>
-                <input
-                  type='text'
-                  value={editingGuest.guest.guest_name}
-                  onChange={(e) =>
-                    setEditingGuest({
-                      ...editingGuest,
-                      guest: { ...editingGuest.guest, guest_name: e.target.value }
-                    })
-                  }
-                  className='w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none'
-                />
-              </div>
-              <div>
-                <label className='block text-sm font-bold text-gray-700 mb-2'>Số Điện Thoại</label>
-                <input
-                  type='text'
-                  value={editingGuest.guest.phone || ''}
-                  onChange={(e) =>
-                    setEditingGuest({
-                      ...editingGuest,
-                      guest: { ...editingGuest.guest, phone: e.target.value }
-                    })
-                  }
-                  className='w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none'
-                />
-              </div>
-              <div>
-                <label className='block text-sm font-bold text-gray-700 mb-2'>Số Lượng Người</label>
-                <input
-                  type='number'
-                  min='1'
-                  value={editingGuest.guest.party_size}
-                  onChange={(e) =>
-                    setEditingGuest({
-                      ...editingGuest,
-                      guest: { ...editingGuest.guest, party_size: parseInt(e.target.value) || 1 }
-                    })
-                  }
-                  className='w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-pink-500 focus:outline-none'
-                />
-              </div>
-            </div>
-            <div className='p-6 border-t border-gray-100 flex gap-3 justify-end'>
-              <button
-                onClick={() => setEditingGuest(null)}
-                className='px-4 py-2 text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 font-medium'
-              >
-                Hủy
-              </button>
-              <button
-                onClick={handleSaveImportedEdit}
-                className='px-6 py-2 bg-pink-600 text-white rounded-lg hover:bg-pink-700 font-bold'
-              >
-                Lưu Thay Đổi
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Edit RSVP Modal */}
       {editingRSVP && (
