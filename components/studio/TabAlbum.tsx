@@ -8,7 +8,7 @@ interface TabAlbumProps {
 const TabAlbum: React.FC<TabAlbumProps> = ({ images, onChange }) => {
   const [albumImages, setAlbumImages] = useState<string[]>(images || [])
   const fileInputRef = useRef<HTMLInputElement>(null)
-  
+
   useEffect(() => {
     setAlbumImages(images || [])
   }, [images])
@@ -47,7 +47,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({ images, onChange }) => {
 
     // Convert to base64 for preview only
     const newImageUrls: string[] = []
-    
+
     for (const file of validFiles) {
       const reader = new FileReader()
       const imageUrl = await new Promise<string>((resolve, reject) => {

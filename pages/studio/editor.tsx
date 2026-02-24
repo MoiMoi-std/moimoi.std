@@ -54,20 +54,20 @@ const Editor = () => {
     try {
       const previousImages = originalImages
       const currentImages = wedding.content.images || []
-      
+
       const { newImages, uploadedCount, deletedCount } = await processImages(currentImages, previousImages)
-      
+
       if (uploadedCount > 0 || deletedCount > 0) {
         console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
       }
-      
+
       const updatedContent = { ...wedding.content, images: newImages }
       await dataService.updateWedding(wedding.id, updatedContent)
-      
+
       // Update local state and original images
       setWedding({ ...wedding, content: updatedContent })
       setOriginalImages(newImages)
-      
+
       success('Lưu thay đổi thành công!')
     } catch (e) {
       console.error('Save error:', e)
@@ -83,13 +83,13 @@ const Editor = () => {
     try {
       const previousImages = originalImages
       const currentImages = wedding.content.images || []
-      
+
       const { newImages, uploadedCount, deletedCount } = await processImages(currentImages, previousImages)
-      
+
       if (uploadedCount > 0 || deletedCount > 0) {
         console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
       }
-      
+
       const updatedContent = { ...wedding.content, images: newImages }
       await dataService.updateWedding(wedding.id, updatedContent)
 
@@ -103,7 +103,7 @@ const Editor = () => {
 
       setWedding({ ...wedding, content: updatedContent, deployment_status: 'published' })
       setOriginalImages(newImages)
-      
+
       success('Xuất bản thành công! Thiệp của bạn đã được công khai.')
     } catch (e) {
       console.error('Publish error:', e)

@@ -23,9 +23,9 @@ export async function processImages(
   for (const img of currentImages) {
     if (img.startsWith('data:')) {
       try {
-        const blob = await fetch(img).then(r => r.blob())
+        const blob = await fetch(img).then((r) => r.blob())
         const file = new File([blob], 'image.jpg', { type: blob.type })
-        
+
         const formData = new FormData()
         formData.append('file', file)
 
@@ -50,7 +50,7 @@ export async function processImages(
   }
 
   const removedImages = previousImages.filter(
-    oldImg => !newImages.includes(oldImg) && (oldImg.startsWith('http://') || oldImg.startsWith('https://'))
+    (oldImg) => !newImages.includes(oldImg) && (oldImg.startsWith('http://') || oldImg.startsWith('https://'))
   )
 
   for (const imageUrl of removedImages) {

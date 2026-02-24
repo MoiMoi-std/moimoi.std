@@ -29,7 +29,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
 
     const [fields, files] = await form.parse(req)
-    
+
     const uploadedFiles = files.file
     if (!uploadedFiles || uploadedFiles.length === 0) {
       return res.status(400).json({ error: 'No file uploaded' })
@@ -42,10 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const result = await cloudinary.uploader.upload(file.filepath, {
           folder: 'moimoi',
           resource_type: 'auto',
-          transformation: [
-            { width: 1920, height: 1080, crop: 'limit' },
-            { quality: 'auto:good' }
-          ]
+          transformation: [{ width: 1920, height: 1080, crop: 'limit' }, { quality: 'auto:good' }]
         })
 
         uploadedUrls.push(result.secure_url)
@@ -58,11 +55,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (uploadedUrls.length === 0) {
       return res.status(500).json({ error: 'Failed to upload images to Cloudinary' })
     }
-    return res.status(200).json({ 
-      success: true, 
-      urls: uploadedUrls 
+    return res.status(200).json({
+      success: true,
+      urls: uploadedUrls
     })
-
   } catch (error) {
     console.error('Upload error:', error)
     return res.status(500).json({ error: 'Internal server error' })

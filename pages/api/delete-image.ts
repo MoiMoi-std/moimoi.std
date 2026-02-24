@@ -34,18 +34,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const result = await cloudinary.uploader.destroy(publicId)
 
     if (result.result === 'ok' || result.result === 'not found') {
-      return res.status(200).json({ 
-        success: true, 
+      return res.status(200).json({
+        success: true,
         message: 'Image deleted successfully',
         result: result.result
       })
     } else {
-      return res.status(500).json({ 
+      return res.status(500).json({
         error: 'Failed to delete image from Cloudinary',
         result: result.result
       })
     }
-
   } catch (error) {
     console.error('Delete error:', error)
     return res.status(500).json({ error: 'Internal server error' })
