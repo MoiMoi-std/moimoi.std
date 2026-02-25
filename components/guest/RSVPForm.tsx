@@ -14,7 +14,6 @@ export default function RSVPForm({ weddingId }: RSVPFormProps) {
     is_attending: true,
     adults: 1,
     children: 0,
-    meal_preference: '',
     wishes: '',
     website: ''
   })
@@ -54,9 +53,6 @@ export default function RSVPForm({ weddingId }: RSVPFormProps) {
       if (formData.is_attending) {
         meta.push(`Người lớn: ${attendingAdults}`)
         meta.push(`Trẻ em: ${attendingChildren}`)
-      }
-      if (formData.meal_preference) {
-        meta.push(`Thực đơn: ${formData.meal_preference}`)
       }
       const metaText = meta.length ? ` [${meta.join(', ')}]` : ''
       const wishesText = formData.wishes.trim()
@@ -200,23 +196,6 @@ export default function RSVPForm({ weddingId }: RSVPFormProps) {
                 />
               </div>
             </div>
-          </div>
-        )}
-
-        {/* Meal Preference */}
-        {formData.is_attending && (
-          <div className='animate-in fade-in slide-in-from-top-2'>
-            <label className='block text-sm font-bold text-gray-700 mb-2'>Chế độ ăn uống (Tùy chọn)</label>
-            <select
-              value={formData.meal_preference}
-              onChange={(e) => setFormData({ ...formData, meal_preference: e.target.value })}
-              className='w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all font-medium'
-            >
-              <option value=''>Không yêu cầu</option>
-              <option value='Ăn chay'>Ăn chay</option>
-              <option value='Ít cay'>Ít cay</option>
-              <option value='Không hải sản'>Không hải sản</option>
-            </select>
           </div>
         )}
 
