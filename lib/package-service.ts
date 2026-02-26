@@ -1,8 +1,49 @@
-import { Database } from '../types/supabase'
 import { supabase } from './initSupabase'
 
-export type Package = Database['public']['Tables']['packages']['Row']
-export type Template = Database['public']['Tables']['templates']['Row']
+// Types for Package
+export interface Package {
+  id: number
+  name: string
+  price: number
+  original_price: number
+  duration_months: number
+  max_rsvps: number
+  features: string[]
+  promotion_end_date: string
+  is_active: boolean
+  created_at: string
+}
+
+export interface PackageInsert {
+  name: string
+  price: number
+  original_price: number
+  duration_months: number
+  max_rsvps: number
+  features: string[]
+  promotion_end_date?: string
+  is_active?: boolean
+}
+
+export interface PackageUpdate {
+  name?: string
+  price?: number
+  original_price?: number
+  duration_months?: number
+  max_rsvps?: number
+  features?: string[]
+  promotion_end_date?: string
+  is_active?: boolean
+}
+
+// Types for Template (already in DB)
+export interface Template {
+  id: number
+  name: string
+  repo_branch: string
+  thumbnail_url: string | null
+  created_at: string
+}
 
 export interface PackageWithTemplates extends Package {
   templates: Template[]
@@ -47,9 +88,23 @@ export const packageService = {
   },
 
   /**
+   * GET: Lấy thông tin 1 package
+   */
+  getPackageById: async (id: number): Promise<Package | null> => {
+    const { data, error } = await supabase.from('packages').select('*').eq('id', id).single()
+
+    if (error) {
+      console.error('Error fetching package:', error)
+      return null
+    }
+
+    return data
+  },
+
+  /**
    * POST: Tạo package mới
    */
-  createPackage: async (packageData: Database['public']['Tables']['packages']['Insert']): Promise<Package> => {
+  createPackage: async (packageData: PackageInsert): Promise<Package> => {
     const { data, error } = await supabase.from('packages').insert(packageData).select().single()
 
     if (error) {
@@ -63,10 +118,7 @@ export const packageService = {
   /**
    * PUT/PATCH: Cập nhật package
    */
-  updatePackage: async (
-    id: number,
-    packageData: Database['public']['Tables']['packages']['Update']
-  ): Promise<Package> => {
+  updatePackage: async (id: number, packageData: PackageUpdate): Promise<Package> => {
     // Check package tồn tại trước
     const { data: existing, error: checkError } = await supabase.from('packages').select('id').eq('id', id).single()
 

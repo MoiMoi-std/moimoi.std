@@ -26,31 +26,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     })
   }
 
-  // // GET: Lấy thông tin 1 package
-  // if (req.method === 'GET') {
-  //   try {
-  //     const packageData = await packageService.getPackageById(packageId)
+  // GET: Lấy thông tin 1 package
+  if (req.method === 'GET') {
+    try {
+      const packageData = await packageService.getPackageById(packageId)
 
-  //     if (!packageData) {
-  //       return res.status(404).json({
-  //         success: false,
-  //         error: 'Package not found'
-  //       })
-  //     }
+      if (!packageData) {
+        return res.status(404).json({
+          success: false,
+          error: 'Package not found'
+        })
+      }
 
-  //     return res.status(200).json({
-  //       success: true,
-  //       data: packageData
-  //     })
-  //   } catch (error: any) {
-  //     console.error('GET Error:', error)
-  //     return res.status(500).json({
-  //       success: false,
-  //       error: 'Internal server error',
-  //       message: error.message
-  //     })
-  //   }
-  // }
+      return res.status(200).json({
+        success: true,
+        data: packageData
+      })
+    } catch (error: any) {
+      console.error('GET Error:', error)
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error.message
+      })
+    }
+  }
 
   // PUT/PATCH: Cập nhật package
   if (req.method === 'PUT' || req.method === 'PATCH') {

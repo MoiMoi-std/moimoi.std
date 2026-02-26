@@ -8,81 +8,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      package_templates: {
-        Row: {
-          id: number
-          package_id: number
-          template_id: number
-          created_at: string
-        }
-        Insert: {
-          id?: number
-          package_id: number
-          template_id: number
-          created_at?: string
-        }
-        Update: {
-          id?: number
-          package_id?: number
-          template_id?: number
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: 'package_templates_package_id_fkey'
-            columns: ['package_id']
-            isOneToOne: false
-            referencedRelation: 'packages'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'package_templates_template_id_fkey'
-            columns: ['template_id']
-            isOneToOne: false
-            referencedRelation: 'templates'
-            referencedColumns: ['id']
-          }
-        ]
-      }
-      packages: {
-        Row: {
-          id: number
-          name: string
-          price: number
-          original_price: number | null
-          duration_months: number
-          max_rsvps: number | null
-          features: Json | null
-          promotion_end_date: string | null
-          is_active: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: number
-          name: string
-          price: number
-          original_price?: number | null
-          duration_months?: number
-          max_rsvps?: number | null
-          features?: Json | null
-          promotion_end_date?: string | null
-          is_active?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: number
-          name?: string
-          price?: number
-          original_price?: number | null
-          duration_months?: number
-          max_rsvps?: number | null
-          features?: Json | null
-          promotion_end_date?: string | null
-          is_active?: boolean
-          created_at?: string
-        }
-        Relationships: []
-      }
       rsvps: {
         Row: {
           created_at: string
@@ -185,6 +110,93 @@ export type Database = {
             referencedColumns: ['id']
           }
         ]
+      }
+      orders: {
+        Row: {
+          id: string
+          order_code: string | null
+          wedding_id: string | null
+          package_id: number | null
+          amount: number | null
+          payment_method: string | null
+          status: string | null
+          payment_info: Json | null
+          transaction_id: string | null
+          paid_at: string | null
+          expires_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          order_code?: string | null
+          wedding_id?: string | null
+          package_id?: number | null
+          amount?: number | null
+          payment_method?: string | null
+          status?: string | null
+          payment_info?: Json | null
+          transaction_id?: string | null
+          paid_at?: string | null
+          expires_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          order_code?: string | null
+          wedding_id?: string | null
+          package_id?: number | null
+          amount?: number | null
+          payment_method?: string | null
+          status?: string | null
+          payment_info?: Json | null
+          transaction_id?: string | null
+          paid_at?: string | null
+          expires_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          id: number
+          transaction_code: string | null
+          customer: string | null
+          service: string | null
+          amount: number | null
+          payment_gateway: string | null
+          status: string | null
+          transaction_date: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          transaction_code?: string | null
+          customer?: string | null
+          service?: string | null
+          amount?: number | null
+          payment_gateway?: string | null
+          status?: string | null
+          transaction_date?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          transaction_code?: string | null
+          customer?: string | null
+          service?: string | null
+          amount?: number | null
+          payment_gateway?: string | null
+          status?: string | null
+          transaction_date?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {

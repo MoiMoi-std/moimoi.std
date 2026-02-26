@@ -84,13 +84,26 @@ function EditPackagePage({ packageId }: { packageId: number }) {
       if (packageData && typeof packageData === 'string') {
         try {
           const plan = JSON.parse(packageData)
+          // Parse duration from "12 tháng" or "Vĩnh viễn" format
+          let durationMonths = 12
+          if (plan.duration) {
+            if (plan.duration.toLowerCase().includes('vĩnh viễn')) {
+              durationMonths = 60
+            } else {
+              const match = plan.duration.match(/\d+/)
+              if (match) {
+                durationMonths = parseInt(match[0])
+              }
+            }
+          }
+          
           setFormData({
             name: plan.name,
             originalPrice: plan.price,
             price: plan.discountPrice || plan.price,
-            durationMonths: parseInt(plan.duration) || 12,
+            durationMonths: durationMonths,
             maxRsvps: plan.maxRsvps || 100,
-            featuresText: plan.features.join('\n')
+            featuresText: Array.isArray(plan.features) ? plan.features.join('\n') : ''
           })
           setLoading(false)
           return
@@ -108,7 +121,7 @@ function EditPackagePage({ packageId }: { packageId: number }) {
           price: pkg.price,
           durationMonths: pkg.duration_months,
           maxRsvps: pkg.max_rsvps,
-          featuresText: pkg.features.join('\n')
+          featuresText: Array.isArray(pkg.features) ? pkg.features.join('\n') : ''
         })
       } else {
         error('Không tìm thấy gói này.')
@@ -126,6 +139,26 @@ function EditPackagePage({ packageId }: { packageId: number }) {
       error('Vui lòng nhập tên gói.')
       return
     }
+    if (formData.originalPrice <= 0) {
+      error('Vui lòng nhập giá gốc hợp lệ.')
+      return
+    }
+    if (formData.price < 0) {
+      error('Giá khuyến mãi không thể âm.')
+      return
+    }
+    if (formData.price > 0 && formData.price > formData.originalPrice) {
+      error('Giá khuyến mãi phải nhỏ hơn giá gốc.')
+      return
+    }
+    if (formData.maxRsvps <= 0) {
+      error('Số lượng khách mời phải lớn hơn 0.')
+      return
+    }
+    if (formData.durationMonths <= 0) {
+      error('Thời gian phải lớn hơn 0.')
+      return
+    }
 
     setSaving(true)
     try {
@@ -133,6 +166,12 @@ function EditPackagePage({ packageId }: { packageId: number }) {
         .split('\n')
         .map((item) => item.trim())
         .filter(Boolean)
+
+      if (features.length === 0) {
+        error('Vui lòng nhập ít nhất 1 tính năng.')
+        setSaving(false)
+        return
+      }
 
       const packageData = {
         name: formData.name.trim(),
@@ -225,6 +264,7 @@ function EditPackagePage({ packageId }: { packageId: number }) {
                 onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
                 className='w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-200'
               />
+              <p className='text-xs text-gray-400 mt-1'>Để 0 nếu không có khuyến mãi (sẽ dùng giá gốc)</p>
             </div>
 
             <div className='md:col-span-2'>

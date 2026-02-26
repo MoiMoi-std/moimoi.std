@@ -62,7 +62,23 @@ export default function AddPackagePage() {
       return
     }
     if (formData.originalPrice <= 0) {
-      error('Vui lòng nhập giá gốc.')
+      error('Vui lòng nhập giá gốc hợp lệ.')
+      return
+    }
+    if (formData.price < 0) {
+      error('Giá khuyến mãi không thể âm.')
+      return
+    }
+    if (formData.price > 0 && formData.price > formData.originalPrice) {
+      error('Giá khuyến mãi phải nhỏ hơn giá gốc.')
+      return
+    }
+    if (formData.maxRsvps <= 0) {
+      error('Số lượng khách mời phải lớn hơn 0.')
+      return
+    }
+    if (!formData.durationText.trim()) {
+      error('Vui lòng nhập thời gian.')
       return
     }
 
@@ -72,6 +88,12 @@ export default function AddPackagePage() {
         .split('\n')
         .map((item) => item.trim())
         .filter(Boolean)
+
+      if (features.length === 0) {
+        error('Vui lòng nhập ít nhất 1 tính năng.')
+        setSaving(false)
+        return
+      }
 
       let durationMonths = 12
       if (formData.durationText.toLowerCase().includes('vĩnh viễn')) {
@@ -142,6 +164,7 @@ export default function AddPackagePage() {
                 placeholder='Vd: 12 tháng hoặc Vĩnh viễn'
                 className='w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-200'
               />
+              <p className='text-xs text-gray-400 mt-1'>Nhập số tháng hoặc "Vĩnh viễn" (sẽ chuyển thành 60 tháng)</p>
             </div>
 
             <div>
@@ -163,9 +186,10 @@ export default function AddPackagePage() {
                 min={0}
                 value={formData.price}
                 onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
-                placeholder='0 nếu không có khuyến mãi'
+                placeholder='0 = không có khuyến mãi'
                 className='w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-200'
               />
+              <p className='text-xs text-gray-400 mt-1'>Để 0 nếu không có khuyến mãi (sẽ dùng giá gốc)</p>
             </div>
 
             <div className='md:col-span-2'>
