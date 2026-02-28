@@ -12,7 +12,7 @@ interface ApiPackage {
   original_price: number
   duration_months: number
   max_rsvps: number
-  features: string[]
+  features: any // Can be string[] or object with structure
   promotion_end_date: string
   created_at: string
   templates: any[]
@@ -25,7 +25,7 @@ const createPackageAPI = async (packageData: {
   original_price: number
   duration_months: number
   max_rsvps: number
-  features: string[]
+  features: string[] | { features: string[]; highlight: boolean; description: string; notIncluded: string[] }
 }): Promise<ApiPackage | null> => {
   try {
     const response = await fetch('/api/packages', {
@@ -105,13 +105,21 @@ export default function AddPackagePage() {
         }
       }
 
+      // Lưu features theo format mới với structure đầy đủ
+      const featuresData = {
+        features: features,
+        highlight: false,
+        description: '',
+        notIncluded: []
+      }
+
       const packageData = {
         name: formData.name.trim(),
         price: formData.price || formData.originalPrice,
         original_price: formData.originalPrice,
         duration_months: durationMonths,
         max_rsvps: formData.maxRsvps,
-        features
+        features: featuresData
       }
 
       const result = await createPackageAPI(packageData)

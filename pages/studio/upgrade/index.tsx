@@ -17,7 +17,7 @@ interface ApiPackage {
   original_price: number
   duration_months: number
   max_rsvps: number
-  features: string[]
+  features: any // Can be string[] or object with structure
   promotion_end_date: string
   is_active: boolean
   created_at: string
@@ -25,19 +25,39 @@ interface ApiPackage {
 }
 
 // Hàm chuyển đổi data từ API sang format Plan
-const mapApiPackageToPlan = (pkg: ApiPackage): Plan => ({
-  id: String(pkg.id),
-  name: pkg.name,
-  price: pkg.original_price || pkg.price,
-  discountPrice: pkg.price < pkg.original_price ? pkg.price : undefined,
-  discountEndsAt: pkg.promotion_end_date !== '2100-01-01T00:00:00+00:00' ? pkg.promotion_end_date : undefined,
-  duration: pkg.duration_months >= 60 ? 'Vĩnh viễn' : `${pkg.duration_months} tháng`,
-  description: `Tối đa ${pkg.max_rsvps} khách mời`,
-  features: pkg.features || [],
-  notIncluded: [],
-  highlight: pkg.id === 7, // Gói Nâng Cao là highlight
-  isActive: pkg.is_active
-})
+const mapApiPackageToPlan = (pkg: ApiPackage): Plan => {
+  // Check if features is new format (object) or old format (array)
+  let featuresArray: string[] = []
+  let notIncludedArray: string[] = []
+  let highlight = false
+  let description = `Tối đa ${pkg.max_rsvps} khách mời`
+
+  if (pkg.features && typeof pkg.features === 'object' && !Array.isArray(pkg.features)) {
+    // New format: features is an object with structure
+    const featureData = pkg.features as any
+    featuresArray = Array.isArray(featureData.features) ? featureData.features : []
+    notIncludedArray = Array.isArray(featureData.notIncluded) ? featureData.notIncluded : []
+    highlight = featureData.highlight || false
+    description = featureData.description || description
+  } else if (Array.isArray(pkg.features)) {
+    // Old format: features is simple array
+    featuresArray = pkg.features
+  }
+
+  return {
+    id: String(pkg.id),
+    name: pkg.name,
+    price: pkg.original_price || pkg.price,
+    discountPrice: pkg.price < pkg.original_price ? pkg.price : undefined,
+    discountEndsAt: pkg.promotion_end_date !== '2100-01-01T00:00:00+00:00' ? pkg.promotion_end_date : undefined,
+    duration: pkg.duration_months >= 60 ? 'Vĩnh viễn' : `${pkg.duration_months} tháng`,
+    description: description,
+    features: featuresArray,
+    notIncluded: notIncludedArray,
+    highlight: highlight,
+    isActive: pkg.is_active
+  }
+}
 
 const fetchPackages = async (): Promise<Plan[]> => {
   try {

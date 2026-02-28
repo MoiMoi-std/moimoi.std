@@ -82,6 +82,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   }
 
+  // DELETE: Xóa package
+  if (req.method === 'DELETE') {
+    try {
+      await packageService.deletePackage(packageId)
+
+      return res.status(200).json({
+        success: true,
+        message: 'Package deleted successfully'
+      })
+    } catch (error: any) {
+      console.error('DELETE Error:', error)
+
+      if (error.message?.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          error: 'Package not found'
+        })
+      }
+
+      return res.status(500).json({
+        success: false,
+        error: 'Internal server error',
+        message: error.message
+      })
+    }
+  }
+
   // Method not allowed
   return res.status(405).json({ error: 'Method not allowed' })
 }

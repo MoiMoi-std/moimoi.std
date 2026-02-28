@@ -1,5 +1,13 @@
 import { supabase } from './initSupabase'
 
+// Feature structure
+export interface FeatureData {
+  features: string[]
+  highlight?: boolean
+  description?: string
+  notIncluded?: string[]
+}
+
 // Types for Package
 export interface Package {
   id: number
@@ -8,7 +16,7 @@ export interface Package {
   original_price: number
   duration_months: number
   max_rsvps: number
-  features: string[]
+  features: FeatureData | string[] // Support both old and new format
   promotion_end_date: string
   is_active: boolean
   created_at: string
@@ -20,7 +28,7 @@ export interface PackageInsert {
   original_price: number
   duration_months: number
   max_rsvps: number
-  features: string[]
+  features: FeatureData | string[]
   promotion_end_date?: string
   is_active?: boolean
 }
@@ -31,7 +39,7 @@ export interface PackageUpdate {
   original_price?: number
   duration_months?: number
   max_rsvps?: number
-  features?: string[]
+  features?: FeatureData | string[]
   promotion_end_date?: string
   is_active?: boolean
 }
@@ -154,5 +162,27 @@ export const packageService = {
     }
 
     return data
+  },
+
+  /**
+   * DELETE: Xóa package
+   */
+  deletePackage: async (id: number): Promise<boolean> => {
+    // Check package tồn tại trước
+    const { data: existing, error: checkError } = await supabase.from('packages').select('id').eq('id', id).single()
+
+    if (checkError || !existing) {
+      throw new Error(`Package with ID ${id} not found`)
+    }
+
+    // Delete package
+    const { error } = await supabase.from('packages').delete().eq('id', id)
+
+    if (error) {
+      console.error('Error deleting package:', error)
+      throw error
+    }
+
+    return true
   }
 }

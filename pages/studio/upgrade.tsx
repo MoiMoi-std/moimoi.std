@@ -3,38 +3,111 @@ import StudioLayout from '@/components/studio/StudioLayout'
 import StudioLoading from '@/components/studio/StudioLoading'
 import { useToast } from '@/components/ui/ToastProvider'
 import { dataService } from '@/lib/data-service'
-import { Plan, formatVnd, generatePlanId, isDiscountActive } from '@/lib/plan-store'
+import { Plan, formatVnd, isDiscountActive } from '@/lib/plan-store'
 import { useWedding } from '@/lib/useWedding'
-import { Check, Clock, CreditCard, Save, Sparkles } from 'lucide-react'
+import { Check, Clock, CreditCard, Edit, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 
+// Interface cho API response
+interface ApiPackage {
+  id: number
+  name: string
+  price: number
+  original_price: number
+  duration_months: number
+  max_rsvps: number
+  features: any // Can be string[] or object with structure
+  promotion_end_date: string
+  is_active: boolean
+  created_at: string
+  templates: any[]
+}
+
+// Hàm chuyển đổi data từ API sang format Plan
+const mapApiPackageToPlan = (pkg: ApiPackage): Plan => {
+  // Check if features is new format (object) or old format (array)
+  let featuresArray: string[] = []
+  let notIncludedArray: string[] = []
+  let highlight = false
+  let description = `Tối đa ${pkg.max_rsvps} khách mời`
+
+  if (pkg.features && typeof pkg.features === 'object' && !Array.isArray(pkg.features)) {
+    // New format: features is an object with structure
+    const featureData = pkg.features as any
+    featuresArray = Array.isArray(featureData.features) ? featureData.features : []
+    notIncludedArray = Array.isArray(featureData.notIncluded) ? featureData.notIncluded : []
+    highlight = featureData.highlight || false
+    description = featureData.description || description
+  } else if (Array.isArray(pkg.features)) {
+    // Old format: features is simple array
+    featuresArray = pkg.features
+  }
+
+  return {
+    id: String(pkg.id),
+    name: pkg.name,
+    price: pkg.original_price || pkg.price,
+    discountPrice: pkg.price < pkg.original_price ? pkg.price : undefined,
+    discountEndsAt: pkg.promotion_end_date !== '2100-01-01T00:00:00+00:00' ? pkg.promotion_end_date : undefined,
+    duration: pkg.duration_months >= 60 ? 'Vĩnh viễn' : `${pkg.duration_months} tháng`,
+    description: description,
+    features: featuresArray,
+    notIncluded: notIncludedArray,
+    highlight: highlight,
+    isActive: pkg.is_active
+  }
+}
+
+const fetchPackages = async (): Promise<Plan[]> => {
+  try {
+    const response = await fetch('/api/packages')
+    const result = await response.json()
+
+    if (result.success && result.data) {
+      return result.data.map(mapApiPackageToPlan)
+    }
+    return []
+  } catch (error) {
+    console.error('Error fetching packages:', error)
+    return []
+  }
+}
+
+const deletePackageAPI = async (id: number): Promise<boolean> => {
+  try {
+    const response = await fetch(`/api/packages/${id}`, {
+      method: 'DELETE'
+    })
+    const result = await response.json()
+    return result.success
+  } catch (error) {
+    console.error('Error deleting package:', error)
+    return false
+  }
+}
+
 export default function UpgradePage() {
+  const router = useRouter()
   const { wedding, setWedding, loading } = useWedding()
   const [paying, setPaying] = useState(false)
   const [plans, setPlans] = useState<Plan[]>([])
   const [plansLoading, setPlansLoading] = useState(true)
   const [isAdminMode, setIsAdminMode] = useState(false)
-  const [newPlanName, setNewPlanName] = useState('')
-  const [newPlanPrice, setNewPlanPrice] = useState(0)
-  const [newPlanDuration, setNewPlanDuration] = useState('')
-  const [newPlanDescription, setNewPlanDescription] = useState('')
-  const [newPlanFeaturesText, setNewPlanFeaturesText] = useState('')
-  const [newPlanNotIncludedText, setNewPlanNotIncludedText] = useState('')
-  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const { success, error } = useToast()
 
   useEffect(() => {
-    fetch('/api/get-packages')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.plans && data.plans.length > 0) {
-          setPlans(data.plans)
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to load packages from DB:', err)
-      })
-      .finally(() => setPlansLoading(false))
+    const loadPackages = async () => {
+      setPlansLoading(true)
+      try {
+        const data = await fetchPackages()
+        setPlans(data)
+      } finally {
+        setPlansLoading(false)
+      }
+    }
+    loadPackages()
   }, [])
 
   const visiblePlans = useMemo(() => plans.filter((plan) => plan.isActive !== false), [plans])
@@ -107,207 +180,41 @@ export default function UpgradePage() {
     }
   }
 
-  const updatePlan = (planId: string, patch: Partial<Plan>) => {
-    setPlans((prev) => prev.map((plan) => (plan.id === planId ? { ...plan, ...patch } : plan)))
-  }
-
-  const removePlan = async (planId: string) => {
-    if (saving) return
+  const removePlan = async (packageId: number) => {
+    if (deleting) return
     
     // Xác nhận trước khi xóa
     if (!confirm(`Bạn có chắc muốn xóa gói này?`)) {
       return
     }
 
-    setSaving(true)
+    setDeleting(true)
     try {
-      // Lọc bỏ gói cần xóa
-      const updatedPlans = plans.filter((plan) => plan.id !== planId)
-      
-      // Lưu vào database
-      const res = await fetch('/api/save-packages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plans: updatedPlans })
-      })
+      const result = await deletePackageAPI(packageId)
 
-      const data = await res.json()
-
-      if (!res.ok) {
-        if (data.details) {
-          console.error('Failed to delete package:', data.details)
-        }
-        throw new Error(data.error || 'Không thể xóa gói')
+      if (!result) {
+        throw new Error('Không thể xóa gói')
       }
 
       success('Đã xóa gói thành công!')
 
       // Reload packages from database
-      const refreshRes = await fetch('/api/get-packages')
-      const refreshData = await refreshRes.json()
-      if (refreshData.plans && refreshData.plans.length > 0) {
-        setPlans(refreshData.plans)
-      }
+      const updatedPlans = await fetchPackages()
+      setPlans(updatedPlans)
     } catch (err: any) {
       console.error('Delete package error:', err)
       error(err.message || 'Không thể xóa gói. Vui lòng thử lại.')
     } finally {
-      setSaving(false)
+      setDeleting(false)
     }
   }
 
-  const addPlan = async () => {
-    if (!newPlanName.trim()) {
-      error('Vui lòng nhập tên gói.')
-      return
-    }
-    
-    if (saving) return
-    setSaving(true)
-
-    try {
-      const id = generatePlanId(newPlanName)
-      const newPlan: Plan = {
-        id,
-        name: newPlanName.trim(),
-        price: newPlanPrice,
-        duration: newPlanDuration.trim() || undefined,
-        description: newPlanDescription.trim() || 'Mô tả gói mới.',
-        features: newPlanFeaturesText
-          .split('\n')
-          .map((item) => item.trim())
-          .filter(Boolean),
-        notIncluded: newPlanNotIncludedText
-          .split('\n')
-          .map((item) => item.trim())
-          .filter(Boolean),
-        highlight: false,
-        isActive: true
-      }
-
-      // Lưu vào database ngay
-      const res = await fetch('/api/save-packages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plans: [...plans, newPlan] })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        if (data.details) {
-          console.error('Failed to create package:', data.details)
-        }
-        throw new Error(data.error || 'Không thể tạo gói mới')
-      }
-
-      success('Đã tạo và lưu gói mới vào database thành công!')
-
-      // Reset form
-      setNewPlanName('')
-      setNewPlanPrice(0)
-      setNewPlanDuration('')
-      setNewPlanDescription('')
-      setNewPlanFeaturesText('')
-      setNewPlanNotIncludedText('')
-
-      // Reload packages from database
-      const refreshRes = await fetch('/api/get-packages')
-      const refreshData = await refreshRes.json()
-      if (refreshData.plans && refreshData.plans.length > 0) {
-        setPlans(refreshData.plans)
-      }
-    } catch (err: any) {
-      console.error('Create package error:', err)
-      error(err.message || 'Không thể tạo gói mới. Vui lòng thử lại.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const togglePlanProperty = async (planId: string, property: 'isActive' | 'highlight') => {
-    if (saving) return
-
-    setSaving(true)
-    try {
-      // Cập nhật state local trước
-      const updatedPlans = plans.map((plan) =>
-        plan.id === planId ? { ...plan, [property]: !plan[property] } : plan
-      )
-      setPlans(updatedPlans)
-
-      // Lưu vào database
-      const res = await fetch('/api/save-packages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plans: updatedPlans })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        if (data.details) {
-          console.error('Failed to update package:', data.details)
-        }
-        throw new Error(data.error || 'Không thể cập nhật gói')
-      }
-
-      const propertyName = property === 'isActive' ? 'trạng thái' : 'đánh dấu nổi bật'
-      success(`Đã cập nhật ${propertyName} thành công!`)
-
-      // Reload packages from database
-      const refreshRes = await fetch('/api/get-packages')
-      const refreshData = await refreshRes.json()
-      if (refreshData.plans && refreshData.plans.length > 0) {
-        setPlans(refreshData.plans)
-      }
-    } catch (err: any) {
-      console.error('Toggle property error:', err)
-      error(err.message || 'Không thể cập nhật. Vui lòng thử lại.')
-      // Revert state on error
-      const refreshRes = await fetch('/api/get-packages')
-      const refreshData = await refreshRes.json()
-      if (refreshData.plans && refreshData.plans.length > 0) {
-        setPlans(refreshData.plans)
-      }
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleSaveChanges = async () => {
-    if (saving) return
-    setSaving(true)
-    try {
-      const res = await fetch('/api/save-packages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plans })
-      })
-
-      const data = await res.json()
-
-      if (!res.ok) {
-        if (data.details) {
-          console.error('Failed packages details:', data.details)
-        }
-        throw new Error(data.error || 'Không thể lưu packages')
-      }
-
-      success('Đã lưu tất cả thay đổi vào database thành công!')
-      
-      // Reload packages from database
-      const refreshRes = await fetch('/api/get-packages')
-      const refreshData = await refreshRes.json()
-      if (refreshData.plans && refreshData.plans.length > 0) {
-        setPlans(refreshData.plans)
-      }
-    } catch (err: any) {
-      console.error('Save error:', err)
-      error(err.message || 'Không thể lưu thay đổi. Vui lòng thử lại.')
-    } finally {
-      setSaving(false)
-    }
+  const handleEdit = (plan: Plan) => {
+    // Chuyển đến trang edit
+    router.push({
+      pathname: `/studio/upgrade/${plan.id}/edit`,
+      query: { packageData: JSON.stringify(plan) }
+    })
   }
 
   return (
@@ -320,84 +227,34 @@ export default function UpgradePage() {
 
         <div className='flex items-center justify-between mb-8'>
           <h2 className='text-xl font-bold text-gray-900'>Danh sách gói</h2>
-          <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
-            <span>Chế độ quản trị</span>
-            <button
-              type='button'
-              onClick={() => setIsAdminMode((prev) => !prev)}
-              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
-                isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
-                  isAdminMode ? 'translate-x-7' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </label>
-        </div>
-
-        {isAdminMode && (
-          <div className='bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-10'>
-            <div className='grid gap-4 md:grid-cols-[1fr_200px_200px_160px]'>
-              <input
-                value={newPlanName}
-                onChange={(e) => setNewPlanName(e.target.value)}
-                placeholder='Tên gói mới'
-                className='rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
-              />
-              <input
-                type='number'
-                min={0}
-                value={newPlanPrice}
-                onChange={(e) => setNewPlanPrice(parseInt(e.target.value) || 0)}
-                placeholder='Giá'
-                className='rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
-              />
-              <input
-                value={newPlanDuration}
-                onChange={(e) => setNewPlanDuration(e.target.value)}
-                placeholder='Thời gian (vd: 6 tháng, vĩnh viễn)'
-                className='rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
-              />
-              <button 
-                onClick={addPlan} 
-                disabled={saving}
-                className='rounded-xl bg-pink-600 text-white font-bold hover:bg-pink-700 px-4 disabled:opacity-60 disabled:cursor-not-allowed'
+          <div className='flex items-center gap-4'>
+            {isAdminMode && (
+              <button
+                onClick={() => router.push('/studio/upgrade/add')}
+                className='flex items-center gap-2 px-4 py-2 rounded-xl bg-pink-600 text-white font-bold hover:bg-pink-700'
               >
-                {saving ? 'Đang tạo...' : 'Tạo gói'}
+                <Plus size={18} />
+                Tạo gói mới
               </button>
-            </div>
-            <div className='grid gap-4 mt-4'>
-              <input
-                value={newPlanDescription}
-                onChange={(e) => setNewPlanDescription(e.target.value)}
-                placeholder='Mô tả ngắn'
-                className='rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
-              />
-              <div className='grid gap-4 md:grid-cols-2'>
-                <textarea
-                  rows={4}
-                  value={newPlanFeaturesText}
-                  onChange={(e) => setNewPlanFeaturesText(e.target.value)}
-                  placeholder='Chi tiết gói (mỗi dòng)'
-                  className='rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
+            )}
+            <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
+              <span>Chế độ quản trị</span>
+              <button
+                type='button'
+                onClick={() => setIsAdminMode((prev) => !prev)}
+                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
+                  isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
+                    isAdminMode ? 'translate-x-7' : 'translate-x-1'
+                  }`}
                 />
-                <textarea
-                  rows={4}
-                  value={newPlanNotIncludedText}
-                  onChange={(e) => setNewPlanNotIncludedText(e.target.value)}
-                  placeholder='Không bao gồm (mỗi dòng)'
-                  className='rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
-                />
-              </div>
-            </div>
-            <p className='mt-3 text-sm text-gray-400'>
-              Thay đổi sẽ lưu vào localStorage để đồng bộ giữa landing và studio.
-            </p>
+              </button>
+            </label>
           </div>
-        )}
+        </div>
 
         <div className='grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8 items-start'>
           {(isAdminMode ? plans : visiblePlans).map((plan) => {
@@ -469,15 +326,19 @@ export default function UpgradePage() {
                   <p className='mt-4 text-gray-500'>{plan.description}</p>
                 </div>
                 <ul className='space-y-4 mb-8'>
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className='flex items-center text-gray-700 font-medium'>
-                      <div className='mr-3 bg-pink-100 rounded-full p-1 text-pink-600'>
-                        <Check size={14} />
-                      </div>
-                      {feature}
-                    </li>
-                  ))}
-                  {plan.notIncluded.map((feature, idx) => (
+                  {Array.isArray(plan.features) && plan.features.length > 0 ? (
+                    plan.features.map((feature, idx) => (
+                      <li key={idx} className='flex items-center text-gray-700 font-medium'>
+                        <div className='mr-3 bg-pink-100 rounded-full p-1 text-pink-600'>
+                          <Check size={14} />
+                        </div>
+                        {feature}
+                      </li>
+                    ))
+                  ) : (
+                    <li className='text-gray-400 text-sm italic'>Chưa có tính năng nào</li>
+                  )}
+                  {Array.isArray(plan.notIncluded) && plan.notIncluded.map((feature, idx) => (
                     <li key={idx} className='flex items-center text-gray-400 text-sm'>
                       <span className='mr-3 text-gray-300'>•</span>
                       <span className='line-through'>{feature}</span>
@@ -512,129 +373,19 @@ export default function UpgradePage() {
                   <div className='mt-8 border-t border-gray-100 pt-6 space-y-4 text-sm'>
                     <div className='flex flex-wrap gap-3'>
                       <button
-                        onClick={() => togglePlanProperty(plan.id, 'isActive')}
-                        disabled={saving}
-                        className='px-3 py-2 rounded-lg border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed'
+                        onClick={() => handleEdit(plan)}
+                        className='px-3 py-2 rounded-lg border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 flex items-center gap-2'
                       >
-                        {plan.isActive === false ? 'Hiện gói' : 'Ẩn gói'}
+                        <Edit size={16} /> Sửa
                       </button>
                       <button
-                        onClick={() => togglePlanProperty(plan.id, 'highlight')}
-                        disabled={saving}
-                        className='px-3 py-2 rounded-lg border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed'
+                        onClick={() => removePlan(parseInt(plan.id))}
+                        disabled={deleting}
+                        className='px-3 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2'
                       >
-                        {plan.highlight ? 'Bỏ nổi bật' : 'Đánh dấu nổi bật'}
-                      </button>
-                      <button
-                        onClick={() => removePlan(plan.id)}
-                        disabled={saving}
-                        className='px-3 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed'
-                      >
-                        Xóa gói
+                        <Trash2 size={16} /> {deleting ? 'Đang xóa...' : 'Xóa'}
                       </button>
                     </div>
-                    <div className='grid gap-3 md:grid-cols-3'>
-                      <label className='flex flex-col gap-2'>
-                        <span className='text-sm font-bold text-gray-500 uppercase'>Tên gói</span>
-                        <input
-                          value={plan.name}
-                          onChange={(e) => updatePlan(plan.id, { name: e.target.value })}
-                          className='rounded-xl border border-gray-200 px-3 py-2 text-sm'
-                        />
-                      </label>
-                      <label className='flex flex-col gap-2'>
-                        <span className='text-sm font-bold text-gray-500 uppercase'>Giá</span>
-                        <input
-                          type='number'
-                          min={0}
-                          value={plan.price}
-                          onChange={(e) => updatePlan(plan.id, { price: parseInt(e.target.value) || 0 })}
-                          className='rounded-xl border border-gray-200 px-3 py-2 text-sm'
-                        />
-                      </label>
-                      <label className='flex flex-col gap-2'>
-                        <span className='text-sm font-bold text-gray-500 uppercase'>Thời gian</span>
-                        <input
-                          value={plan.duration || ''}
-                          onChange={(e) => updatePlan(plan.id, { duration: e.target.value || undefined })}
-                          className='rounded-xl border border-gray-200 px-3 py-2 text-sm'
-                        />
-                      </label>
-                    </div>
-                    <label className='flex flex-col gap-2'>
-                      <span className='text-sm font-bold text-gray-500 uppercase'>Mô tả</span>
-                      <input
-                        value={plan.description}
-                        onChange={(e) => updatePlan(plan.id, { description: e.target.value })}
-                        className='rounded-xl border border-gray-200 px-3 py-2 text-sm'
-                      />
-                    </label>
-                    <div className='grid gap-3 md:grid-cols-2'>
-                      <label className='flex flex-col gap-2'>
-                        <span className='text-sm font-bold text-gray-500 uppercase'>Giảm giá</span>
-                        <input
-                          type='number'
-                          min={0}
-                          value={plan.discountPrice || 0}
-                          onChange={(e) => updatePlan(plan.id, { discountPrice: parseInt(e.target.value) || 0 })}
-                          className='rounded-xl border border-gray-200 px-3 py-2 text-sm'
-                        />
-                      </label>
-                      <label className='flex flex-col gap-2'>
-                        <span className='text-sm font-bold text-gray-500 uppercase'>Hết hạn ưu đãi</span>
-                        <input
-                          type='datetime-local'
-                          value={plan.discountEndsAt ? plan.discountEndsAt.slice(0, 16) : ''}
-                          onChange={(e) =>
-                            updatePlan(plan.id, {
-                              discountEndsAt: e.target.value ? new Date(e.target.value).toISOString() : undefined
-                            })
-                          }
-                          className='rounded-xl border border-gray-200 px-3 py-2 text-sm'
-                        />
-                      </label>
-                    </div>
-                    <div className='grid gap-3 md:grid-cols-2'>
-                      <label className='flex flex-col gap-2'>
-                        <span className='text-sm font-bold text-gray-500 uppercase'>Tính năng (mỗi dòng)</span>
-                        <textarea
-                          rows={4}
-                          value={plan.features.join('\n')}
-                          onChange={(e) =>
-                            updatePlan(plan.id, {
-                              features: e.target.value
-                                .split('\n')
-                                .map((item) => item.trim())
-                                .filter(Boolean)
-                            })
-                          }
-                          className='rounded-xl border border-gray-200 px-3 py-2 text-sm'
-                        />
-                      </label>
-                      <label className='flex flex-col gap-2'>
-                        <span className='text-sm font-bold text-gray-500 uppercase'>Không bao gồm (mỗi dòng)</span>
-                        <textarea
-                          rows={4}
-                          value={plan.notIncluded.join('\n')}
-                          onChange={(e) =>
-                            updatePlan(plan.id, {
-                              notIncluded: e.target.value
-                                .split('\n')
-                                .map((item) => item.trim())
-                                .filter(Boolean)
-                            })
-                          }
-                          className='rounded-xl border border-gray-200 px-3 py-2 text-sm'
-                        />
-                      </label>
-                    </div>
-                    <button
-                      onClick={handleSaveChanges}
-                      disabled={saving}
-                      className='inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-900 text-white font-bold hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed'
-                    >
-                      <Save size={16} /> {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
-                    </button>
                   </div>
                 )}
               </div>

@@ -12,7 +12,7 @@ interface ApiPackage {
   original_price: number
   duration_months: number
   max_rsvps: number
-  features: string[]
+  features: any // Can be string[] or object with structure
   promotion_end_date: string
   created_at: string
   templates: any[]
@@ -97,13 +97,21 @@ function EditPackagePage({ packageId }: { packageId: number }) {
             }
           }
           
+          // Extract features from new or old format
+          let featuresText = ''
+          if (Array.isArray(plan.features)) {
+            featuresText = plan.features.join('\n')
+          } else if (plan.features && Array.isArray(plan.features.features)) {
+            featuresText = plan.features.features.join('\n')
+          }
+          
           setFormData({
             name: plan.name,
             originalPrice: plan.price,
             price: plan.discountPrice || plan.price,
             durationMonths: durationMonths,
             maxRsvps: plan.maxRsvps || 100,
-            featuresText: Array.isArray(plan.features) ? plan.features.join('\n') : ''
+            featuresText: featuresText
           })
           setLoading(false)
           return
@@ -115,13 +123,24 @@ function EditPackagePage({ packageId }: { packageId: number }) {
       // Fallback: Gọi API nếu không có data (user refresh/bookmark)
       const pkg = await getPackageById(packageId)
       if (pkg) {
+        // Extract features from new or old format
+        let featuresText = ''
+        if (Array.isArray(pkg.features)) {
+          featuresText = pkg.features.join('\n')
+        } else if (pkg.features && typeof pkg.features === 'object') {
+          const featureData = pkg.features as any
+          if (Array.isArray(featureData.features)) {
+            featuresText = featureData.features.join('\n')
+          }
+        }
+        
         setFormData({
           name: pkg.name,
           originalPrice: pkg.original_price,
           price: pkg.price,
           durationMonths: pkg.duration_months,
           maxRsvps: pkg.max_rsvps,
-          featuresText: Array.isArray(pkg.features) ? pkg.features.join('\n') : ''
+          featuresText: featuresText
         })
       } else {
         error('Không tìm thấy gói này.')
@@ -173,13 +192,21 @@ function EditPackagePage({ packageId }: { packageId: number }) {
         return
       }
 
+      // Lưu features theo format mới với structure đầy đủ
+      const featuresData = {
+        features: features,
+        highlight: false,
+        description: '',
+        notIncluded: []
+      }
+
       const packageData = {
         name: formData.name.trim(),
         price: formData.price || formData.originalPrice,
         original_price: formData.originalPrice,
         duration_months: formData.durationMonths,
         max_rsvps: formData.maxRsvps,
-        features
+        features: featuresData
       }
 
       const result = await updatePackageAPI(packageId, packageData)
