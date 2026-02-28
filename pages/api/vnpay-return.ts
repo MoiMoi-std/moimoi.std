@@ -70,12 +70,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           console.log('✅ Transaction inserted successfully:', transactionData)
         }
 
-        // 3. Update order status to 'paid' and save transaction_code to transaction_id
+        // 3. Update order status to 'paid' and save transaction id
         await supabase
           .from('orders')
           .update({
             status: 'paid',
-            transaction_id: transactionData?.transaction_code || transactionNo,
+            transaction_id: transactionData?.id ? String(transactionData.id) : null,
             paid_at: new Date().toISOString(),
             payment_info: {
               ...paymentInfo,

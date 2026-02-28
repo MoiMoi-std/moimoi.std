@@ -39,6 +39,24 @@ export default function UpgradePage() {
 
   const visiblePlans = useMemo(() => plans.filter((plan) => plan.isActive !== false), [plans])
 
+  // Get current plan and calculate prices (must be before any return statements)
+  const currentPlan = wedding?.content?.plan || ''
+  
+  // Find current plan details
+  const currentPlanDetails = useMemo(() => {
+    if (!currentPlan || !plans.length) return null
+    return plans.find(p => p.id === currentPlan)
+  }, [currentPlan, plans])
+
+  // Get the actual price to pay for current plan (considering discount)
+  const getCurrentPlanPrice = useMemo(() => {
+    if (!currentPlanDetails) return 0
+    const discountActive = isDiscountActive(currentPlanDetails)
+    return discountActive && currentPlanDetails.discountPrice ? currentPlanDetails.discountPrice : currentPlanDetails.price
+  }, [currentPlanDetails])
+
+  const currentPlanPrice = getCurrentPlanPrice
+
   if (loading || plansLoading) {
     return (
       <StudioLayout>
@@ -55,14 +73,17 @@ export default function UpgradePage() {
     )
   }
 
-  const currentPlan = wedding.content?.plan || ''
-
   const handleUpgrade = async (plan: Plan) => {
     if (paying) return
     setPaying(true)
     try {
       const discountActive = isDiscountActive(plan)
-      const finalPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
+      let finalPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
+
+      // Deduct current plan price if user already has a plan
+      if (currentPlanDetails && currentPlanPrice > 0) {
+        finalPrice = Math.max(0, finalPrice - currentPlanPrice)
+      }
 
       const res = await fetch('/api/create-payment', {
         method: 'POST',
@@ -381,7 +402,20 @@ export default function UpgradePage() {
         <div className='grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8 items-start'>
           {(isAdminMode ? plans : visiblePlans).map((plan) => {
             const discountActive = isDiscountActive(plan)
-            const displayPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
+            let displayPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
+            
+            // Check if this plan is lower than current plan
+            const isLowerThanCurrent = currentPlanDetails && displayPrice <= currentPlanPrice
+            const isCurrentPlan = currentPlan === plan.id
+            
+            // Calculate upgrade price (deduct current plan price)
+            let upgradePrice = displayPrice
+            let showUpgradePrice = false
+            if (currentPlanDetails && !isCurrentPlan && !isLowerThanCurrent && currentPlanPrice > 0) {
+              upgradePrice = Math.max(0, displayPrice - currentPlanPrice)
+              showUpgradePrice = true
+            }
+            
             return (
               <div
                 key={plan.id}
@@ -397,15 +431,33 @@ export default function UpgradePage() {
                 <div className='mb-6'>
                   <h3 className='text-xl font-bold text-gray-900'>{plan.name}</h3>
                   <div className='mt-4 flex items-baseline gap-3 flex-wrap'>
-                    <span className='text-4xl font-extrabold tracking-tight text-pink-600'>
-                      {formatVnd(displayPrice)}
-                    </span>
-                    {discountActive && (
-                      <span className='text-sm font-semibold text-gray-400 line-through opacity-70'>
-                        {formatVnd(plan.price)}
-                      </span>
+                    {showUpgradePrice ? (
+                      <>
+                        <span className='text-4xl font-extrabold tracking-tight text-pink-600'>
+                          {formatVnd(upgradePrice)}
+                        </span>
+                        <span className='text-sm font-semibold text-gray-400 line-through opacity-70'>
+                          {formatVnd(displayPrice)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className='text-4xl font-extrabold tracking-tight text-pink-600'>
+                          {formatVnd(displayPrice)}
+                        </span>
+                        {discountActive && (
+                          <span className='text-sm font-semibold text-gray-400 line-through opacity-70'>
+                            {formatVnd(plan.price)}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
+                  {showUpgradePrice && (
+                    <div className='mt-2 text-sm font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-flex items-center gap-1'>
+                      <Sparkles size={14} /> Đã giảm {formatVnd(currentPlanPrice)} từ gói hiện tại
+                    </div>
+                  )}
                   {plan.duration && (
                     <div className='mt-2 text-sm font-semibold text-gray-500'>Thời gian: {plan.duration}</div>
                   )}
@@ -436,18 +488,20 @@ export default function UpgradePage() {
                 <div className='space-y-3'>
                   <button
                     onClick={() => handleUpgrade(plan)}
-                    disabled={currentPlan === plan.id || paying}
-                    className='w-full py-4 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-pink-200 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:scale-100'
+                    disabled={isCurrentPlan || isLowerThanCurrent || paying}
+                    className='w-full py-4 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-pink-200 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed'
                   >
-                    {currentPlan === plan.id ? (
+                    {isCurrentPlan ? (
                       <>
                         <Check size={20} /> Đang sử dụng
                       </>
+                    ) : isLowerThanCurrent ? (
+                      'Bạn đã sở hữu gói cao hơn'
                     ) : paying ? (
                       'Đang chuyển đến VNPay...'
                     ) : (
                       <>
-                        <CreditCard size={20} /> Thanh Toán qua VNPay
+                        <CreditCard size={20} /> {showUpgradePrice ? 'Nâng cấp' : 'Thanh Toán qua VNPay'}
                       </>
                     )}
                   </button>
