@@ -96,7 +96,7 @@ function EditPackagePage({ packageId }: { packageId: number }) {
               }
             }
           }
-          
+
           // Extract features from new or old format
           let featuresText = ''
           if (Array.isArray(plan.features)) {
@@ -104,7 +104,7 @@ function EditPackagePage({ packageId }: { packageId: number }) {
           } else if (plan.features && Array.isArray(plan.features.features)) {
             featuresText = plan.features.features.join('\n')
           }
-          
+
           setFormData({
             name: plan.name,
             originalPrice: plan.price,
@@ -133,7 +133,7 @@ function EditPackagePage({ packageId }: { packageId: number }) {
             featuresText = featureData.features.join('\n')
           }
         }
-        
+
         setFormData({
           name: pkg.name,
           originalPrice: pkg.original_price,

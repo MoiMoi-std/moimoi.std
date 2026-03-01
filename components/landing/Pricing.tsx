@@ -43,7 +43,7 @@ export default function Pricing() {
                 features = []
               }
             }
-            
+
             // Fallback to default features if empty
             if (features.length === 0) {
               features = [
@@ -149,18 +149,20 @@ export default function Pricing() {
                 </button>
 
                 <div className='space-y-4'>
-                  {Array.isArray(plan.features) && plan.features.map((feature, i) => (
-                    <div key={i} className='flex items-start gap-3 text-sm text-gray-700'>
-                      <Check className='w-5 h-5 text-green-500 shrink-0' />
-                      <span>{feature}</span>
-                    </div>
-                  ))}
-                  {Array.isArray(plan.notIncluded) && plan.notIncluded.map((feature, i) => (
-                    <div key={i} className='flex items-start gap-3 text-sm text-gray-400'>
-                      <X className='w-5 h-5 text-gray-300 shrink-0' />
-                      <span className='line-through'>{feature}</span>
-                    </div>
-                  ))}
+                  {Array.isArray(plan.features) &&
+                    plan.features.map((feature, i) => (
+                      <div key={i} className='flex items-start gap-3 text-sm text-gray-700'>
+                        <Check className='w-5 h-5 text-green-500 shrink-0' />
+                        <span>{feature}</span>
+                      </div>
+                    ))}
+                  {Array.isArray(plan.notIncluded) &&
+                    plan.notIncluded.map((feature, i) => (
+                      <div key={i} className='flex items-start gap-3 text-sm text-gray-400'>
+                        <X className='w-5 h-5 text-gray-300 shrink-0' />
+                        <span className='line-through'>{feature}</span>
+                      </div>
+                    ))}
                 </div>
               </div>
             )

@@ -26,11 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (verify.isVerified && verify.isSuccess) {
       // 1. Fetch the order to get wedding_id and plan info
-      const { data: order } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .single()
+      const { data: order } = await supabase.from('orders').select('*').eq('id', orderId).single()
 
       if (order) {
         const paymentInfo = (order.payment_info as any) || {}
@@ -133,10 +129,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Update order status to failed
     if (orderId) {
-      await supabase
-        .from('orders')
-        .update({ status: 'failed' })
-        .eq('id', orderId)
+      await supabase.from('orders').update({ status: 'failed' }).eq('id', orderId)
     }
 
     return res.redirect(302, `/studio/payment-result?${params.toString()}`)

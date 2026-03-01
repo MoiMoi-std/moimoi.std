@@ -3856,10 +3856,6 @@ h1 {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
-  .md\:grid-cols-\[1fr_200px_200px_160px\] {
-    grid-template-columns: 1fr 200px 200px 160px;
-  }
-
   .md\:flex-row {
     flex-direction: row;
   }

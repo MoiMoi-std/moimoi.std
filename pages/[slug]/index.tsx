@@ -88,27 +88,38 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
             <div
               className='absolute inset-0'
               style={{
-                backgroundImage:
-                  'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
+                backgroundImage: 'radial-gradient(circle at 2px 2px, currentColor 1px, transparent 0)',
                 backgroundSize: '40px 40px'
               }}
             ></div>
           </div>
 
           {/* Decorative Elements */}
-          <div className='absolute top-10 left-10 w-32 h-32 border-2 rounded-full opacity-20' style={{ borderColor: primaryColor }}></div>
-          <div className='absolute bottom-10 right-10 w-40 h-40 border-2 rounded-full opacity-20' style={{ borderColor: primaryColor }}></div>
+          <div
+            className='absolute top-10 left-10 w-32 h-32 border-2 rounded-full opacity-20'
+            style={{ borderColor: primaryColor }}
+          ></div>
+          <div
+            className='absolute bottom-10 right-10 w-40 h-40 border-2 rounded-full opacity-20'
+            style={{ borderColor: primaryColor }}
+          ></div>
 
           <div className='relative z-10 text-center px-4 max-w-4xl mx-auto'>
             {/* Save The Date Badge */}
-            <div className='inline-block mb-8 px-6 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg border' style={{ borderColor: `${primaryColor}20` }}>
+            <div
+              className='inline-block mb-8 px-6 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg border'
+              style={{ borderColor: `${primaryColor}20` }}
+            >
               <p className='text-sm font-medium tracking-[0.3em] uppercase' style={{ color: primaryColor }}>
                 Save The Date
               </p>
             </div>
 
             {/* Names */}
-            <h1 className='text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight' style={{ color: primaryColor }}>
+            <h1
+              className='text-5xl md:text-7xl lg:text-8xl font-bold mb-6 leading-tight'
+              style={{ color: primaryColor }}
+            >
               {mergedContent.groom_name}
               <span className='block text-3xl md:text-4xl my-4 opacity-60'>&</span>
               {mergedContent.bride_name}
@@ -128,9 +139,15 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
 
             {/* Divider */}
             <div className='flex items-center justify-center gap-4 my-8'>
-              <div className='h-px w-16 bg-gradient-to-r from-transparent' style={{ background: `linear-gradient(to right, transparent, ${primaryColor})` }}></div>
+              <div
+                className='h-px w-16 bg-gradient-to-r from-transparent'
+                style={{ background: `linear-gradient(to right, transparent, ${primaryColor})` }}
+              ></div>
               <Heart size={24} fill={primaryColor} color={primaryColor} className='animate-pulse' />
-              <div className='h-px w-16 bg-gradient-to-l from-transparent' style={{ background: `linear-gradient(to left, transparent, ${primaryColor})` }}></div>
+              <div
+                className='h-px w-16 bg-gradient-to-l from-transparent'
+                style={{ background: `linear-gradient(to left, transparent, ${primaryColor})` }}
+              ></div>
             </div>
 
             {/* Subtitle */}
@@ -140,7 +157,10 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
 
             {/* Scroll Indicator */}
             <div className='mt-16 animate-bounce'>
-              <div className='w-6 h-10 border-2 rounded-full mx-auto flex items-start justify-center p-2' style={{ borderColor: primaryColor }}>
+              <div
+                className='w-6 h-10 border-2 rounded-full mx-auto flex items-start justify-center p-2'
+                style={{ borderColor: primaryColor }}
+              >
                 <div className='w-1 h-3 rounded-full' style={{ backgroundColor: primaryColor }}></div>
               </div>
             </div>
@@ -149,7 +169,10 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
 
         {/* Countdown Section */}
         {timeRemaining && (
-          <section className='py-16 px-4' style={{ background: `linear-gradient(135deg, ${primaryColor}15, ${primaryColor}05)` }}>
+          <section
+            className='py-16 px-4'
+            style={{ background: `linear-gradient(135deg, ${primaryColor}15, ${primaryColor}05)` }}
+          >
             <div className='max-w-4xl mx-auto text-center'>
               <h2 className='text-3xl md:text-4xl font-bold mb-4' style={{ color: primaryColor }}>
                 Đếm Ngược Đến Ngày Vui
@@ -163,7 +186,11 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
                   { label: 'Phút', value: timeRemaining.minutes },
                   { label: 'Giây', value: timeRemaining.seconds }
                 ].map((item) => (
-                  <div key={item.label} className='bg-white rounded-2xl shadow-lg p-4 md:p-6 border' style={{ borderColor: `${primaryColor}20` }}>
+                  <div
+                    key={item.label}
+                    className='bg-white rounded-2xl shadow-lg p-4 md:p-6 border'
+                    style={{ borderColor: `${primaryColor}20` }}
+                  >
                     <div className='text-3xl md:text-5xl font-bold mb-2' style={{ color: primaryColor }}>
                       {String(item.value).padStart(2, '0')}
                     </div>
@@ -187,7 +214,10 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
 
             <div className='grid md:grid-cols-2 gap-8'>
               {/* Date & Time */}
-              <div className='bg-gradient-to-br from-amber-50 to-white rounded-2xl p-8 shadow-lg border' style={{ borderColor: `${primaryColor}20` }}>
+              <div
+                className='bg-gradient-to-br from-amber-50 to-white rounded-2xl p-8 shadow-lg border'
+                style={{ borderColor: `${primaryColor}20` }}
+              >
                 <div className='flex items-center gap-4 mb-4'>
                   <div className='p-3 rounded-full' style={{ backgroundColor: `${primaryColor}20` }}>
                     <Calendar size={24} color={primaryColor} />
@@ -210,7 +240,10 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
               </div>
 
               {/* Location */}
-              <div className='bg-gradient-to-br from-amber-50 to-white rounded-2xl p-8 shadow-lg border' style={{ borderColor: `${primaryColor}20` }}>
+              <div
+                className='bg-gradient-to-br from-amber-50 to-white rounded-2xl p-8 shadow-lg border'
+                style={{ borderColor: `${primaryColor}20` }}
+              >
                 <div className='flex items-center gap-4 mb-4'>
                   <div className='p-3 rounded-full' style={{ backgroundColor: `${primaryColor}20` }}>
                     <MapPin size={24} color={primaryColor} />
@@ -237,7 +270,10 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
 
         {/* Gallery Section */}
         {mergedContent.images && mergedContent.images.length > 0 && (
-          <section className='py-20 px-4' style={{ background: `linear-gradient(to bottom, ${primaryColor}05, white)` }}>
+          <section
+            className='py-20 px-4'
+            style={{ background: `linear-gradient(to bottom, ${primaryColor}05, white)` }}
+          >
             <div className='max-w-6xl mx-auto'>
               <div className='text-center mb-16'>
                 <h2 className='text-4xl md:text-5xl font-bold mb-4' style={{ color: primaryColor }}>
@@ -249,7 +285,11 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
               <div className='grid md:grid-cols-2 lg:grid-cols-3 gap-4'>
                 {mergedContent.images.slice(0, 6).map((img: string, idx: number) => (
                   <div key={idx} className='relative group overflow-hidden rounded-2xl shadow-lg aspect-square'>
-                    <img src={img} alt={`Wedding photo ${idx + 1}`} className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110' />
+                    <img
+                      src={img}
+                      alt={`Wedding photo ${idx + 1}`}
+                      className='w-full h-full object-cover transition-transform duration-500 group-hover:scale-110'
+                    />
                     <div className='absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity'></div>
                   </div>
                 ))}
@@ -273,7 +313,10 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
         </section>
 
         {/* Footer */}
-        <footer className='py-12 px-4 text-center' style={{ background: `linear-gradient(to bottom, white, ${primaryColor}10)` }}>
+        <footer
+          className='py-12 px-4 text-center'
+          style={{ background: `linear-gradient(to bottom, white, ${primaryColor}10)` }}
+        >
           <div className='mb-6'>
             <Heart size={32} fill={primaryColor} color={primaryColor} className='mx-auto mb-4' />
             <p className='text-2xl font-bold mb-2' style={{ color: primaryColor }}>

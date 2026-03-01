@@ -77,10 +77,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const paymentUrl = vnpay.buildPaymentUrl({
       vnp_Amount: amount,
-      vnp_IpAddr:
-        (req.headers['x-forwarded-for'] as string) ||
-        req.socket.remoteAddress ||
-        '127.0.0.1',
+      vnp_IpAddr: (req.headers['x-forwarded-for'] as string) || req.socket.remoteAddress || '127.0.0.1',
       vnp_ReturnUrl: returnUrl,
       vnp_TxnRef: txnRef,
       vnp_OrderInfo: `Thanh toan goi ${planName || planId} - ${orderCode}`,

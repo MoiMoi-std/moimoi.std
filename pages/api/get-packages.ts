@@ -8,7 +8,12 @@ function durationLabel(months: number): string {
   return Number.isInteger(years) ? `${years} năm` : `${months} tháng`
 }
 
-function parseFeatures(raw: unknown): { features: string[]; notIncluded: string[]; description?: string; highlight?: boolean } {
+function parseFeatures(raw: unknown): {
+  features: string[]
+  notIncluded: string[]
+  description?: string
+  highlight?: boolean
+} {
   if (!raw) return { features: [], notIncluded: [] }
 
   // Array of strings → treat all as features
@@ -23,8 +28,8 @@ function parseFeatures(raw: unknown): { features: string[]; notIncluded: string[
     const notIncluded = Array.isArray(obj.notIncluded)
       ? obj.notIncluded.map(String)
       : Array.isArray(obj.not_included)
-      ? (obj.not_included as unknown[]).map(String)
-      : []
+        ? (obj.not_included as unknown[]).map(String)
+        : []
     const description = typeof obj.description === 'string' ? obj.description : undefined
     const highlight = typeof obj.highlight === 'boolean' ? obj.highlight : undefined
     return { features, notIncluded, description, highlight }
@@ -66,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       features,
       notIncluded,
       highlight: highlight ?? false,
-      isActive: pkg.is_active,
+      isActive: pkg.is_active
     }
   })
 

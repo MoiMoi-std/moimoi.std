@@ -114,18 +114,20 @@ export default function UpgradePage() {
 
   // Get current plan and calculate prices (must be before any return statements)
   const currentPlan = wedding?.content?.plan || ''
-  
+
   // Find current plan details
   const currentPlanDetails = useMemo(() => {
     if (!currentPlan || !plans.length) return null
-    return plans.find(p => p.id === currentPlan)
+    return plans.find((p) => p.id === currentPlan)
   }, [currentPlan, plans])
 
   // Get the actual price to pay for current plan (considering discount)
   const getCurrentPlanPrice = useMemo(() => {
     if (!currentPlanDetails) return 0
     const discountActive = isDiscountActive(currentPlanDetails)
-    return discountActive && currentPlanDetails.discountPrice ? currentPlanDetails.discountPrice : currentPlanDetails.price
+    return discountActive && currentPlanDetails.discountPrice
+      ? currentPlanDetails.discountPrice
+      : currentPlanDetails.price
   }, [currentPlanDetails])
 
   const currentPlanPrice = getCurrentPlanPrice
@@ -182,7 +184,7 @@ export default function UpgradePage() {
 
   const removePlan = async (packageId: number) => {
     if (deleting) return
-    
+
     // Xác nhận trước khi xóa
     if (!confirm(`Bạn có chắc muốn xóa gói này?`)) {
       return
@@ -260,11 +262,11 @@ export default function UpgradePage() {
           {(isAdminMode ? plans : visiblePlans).map((plan) => {
             const discountActive = isDiscountActive(plan)
             let displayPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
-            
+
             // Check if this plan is lower than current plan
             const isLowerThanCurrent = currentPlanDetails && displayPrice <= currentPlanPrice
             const isCurrentPlan = currentPlan === plan.id
-            
+
             // Calculate upgrade price (deduct current plan price)
             let upgradePrice = displayPrice
             let showUpgradePrice = false
@@ -272,7 +274,7 @@ export default function UpgradePage() {
               upgradePrice = Math.max(0, displayPrice - currentPlanPrice)
               showUpgradePrice = true
             }
-            
+
             return (
               <div
                 key={plan.id}
@@ -338,12 +340,13 @@ export default function UpgradePage() {
                   ) : (
                     <li className='text-gray-400 text-sm italic'>Chưa có tính năng nào</li>
                   )}
-                  {Array.isArray(plan.notIncluded) && plan.notIncluded.map((feature, idx) => (
-                    <li key={idx} className='flex items-center text-gray-400 text-sm'>
-                      <span className='mr-3 text-gray-300'>•</span>
-                      <span className='line-through'>{feature}</span>
-                    </li>
-                  ))}
+                  {Array.isArray(plan.notIncluded) &&
+                    plan.notIncluded.map((feature, idx) => (
+                      <li key={idx} className='flex items-center text-gray-400 text-sm'>
+                        <span className='mr-3 text-gray-300'>•</span>
+                        <span className='line-through'>{feature}</span>
+                      </li>
+                    ))}
                 </ul>
 
                 <div className='space-y-3'>

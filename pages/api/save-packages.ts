@@ -18,9 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Lấy tất cả packages hiện có trong database
-    const { data: existingPackages, error: fetchError } = await supabase
-      .from('packages')
-      .select('id')
+    const { data: existingPackages, error: fetchError } = await supabase.from('packages').select('id')
 
     if (fetchError) {
       console.error('Error fetching existing packages:', fetchError)
@@ -28,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const existingIds = new Set((existingPackages || []).map((pkg) => String(pkg.id)))
-    const planIds = new Set(plans.map((p) => p.id).filter(id => !isNaN(parseInt(id))))
+    const planIds = new Set(plans.map((p) => p.id).filter((id) => !isNaN(parseInt(id))))
 
     // Xóa các packages không còn trong danh sách (chỉ xóa những gói có ID là số)
     const idsToDelete = Array.from(existingIds).filter((id) => !planIds.has(id))
@@ -36,7 +34,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { error: deleteError } = await supabase
         .from('packages')
         .delete()
-        .in('id', idsToDelete.map(id => parseInt(id)))
+        .in(
+          'id',
+          idsToDelete.map((id) => parseInt(id))
+        )
 
       if (deleteError) {
         console.error('Error deleting packages:', deleteError)
