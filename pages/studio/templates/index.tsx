@@ -95,6 +95,7 @@ export default function TemplatesPage() {
       }
     }
     loadTemplates()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const updateMeta = (templateId: number, patch: Partial<TemplateAdminMeta>) => {

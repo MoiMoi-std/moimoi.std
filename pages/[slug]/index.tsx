@@ -17,19 +17,7 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
   } | null>(null)
   const [showRSVP, setShowRSVP] = useState(false)
 
-  // 404 nếu không tìm thấy
-  if (!wedding) {
-    return (
-      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
-        <div className='text-center'>
-          <h1 className='text-4xl font-bold text-gray-900 mb-4'>404 - Wedding not found</h1>
-          <p className='text-gray-500'>Không tìm thấy thiệp cưới với slug này.</p>
-        </div>
-      </div>
-    )
-  }
-
-  const { content, template } = wedding
+  const { content, template } = wedding || {}
 
   // Merge template default_content với wedding content
   const mergedContent = {
@@ -40,7 +28,7 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
   const primaryColor = mergedContent.primary_color || '#d97706'
   const fontFamily = mergedContent.font_family || 'Cormorant Garamond, serif'
 
-  // Countdown timer
+  // Countdown timer — must be before any early return
   useEffect(() => {
     if (mergedContent.wedding_date) {
       const interval = setInterval(() => {
@@ -61,6 +49,18 @@ export default function WeddingPage({ wedding }: WeddingPageProps) {
       return () => clearInterval(interval)
     }
   }, [mergedContent.wedding_date, mergedContent.wedding_time])
+
+  // 404 nếu không tìm thấy
+  if (!wedding) {
+    return (
+      <div className='min-h-screen flex items-center justify-center bg-gray-50'>
+        <div className='text-center'>
+          <h1 className='text-4xl font-bold text-gray-900 mb-4'>404 - Wedding not found</h1>
+          <p className='text-gray-500'>Không tìm thấy thiệp cưới với slug này.</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>

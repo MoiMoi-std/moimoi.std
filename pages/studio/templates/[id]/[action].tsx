@@ -75,7 +75,8 @@ export default function EditTemplatePage() {
     }
 
     loadData()
-  }, [id, action])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, action, error, router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -190,6 +191,7 @@ export default function EditTemplatePage() {
               />
               {formData.thumbnail_url && (
                 <div className='mt-3'>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={formData.thumbnail_url}
                     alt='Preview'

@@ -172,7 +172,9 @@ export default function AddPackagePage() {
                 placeholder='Vd: 12 tháng hoặc Vĩnh viễn'
                 className='w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-200'
               />
-              <p className='text-xs text-gray-400 mt-1'>Nhập số tháng hoặc "Vĩnh viễn" (sẽ chuyển thành 60 tháng)</p>
+              <p className='text-xs text-gray-400 mt-1'>
+                Nhập số tháng hoặc &quot;Vĩnh viễn&quot; (sẽ chuyển thành 60 tháng)
+              </p>
             </div>
 
             <div>

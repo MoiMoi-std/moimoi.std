@@ -149,6 +149,7 @@ function EditPackagePage({ packageId }: { packageId: number }) {
       setLoading(false)
     }
     loadPackage()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [packageId, router.query])
 
   const handleSubmit = async (e: React.FormEvent) => {

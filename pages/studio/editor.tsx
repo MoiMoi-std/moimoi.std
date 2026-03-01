@@ -30,6 +30,7 @@ const Editor = () => {
     if (wedding?.content?.images) {
       setOriginalImages(wedding.content.images)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding?.id])
 
   const handleInfoChange = (key: string, value: string) => {
