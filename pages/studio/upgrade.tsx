@@ -3,9 +3,9 @@ import StudioLayout from '@/components/studio/StudioLayout'
 import StudioLoading from '@/components/studio/StudioLoading'
 import { useToast } from '@/components/ui/ToastProvider'
 import { dataService } from '@/lib/data-service'
-import { Plan, formatVnd, generatePlanId, getPlans, isDiscountActive, savePlans } from '@/lib/plan-store'
+import { Plan, formatVnd, isDiscountActive } from '@/lib/plan-store'
 import { useWedding } from '@/lib/useWedding'
-import { Check, Clock, CreditCard, Edit, Plus, Save, Sparkles, Trash2 } from 'lucide-react'
+import { Check, Clock, CreditCard, Edit, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -70,7 +70,20 @@ const fetchPackages = async (): Promise<Plan[]> => {
     return []
   } catch (error) {
     console.error('Error fetching packages:', error)
-    return getPlans() // Fallback về localStorage nếu API lỗi
+    return []
+  }
+}
+
+const deletePackageAPI = async (id: number): Promise<boolean> => {
+  try {
+    const response = await fetch(`/api/packages/${id}`, {
+      method: 'DELETE'
+    })
+    const result = await response.json()
+    return result.success
+  } catch (error) {
+    console.error('Error deleting package:', error)
+    return false
   }
 }
 
@@ -81,6 +94,7 @@ export default function UpgradePage() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [plansLoading, setPlansLoading] = useState(true)
   const [isAdminMode, setIsAdminMode] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const { success, error } = useToast()
 
   useEffect(() => {
@@ -98,7 +112,25 @@ export default function UpgradePage() {
 
   const visiblePlans = useMemo(() => plans.filter((plan) => plan.isActive !== false), [plans])
 
-  if (plansLoading) {
+  // Get current plan and calculate prices (must be before any return statements)
+  const currentPlan = wedding?.content?.plan || ''
+  
+  // Find current plan details
+  const currentPlanDetails = useMemo(() => {
+    if (!currentPlan || !plans.length) return null
+    return plans.find(p => p.id === currentPlan)
+  }, [currentPlan, plans])
+
+  // Get the actual price to pay for current plan (considering discount)
+  const getCurrentPlanPrice = useMemo(() => {
+    if (!currentPlanDetails) return 0
+    const discountActive = isDiscountActive(currentPlanDetails)
+    return discountActive && currentPlanDetails.discountPrice ? currentPlanDetails.discountPrice : currentPlanDetails.price
+  }, [currentPlanDetails])
+
+  const currentPlanPrice = getCurrentPlanPrice
+
+  if (loading || plansLoading) {
     return (
       <StudioLayout>
         <StudioLoading message='Đang tải gói dịch vụ...' />
@@ -106,41 +138,83 @@ export default function UpgradePage() {
     )
   }
 
-  const currentPlan = wedding?.content?.plan || ''
+  if (!wedding) {
+    return (
+      <StudioLayout>
+        <StudioEmptyState />
+      </StudioLayout>
+    )
+  }
 
-  const handleUpgrade = async (planId: string) => {
+  const handleUpgrade = async (plan: Plan) => {
     if (paying) return
-
-    // Kiểm tra wedding khi thanh toán
-    if (!wedding) {
-      error('Vui lòng tạo đám cưới trước khi nâng cấp gói.')
-      return
-    }
-
     setPaying(true)
     try {
-      const updated = await dataService.updateWedding(wedding.id, {
-        ...wedding.content,
-        plan: planId,
-        plan_activated_at: new Date().toISOString()
-      })
-      if (updated) {
-        setWedding(updated)
-        success('Thanh toán demo thành công! Gói dịch vụ đã được kích hoạt.')
+      const discountActive = isDiscountActive(plan)
+      let finalPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
+
+      // Deduct current plan price if user already has a plan
+      if (currentPlanDetails && currentPlanPrice > 0) {
+        finalPrice = Math.max(0, finalPrice - currentPlanPrice)
       }
-    } catch (e) {
-      error('Không thể nâng cấp. Vui lòng thử lại.')
-    } finally {
+
+      const res = await fetch('/api/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          planId: plan.id,
+          planName: plan.name,
+          amount: finalPrice,
+          weddingId: wedding.id
+        })
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Lỗi tạo thanh toán')
+
+      // Redirect to VNPay payment page
+      window.location.href = data.paymentUrl
+    } catch (e: any) {
+      error(e.message || 'Không thể tạo thanh toán. Vui lòng thử lại.')
       setPaying(false)
     }
   }
 
-  const updatePlan = (planId: string, patch: Partial<Plan>) => {
-    setPlans((prev) => prev.map((plan) => (plan.id === planId ? { ...plan, ...patch } : plan)))
+  const removePlan = async (packageId: number) => {
+    if (deleting) return
+    
+    // Xác nhận trước khi xóa
+    if (!confirm(`Bạn có chắc muốn xóa gói này?`)) {
+      return
+    }
+
+    setDeleting(true)
+    try {
+      const result = await deletePackageAPI(packageId)
+
+      if (!result) {
+        throw new Error('Không thể xóa gói')
+      }
+
+      success('Đã xóa gói thành công!')
+
+      // Reload packages from database
+      const updatedPlans = await fetchPackages()
+      setPlans(updatedPlans)
+    } catch (err: any) {
+      console.error('Delete package error:', err)
+      error(err.message || 'Không thể xóa gói. Vui lòng thử lại.')
+    } finally {
+      setDeleting(false)
+    }
   }
 
-  const removePlan = (planId: string) => {
-    setPlans((prev) => prev.filter((plan) => plan.id !== planId))
+  const handleEdit = (plan: Plan) => {
+    // Chuyển đến trang edit
+    router.push({
+      pathname: `/studio/upgrade/${plan.id}/edit`,
+      query: { packageData: JSON.stringify(plan) }
+    })
   }
 
   return (
@@ -185,7 +259,20 @@ export default function UpgradePage() {
         <div className='grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8 items-start'>
           {(isAdminMode ? plans : visiblePlans).map((plan) => {
             const discountActive = isDiscountActive(plan)
-            const displayPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
+            let displayPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
+            
+            // Check if this plan is lower than current plan
+            const isLowerThanCurrent = currentPlanDetails && displayPrice <= currentPlanPrice
+            const isCurrentPlan = currentPlan === plan.id
+            
+            // Calculate upgrade price (deduct current plan price)
+            let upgradePrice = displayPrice
+            let showUpgradePrice = false
+            if (currentPlanDetails && !isCurrentPlan && !isLowerThanCurrent && currentPlanPrice > 0) {
+              upgradePrice = Math.max(0, displayPrice - currentPlanPrice)
+              showUpgradePrice = true
+            }
+            
             return (
               <div
                 key={plan.id}
@@ -201,15 +288,33 @@ export default function UpgradePage() {
                 <div className='mb-6'>
                   <h3 className='text-xl font-bold text-gray-900'>{plan.name}</h3>
                   <div className='mt-4 flex items-baseline gap-3 flex-wrap'>
-                    <span className='text-4xl font-extrabold tracking-tight text-pink-600'>
-                      {formatVnd(displayPrice)}
-                    </span>
-                    {discountActive && (
-                      <span className='text-sm font-semibold text-gray-400 line-through opacity-70'>
-                        {formatVnd(plan.price)}
-                      </span>
+                    {showUpgradePrice ? (
+                      <>
+                        <span className='text-4xl font-extrabold tracking-tight text-pink-600'>
+                          {formatVnd(upgradePrice)}
+                        </span>
+                        <span className='text-sm font-semibold text-gray-400 line-through opacity-70'>
+                          {formatVnd(displayPrice)}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className='text-4xl font-extrabold tracking-tight text-pink-600'>
+                          {formatVnd(displayPrice)}
+                        </span>
+                        {discountActive && (
+                          <span className='text-sm font-semibold text-gray-400 line-through opacity-70'>
+                            {formatVnd(plan.price)}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
+                  {showUpgradePrice && (
+                    <div className='mt-2 text-sm font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full inline-flex items-center gap-1'>
+                      <Sparkles size={14} /> Đã giảm {formatVnd(currentPlanPrice)} từ gói hiện tại
+                    </div>
+                  )}
                   {plan.duration && (
                     <div className='mt-2 text-sm font-semibold text-gray-500'>Thời gian: {plan.duration}</div>
                   )}
@@ -221,15 +326,19 @@ export default function UpgradePage() {
                   <p className='mt-4 text-gray-500'>{plan.description}</p>
                 </div>
                 <ul className='space-y-4 mb-8'>
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className='flex items-center text-gray-700 font-medium'>
-                      <div className='mr-3 bg-pink-100 rounded-full p-1 text-pink-600'>
-                        <Check size={14} />
-                      </div>
-                      {feature}
-                    </li>
-                  ))}
-                  {plan.notIncluded.map((feature, idx) => (
+                  {Array.isArray(plan.features) && plan.features.length > 0 ? (
+                    plan.features.map((feature, idx) => (
+                      <li key={idx} className='flex items-center text-gray-700 font-medium'>
+                        <div className='mr-3 bg-pink-100 rounded-full p-1 text-pink-600'>
+                          <Check size={14} />
+                        </div>
+                        {feature}
+                      </li>
+                    ))
+                  ) : (
+                    <li className='text-gray-400 text-sm italic'>Chưa có tính năng nào</li>
+                  )}
+                  {Array.isArray(plan.notIncluded) && plan.notIncluded.map((feature, idx) => (
                     <li key={idx} className='flex items-center text-gray-400 text-sm'>
                       <span className='mr-3 text-gray-300'>•</span>
                       <span className='line-through'>{feature}</span>
@@ -239,80 +348,43 @@ export default function UpgradePage() {
 
                 <div className='space-y-3'>
                   <button
-                    onClick={() => handleUpgrade(plan.id)}
-                    disabled={currentPlan === plan.id || paying}
-                    className='w-full py-4 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-pink-200 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:scale-100'
+                    onClick={() => handleUpgrade(plan)}
+                    disabled={isCurrentPlan || isLowerThanCurrent || paying}
+                    className='w-full py-4 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-pink-200 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed'
                   >
-                    {currentPlan === plan.id ? (
+                    {isCurrentPlan ? (
                       <>
                         <Check size={20} /> Đang sử dụng
                       </>
+                    ) : isLowerThanCurrent ? (
+                      'Bạn đã sở hữu gói cao hơn'
                     ) : paying ? (
-                      'Đang xử lý...'
+                      'Đang chuyển đến VNPay...'
                     ) : (
                       <>
-                        <CreditCard size={20} /> Thanh Toán Ngay (Demo)
+                        <CreditCard size={20} /> {showUpgradePrice ? 'Nâng cấp' : 'Thanh Toán qua VNPay'}
                       </>
                     )}
                   </button>
-                  {currentPlan !== plan.id && (
-                    <div className='flex items-center justify-center gap-2 text-sm text-gray-400'>
-                      <Sparkles size={14} /> Demo kích hoạt gói để test nhanh.
-                    </div>
-                  )}
                   <p className='text-center text-sm text-gray-400'>Hoàn tiền 100% nếu không hài lòng trong 7 ngày.</p>
                 </div>
 
                 {isAdminMode && (
-                  <div className='mt-8 border-t border-gray-100 pt-6'>
-                    <div className='flex flex-wrap gap-3 items-center'>
+                  <div className='mt-8 border-t border-gray-100 pt-6 space-y-4 text-sm'>
+                    <div className='flex flex-wrap gap-3'>
                       <button
-                        onClick={() =>
-                          router.push({
-                            pathname: `/studio/upgrade/${plan.id}/edit`,
-                            query: { packageData: JSON.stringify(plan) }
-                          })
-                        }
-                        className='flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 font-semibold hover:bg-gray-50'
+                        onClick={() => handleEdit(plan)}
+                        className='px-3 py-2 rounded-lg border border-gray-200 text-gray-600 font-semibold hover:bg-gray-50 flex items-center gap-2'
                       >
-                        <Edit size={16} />
-                        Chỉnh sửa
+                        <Edit size={16} /> Sửa
                       </button>
-                      <div className='flex items-center gap-2'>
-                        <span className='text-sm text-gray-600'>Hiển thị:</span>
-                        <button
-                          onClick={async () => {
-                            const newStatus = !plan.isActive
-                            try {
-                              const response = await fetch(`/api/packages/${plan.id}`, {
-                                method: 'PATCH',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ is_active: newStatus })
-                              })
-                              const result = await response.json()
-                              if (result.success) {
-                                // Reload packages
-                                const updatedPackages = await fetchPackages()
-                                setPlans(updatedPackages)
-                                success(newStatus ? 'Đã kích hoạt gói' : 'Đã ẩn gói')
-                              } else {
-                                error('Không thể thay đổi trạng thái')
-                              }
-                            } catch (e) {
-                              error('Có lỗi xảy ra')
-                            }
-                          }}
-                          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                            plan.isActive ? 'bg-green-600' : 'bg-gray-300'
-                          }`}
-                        >
-                          <span
-                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                              plan.isActive ? 'translate-x-6' : 'translate-x-1'
-                            }`}
-                          />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => removePlan(parseInt(plan.id))}
+                        disabled={deleting}
+                        className='px-3 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2'
+                      >
+                        <Trash2 size={16} /> {deleting ? 'Đang xóa...' : 'Xóa'}
+                      </button>
                     </div>
                   </div>
                 )}

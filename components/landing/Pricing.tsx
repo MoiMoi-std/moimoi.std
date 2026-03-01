@@ -31,23 +31,42 @@ export default function Pricing() {
         // Map API data to Plan format
         const mappedPlans: Plan[] = packages
           .filter((pkg) => pkg.is_active)
-          .map((pkg) => ({
-            id: pkg.id.toString(),
-            name: pkg.name,
-            price: pkg.price,
-            discountPrice: pkg.original_price > pkg.price ? pkg.price : undefined,
-            duration: `${pkg.duration_months} tháng`,
-            description: pkg.description || 'Gói dịch vụ thiệp cưới trực tuyến',
-            features: pkg.features || [
-              'Thiết kế thiệp cưới online',
-              'Quản lý danh sách khách mời',
-              'Thu thập xác nhận tham dự',
-              'Hỗ trợ kỹ thuật 24/7'
-            ],
-            notIncluded: [],
-            isActive: pkg.is_active,
-            highlight: false // Có thể thêm logic để highlight package nào đó
-          }))
+          .map((pkg) => {
+            // Parse features if it's a JSON string
+            let features: string[] = []
+            if (Array.isArray(pkg.features)) {
+              features = pkg.features
+            } else if (typeof pkg.features === 'string') {
+              try {
+                features = JSON.parse(pkg.features)
+              } catch {
+                features = []
+              }
+            }
+            
+            // Fallback to default features if empty
+            if (features.length === 0) {
+              features = [
+                'Thiết kế thiệp cưới online',
+                'Quản lý danh sách khách mời',
+                'Thu thập xác nhận tham dự',
+                'Hỗ trợ kỹ thuật 24/7'
+              ]
+            }
+
+            return {
+              id: pkg.id.toString(),
+              name: pkg.name,
+              price: pkg.price,
+              discountPrice: pkg.original_price > pkg.price ? pkg.price : undefined,
+              duration: `${pkg.duration_months} tháng`,
+              description: pkg.description || 'Gói dịch vụ thiệp cưới trực tuyến',
+              features: features,
+              notIncluded: [],
+              isActive: pkg.is_active,
+              highlight: false // Có thể thêm logic để highlight package nào đó
+            }
+          })
 
         setPlans(mappedPlans)
       } catch (error) {
@@ -130,13 +149,13 @@ export default function Pricing() {
                 </button>
 
                 <div className='space-y-4'>
-                  {plan.features.map((feature, i) => (
+                  {Array.isArray(plan.features) && plan.features.map((feature, i) => (
                     <div key={i} className='flex items-start gap-3 text-sm text-gray-700'>
                       <Check className='w-5 h-5 text-green-500 shrink-0' />
                       <span>{feature}</span>
                     </div>
                   ))}
-                  {plan.notIncluded.map((feature, i) => (
+                  {Array.isArray(plan.notIncluded) && plan.notIncluded.map((feature, i) => (
                     <div key={i} className='flex items-start gap-3 text-sm text-gray-400'>
                       <X className='w-5 h-5 text-gray-300 shrink-0' />
                       <span className='line-through'>{feature}</span>

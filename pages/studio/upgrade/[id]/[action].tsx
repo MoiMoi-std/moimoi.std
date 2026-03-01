@@ -12,7 +12,7 @@ interface ApiPackage {
   original_price: number
   duration_months: number
   max_rsvps: number
-  features: string[]
+  features: any // Can be string[] or object with structure
   promotion_end_date: string
   created_at: string
   templates: any[]
@@ -84,13 +84,34 @@ function EditPackagePage({ packageId }: { packageId: number }) {
       if (packageData && typeof packageData === 'string') {
         try {
           const plan = JSON.parse(packageData)
+          // Parse duration from "12 tháng" or "Vĩnh viễn" format
+          let durationMonths = 12
+          if (plan.duration) {
+            if (plan.duration.toLowerCase().includes('vĩnh viễn')) {
+              durationMonths = 60
+            } else {
+              const match = plan.duration.match(/\d+/)
+              if (match) {
+                durationMonths = parseInt(match[0])
+              }
+            }
+          }
+          
+          // Extract features from new or old format
+          let featuresText = ''
+          if (Array.isArray(plan.features)) {
+            featuresText = plan.features.join('\n')
+          } else if (plan.features && Array.isArray(plan.features.features)) {
+            featuresText = plan.features.features.join('\n')
+          }
+          
           setFormData({
             name: plan.name,
             originalPrice: plan.price,
             price: plan.discountPrice || plan.price,
-            durationMonths: parseInt(plan.duration) || 12,
+            durationMonths: durationMonths,
             maxRsvps: plan.maxRsvps || 100,
-            featuresText: plan.features.join('\n')
+            featuresText: featuresText
           })
           setLoading(false)
           return
@@ -102,13 +123,24 @@ function EditPackagePage({ packageId }: { packageId: number }) {
       // Fallback: Gọi API nếu không có data (user refresh/bookmark)
       const pkg = await getPackageById(packageId)
       if (pkg) {
+        // Extract features from new or old format
+        let featuresText = ''
+        if (Array.isArray(pkg.features)) {
+          featuresText = pkg.features.join('\n')
+        } else if (pkg.features && typeof pkg.features === 'object') {
+          const featureData = pkg.features as any
+          if (Array.isArray(featureData.features)) {
+            featuresText = featureData.features.join('\n')
+          }
+        }
+        
         setFormData({
           name: pkg.name,
           originalPrice: pkg.original_price,
           price: pkg.price,
           durationMonths: pkg.duration_months,
           maxRsvps: pkg.max_rsvps,
-          featuresText: pkg.features.join('\n')
+          featuresText: featuresText
         })
       } else {
         error('Không tìm thấy gói này.')
@@ -126,6 +158,26 @@ function EditPackagePage({ packageId }: { packageId: number }) {
       error('Vui lòng nhập tên gói.')
       return
     }
+    if (formData.originalPrice <= 0) {
+      error('Vui lòng nhập giá gốc hợp lệ.')
+      return
+    }
+    if (formData.price < 0) {
+      error('Giá khuyến mãi không thể âm.')
+      return
+    }
+    if (formData.price > 0 && formData.price > formData.originalPrice) {
+      error('Giá khuyến mãi phải nhỏ hơn giá gốc.')
+      return
+    }
+    if (formData.maxRsvps <= 0) {
+      error('Số lượng khách mời phải lớn hơn 0.')
+      return
+    }
+    if (formData.durationMonths <= 0) {
+      error('Thời gian phải lớn hơn 0.')
+      return
+    }
 
     setSaving(true)
     try {
@@ -134,13 +186,27 @@ function EditPackagePage({ packageId }: { packageId: number }) {
         .map((item) => item.trim())
         .filter(Boolean)
 
+      if (features.length === 0) {
+        error('Vui lòng nhập ít nhất 1 tính năng.')
+        setSaving(false)
+        return
+      }
+
+      // Lưu features theo format mới với structure đầy đủ
+      const featuresData = {
+        features: features,
+        highlight: false,
+        description: '',
+        notIncluded: []
+      }
+
       const packageData = {
         name: formData.name.trim(),
         price: formData.price || formData.originalPrice,
         original_price: formData.originalPrice,
         duration_months: formData.durationMonths,
         max_rsvps: formData.maxRsvps,
-        features
+        features: featuresData
       }
 
       const result = await updatePackageAPI(packageId, packageData)
@@ -225,6 +291,7 @@ function EditPackagePage({ packageId }: { packageId: number }) {
                 onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
                 className='w-full rounded-xl border border-gray-200 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-pink-200'
               />
+              <p className='text-xs text-gray-400 mt-1'>Để 0 nếu không có khuyến mãi (sẽ dùng giá gốc)</p>
             </div>
 
             <div className='md:col-span-2'>
