@@ -7,6 +7,8 @@ import { useToast } from '../../components/ui/ToastProvider'
 import { dataService } from '../../lib/data-service'
 import { useWedding } from '../../lib/useWedding'
 
+const baseUrl = process.env.NEXT_SITE_URL || 'https://www.moimoi.io.vn/'
+
 const Dashboard = () => {
   const { wedding, setWedding, loading } = useWedding()
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -271,26 +273,26 @@ const Dashboard = () => {
           {/* Publish Status Card */}
           <div className='bg-gradient-to-b from-gray-900 to-gray-800 text-white p-8 rounded-3xl shadow-xl relative overflow-hidden'>
             <div className='relative z-10'>
-              <div className='flex items-center justify-between mb-6'>
-                <div className='font-bold text-lg'>Trạng Thái Website</div>
+              <div className='flex flex-col items-center py-2 justify-between mb-6'>
+                <div className='font-bold text-lg w-full text-center mb-2'>Trạng Thái Website</div>
                 <div
-                  className={`px-3 py-1 rounded-full text-xs font-bold uppercase ${wedding.deployment_status === 'published' ? 'bg-green-500 text-white' : 'bg-yellow-500 text-black'}`}
+                  className={`px-3 w-full rounded-lg text-xs py-2 text-center font-bold uppercase ${wedding.deployment_status === 'published' ? 'bg-green-500 text-white' : 'bg-yellow-500 text-black'}`}
                 >
                   {wedding.deployment_status === 'published' ? 'Đã Xuất Bản' : 'Nháp'}
                 </div>
               </div>
 
-              <p className='text-gray-400 text-sm mb-8 leading-relaxed'>
+              <p className='text-gray-400 text-sm leading-relaxed'>
                 {wedding.deployment_status === 'published'
                   ? 'Website của bạn đang hoạt động và sẵn sàng đón khách!'
                   : 'Website của bạn đang ở chế độ nháp. Hãy xuất bản để chia sẻ với mọi người.'}
               </p>
 
-              <Link href='/studio/settings'>
+              {/* <Link href='/studio/settings'>
                 <button className='w-full py-4 bg-white text-gray-900 rounded-xl font-bold hover:bg-gray-100 transition-colors'>
                   {wedding.deployment_status === 'published' ? 'Cấu Hình' : 'Xuất Bản Ngay'}
                 </button>
-              </Link>
+              </Link> */}
             </div>
 
             {/* Decorative Circles */}
@@ -305,10 +307,10 @@ const Dashboard = () => {
             </h3>
             <p className='text-sm text-gray-600 mb-4'>Gửi link website cho bạn bè và người thân.</p>
             <div className='bg-white p-3 rounded-xl border border-pink-200 flex items-center justify-between gap-2 shadow-sm'>
-              <code className='text-xs text-gray-500 truncate flex-1'>moimoi.vn/{wedding.slug}</code>
+              <code className='text-xs text-gray-500 truncate flex-1'>{baseUrl}/{wedding.slug}</code>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(`https://moimoi.vn/${wedding.slug}`)
+                  navigator.clipboard.writeText(`${baseUrl}/${wedding.slug}`)
                   toast('Đã sao chép liên kết!', 'success')
                 }}
                 className='text-xs font-bold text-pink-600 hover:text-pink-700 whitespace-nowrap'

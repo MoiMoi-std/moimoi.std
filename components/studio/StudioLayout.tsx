@@ -55,11 +55,11 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
     { label: 'Kho Giao Diện', href: '/studio/templates', icon: LayoutTemplate },
     { label: 'Khách Mời', href: '/studio/guests', icon: Users },
     { label: 'Nâng cấp gói', href: '/studio/upgrade', icon: CreditCard },
-    { label: 'Cài Đặt', href: '/studio/settings', icon: Settings },
+    // { label: 'Cài Đặt', href: '/studio/settings', icon: Settings },
     // Dev items
-    { label: 'Quản trị (Admin)', href: '/admin', icon: Shield },
-    { label: 'Kế toán (Finance)', href: '/finance', icon: DollarSign },
-    { label: 'CSKH (Support)', href: '/care', icon: Headset }
+    // { label: 'Quản trị (Admin)', href: '/admin', icon: Shield },
+    // { label: 'Kế toán (Finance)', href: '/finance', icon: DollarSign },
+    // { label: 'CSKH (Support)', href: '/care', icon: Headset }
   ]
 
   return (

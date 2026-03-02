@@ -225,7 +225,7 @@ const Editor = () => {
               }`}
             >
               <div className='flex items-center justify-center gap-2'>
-                <Info size={18} /> Thông Tin & Địa Điểm
+                <Info size={18} /> Thông Tin
               </div>
             </button>
             <button
@@ -249,7 +249,7 @@ const Editor = () => {
               }`}
             >
               <div className='flex items-center justify-center gap-2'>
-                <CreditCard size={18} /> Ngân Hàng & Quà
+                <CreditCard size={18} /> Tiền mừng
               </div>
             </button>
             {isAdminMode && (

@@ -34,12 +34,12 @@ export default function Header() {
         {/* Right: CTA Buttons (Desktop) */}
         <div className='hidden md:flex flex-1 items-center justify-end space-x-4'>
           {/* Dev Links (Temporary) */}
-          <Link href='/admin' className='text-xs font-bold text-gray-400 hover:text-gray-900'>
+          {/* <Link href='/admin' className='text-xs font-bold text-gray-400 hover:text-gray-900'>
             Admin
           </Link>
           <Link href='/finance' className='text-xs font-bold text-gray-400 hover:text-gray-900'>
             Finance
-          </Link>
+          </Link> */}
 
           {session ? (
             <Link href='/studio'>
