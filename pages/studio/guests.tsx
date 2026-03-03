@@ -306,7 +306,9 @@ const Guests = () => {
         <div>
           <h2 className='text-3xl font-serif font-bold text-gray-900'>Quản Lý Khách Mời</h2>
           <p className='text-gray-500 mt-1'>Theo dõi danh sách khách mời tham gia, quản lý được tiền mừng cưới.</p>
-          <p className='text-gray-500 mt-1'>Số khách hiện tại: <span className='text-red-500 text-xl font-bold'>{rsvps.length}</span></p>
+          <p className='text-gray-500 mt-1'>
+            Số khách hiện tại: <span className='text-red-500 text-xl font-bold'>{rsvps.length}</span>
+          </p>
         </div>
         <div className='flex flex-wrap items-center gap-3'>
           <button

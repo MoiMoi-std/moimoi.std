@@ -307,7 +307,9 @@ const Dashboard = () => {
             </h3>
             <p className='text-sm text-gray-600 mb-4'>Gửi link website cho bạn bè và người thân.</p>
             <div className='bg-white p-3 rounded-xl border border-pink-200 flex items-center justify-between gap-2 shadow-sm'>
-              <code className='text-xs text-gray-500 truncate flex-1'>{baseUrl}/{wedding.slug}</code>
+              <code className='text-xs text-gray-500 truncate flex-1'>
+                {baseUrl}/{wedding.slug}
+              </code>
               <button
                 onClick={() => {
                   navigator.clipboard.writeText(`${baseUrl}/${wedding.slug}`)
