@@ -1,4 +1,16 @@
-import { AlertTriangle, ArrowRight, Calendar, Clock, Edit, Gift, Heart, MapPin, Share2, Sparkles, Users } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowRight,
+  Calendar,
+  Clock,
+  Edit,
+  Gift,
+  Heart,
+  MapPin,
+  Share2,
+  Sparkles,
+  Users
+} from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import StudioLayout from '../../components/studio/StudioLayout'

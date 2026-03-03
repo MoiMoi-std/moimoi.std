@@ -116,7 +116,7 @@ export default function UpgradePage() {
   const planExpiresAt = wedding?.content?.expires_at
   const planExpired = isPlanExpired(planExpiresAt)
   // If plan is expired, treat as no active plan
-  const currentPlan = planExpired ? '' : (wedding?.content?.plan || '')
+  const currentPlan = planExpired ? '' : wedding?.content?.plan || ''
 
   // Find current plan details
   const currentPlanDetails = useMemo(() => {
@@ -269,8 +269,16 @@ export default function UpgradePage() {
               <p className='font-bold text-sm'>Gói dịch vụ của bạn đã hết hạn</p>
               <p className='text-sm mt-0.5'>
                 Gói đã hết hạn vào{' '}
-                <span className='font-semibold'>{new Date(planExpiresAt!).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>.
-                Vui lòng chọn một gói bên dưới để tiếp tục sử dụng dịch vụ.
+                <span className='font-semibold'>
+                  {new Date(planExpiresAt!).toLocaleDateString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+                . Vui lòng chọn một gói bên dưới để tiếp tục sử dụng dịch vụ.
               </p>
             </div>
           </div>
