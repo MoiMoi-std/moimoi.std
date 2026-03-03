@@ -7,7 +7,7 @@ import { useToast } from '../../components/ui/ToastProvider'
 import { dataService } from '../../lib/data-service'
 import { useWedding } from '../../lib/useWedding'
 
-const baseUrl = process.env.NEXT_SITE_URL || 'https://www.moimoi.io.vn/'
+const getBaseUrl = () => (typeof window !== 'undefined' ? window.location.origin : 'https://www.moimoi.io.vn')
 
 const Dashboard = () => {
   const { wedding, setWedding, loading } = useWedding()
@@ -308,11 +308,11 @@ const Dashboard = () => {
             <p className='text-sm text-gray-600 mb-4'>Gửi link website cho bạn bè và người thân.</p>
             <div className='bg-white p-3 rounded-xl border border-pink-200 flex items-center justify-between gap-2 shadow-sm'>
               <code className='text-xs text-gray-500 truncate flex-1'>
-                {baseUrl}/{wedding.slug}
+                {getBaseUrl()}/{wedding.slug}
               </code>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(`${baseUrl}/${wedding.slug}`)
+                  navigator.clipboard.writeText(`${getBaseUrl()}/${wedding.slug}`)
                   toast('Đã sao chép liên kết!', 'success')
                 }}
                 className='text-xs font-bold text-pink-600 hover:text-pink-700 whitespace-nowrap'
