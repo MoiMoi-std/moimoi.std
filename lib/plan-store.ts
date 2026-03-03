@@ -130,6 +130,15 @@ export const isDiscountActive = (plan: Plan) => {
   return new Date(plan.discountEndsAt).getTime() > Date.now()
 }
 
+/**
+ * Kiểm tra xem gói dịch vụ đã hết hạn chưa dựa trên expires_at trong content của wedding.
+ * Trả về true nếu gói đã hết hạn, false nếu còn hạn hoặc không có hạn.
+ */
+export const isPlanExpired = (expiresAt: string | undefined | null): boolean => {
+  if (!expiresAt) return false
+  return new Date(expiresAt).getTime() < Date.now()
+}
+
 export const generatePlanId = (name: string) => {
   return name
     .toLowerCase()

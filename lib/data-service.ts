@@ -46,9 +46,25 @@ export const dataService = {
       return null
     }
 
+    const content: WeddingContent = (data.content as unknown as WeddingContent) || {}
+
+    // Lấy expires_at từ bảng orders (source of truth) để tránh lệch dữ liệu
+    const { data: latestOrder } = await supabase
+      .from('orders')
+      .select('expires_at, package_id')
+      .eq('wedding_id', data.id)
+      .eq('status', 'paid')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (latestOrder?.expires_at) {
+      content.expires_at = latestOrder.expires_at
+    }
+
     return {
       ...data,
-      content: (data.content as unknown as WeddingContent) || {}
+      content
     } as Wedding
   },
 

@@ -99,6 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                   ...content,
                   plan: planId,
                   plan_activated_at: new Date().toISOString(),
+                  expires_at: order.expires_at,
                   vnpay_txn_ref: orderId,
                   vnpay_transaction_no: transactionNo
                 }
