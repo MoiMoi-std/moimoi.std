@@ -74,7 +74,6 @@ export const dataService = {
     } = await supabase.auth.getUser()
     if (!user) return null
 
-
     // Call API to bypass RLS
     const response = await fetch('/api/create-wedding', {
       method: 'POST',
@@ -314,8 +313,8 @@ const createMockGuests = (count: number, weddingId: string): RSVP[] => {
       guest_name: fullName,
       phone: hasPhone
         ? `09${Math.floor(Math.random() * 100000000)
-          .toString()
-          .padStart(8, '0')}`
+            .toString()
+            .padStart(8, '0')}`
         : null,
       email: null,
       party_size: Math.floor(Math.random() * 3) + 1, // 1-4 people

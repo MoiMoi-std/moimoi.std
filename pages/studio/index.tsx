@@ -17,8 +17,19 @@ const Dashboard = () => {
     minutes: number
     seconds: number
   } | null>(null)
+  const [rsvpStats, setRsvpStats] = useState({ totalGuests: 0, withWishes: 0 })
   const [creating, setCreating] = useState(false)
   const { toast } = useToast()
+
+  // Fetch live RSVP stats
+  useEffect(() => {
+    if (!wedding?.id) return
+    dataService.getRSVPs(wedding.id).then((rsvps) => {
+      const totalGuests = rsvps.reduce((sum, r) => sum + (r.party_size ?? 1), 0)
+      const withWishes = rsvps.filter((r) => r.wishes && r.wishes.trim()).length
+      setRsvpStats({ totalGuests, withWishes })
+    })
+  }, [wedding?.id])
 
   useEffect(() => {
     if (wedding?.content?.wedding_date) {
@@ -88,8 +99,20 @@ const Dashboard = () => {
       color: 'text-blue-600',
       bg: 'bg-blue-100'
     },
-    { label: 'Khách Đã Mời', value: '0', icon: Users, color: 'text-purple-600', bg: 'bg-purple-100' },
-    { label: 'Lời Chúc', value: '0', icon: Heart, color: 'text-red-600', bg: 'bg-red-100' }
+    {
+      label: 'Khách Đã Mời',
+      value: rsvpStats.totalGuests,
+      icon: Users,
+      color: 'text-purple-600',
+      bg: 'bg-purple-100'
+    },
+    {
+      label: 'Lời Chúc',
+      value: rsvpStats.withWishes,
+      icon: Heart,
+      color: 'text-red-600',
+      bg: 'bg-red-100'
+    }
   ]
 
   return (
