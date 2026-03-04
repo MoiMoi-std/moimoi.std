@@ -1,16 +1,30 @@
-import { ArrowRight, Calendar, Clock, Edit, Gift, Heart, MapPin, Share2, Sparkles, Users } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowRight,
+  Calendar,
+  Clock,
+  Edit,
+  Gift,
+  Heart,
+  MapPin,
+  Share2,
+  Sparkles,
+  Users
+} from 'lucide-react'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import StudioLayout from '../../components/studio/StudioLayout'
 import StudioLoading from '../../components/studio/StudioLoading'
 import { useToast } from '../../components/ui/ToastProvider'
 import { dataService } from '../../lib/data-service'
+import { isPlanExpired } from '../../lib/plan-store'
 import { useWedding } from '../../lib/useWedding'
 
 const getBaseUrl = () => (typeof window !== 'undefined' ? window.location.origin : 'https://www.moimoi.io.vn')
 
 const Dashboard = () => {
   const { wedding, setWedding, loading } = useWedding()
+  const planExpired = isPlanExpired(wedding?.content?.expires_at)
   const [timeRemaining, setTimeRemaining] = useState<{
     days: number
     hours: number
@@ -154,6 +168,34 @@ const Dashboard = () => {
         {/* Background Decor */}
         <div className='absolute right-0 top-0 w-64 h-64 bg-gradient-to-br from-pink-100/50 to-purple-100/50 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none'></div>
       </div>
+
+      {/* Plan expired warning */}
+      {planExpired && wedding?.content?.plan && (
+        <div className='mb-8 flex items-start gap-3 p-5 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 shadow-sm'>
+          <AlertTriangle size={22} className='mt-0.5 shrink-0 text-amber-500' />
+          <div className='flex-1'>
+            <p className='font-bold'>Gói dịch vụ của bạn đã hết hạn</p>
+            <p className='text-sm mt-1 text-amber-700'>
+              Gói đã hết hạn vào{' '}
+              <span className='font-semibold'>
+                {new Date(wedding.content.expires_at).toLocaleDateString('vi-VN', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+              . Một số tính năng có thể bị hạn chế. Vui lòng gia hạn để tiếp tục sử dụng đầy đủ.
+            </p>
+          </div>
+          <Link href='/studio/upgrade'>
+            <button className='whitespace-nowrap px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm transition-colors shadow'>
+              Gia Hạn Ngay
+            </button>
+          </Link>
+        </div>
+      )}
 
       {/* Countdown Grid */}
       {!wedding.content.wedding_date ? (

@@ -3,9 +3,9 @@ import StudioLayout from '@/components/studio/StudioLayout'
 import StudioLoading from '@/components/studio/StudioLoading'
 import { useToast } from '@/components/ui/ToastProvider'
 import { dataService } from '@/lib/data-service'
-import { Plan, formatVnd, isDiscountActive } from '@/lib/plan-store'
+import { Plan, formatVnd, isDiscountActive, isPlanExpired } from '@/lib/plan-store'
 import { useWedding } from '@/lib/useWedding'
-import { Check, Clock, CreditCard, Edit, Plus, Sparkles, Trash2 } from 'lucide-react'
+import { AlertTriangle, Check, Clock, CreditCard, Edit, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -113,7 +113,10 @@ export default function UpgradePage() {
   const visiblePlans = useMemo(() => plans.filter((plan) => plan.isActive !== false), [plans])
 
   // Get current plan and calculate prices (must be before any return statements)
-  const currentPlan = wedding?.content?.plan || ''
+  const planExpiresAt = wedding?.content?.expires_at
+  const planExpired = isPlanExpired(planExpiresAt)
+  // If plan is expired, treat as no active plan
+  const currentPlan = planExpired ? '' : wedding?.content?.plan || ''
 
   // Find current plan details
   const currentPlanDetails = useMemo(() => {
@@ -258,11 +261,36 @@ export default function UpgradePage() {
           </div>
         </div>
 
-        <div className='grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8 items-start'>
+        {/* Expired plan warning banner */}
+        {planExpired && wedding?.content?.plan && (
+          <div className='mb-8 flex items-start gap-3 p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800'>
+            <AlertTriangle size={20} className='mt-0.5 shrink-0 text-amber-500' />
+            <div>
+              <p className='font-bold text-sm'>Gói dịch vụ của bạn đã hết hạn</p>
+              <p className='text-sm mt-0.5'>
+                Gói đã hết hạn vào{' '}
+                <span className='font-semibold'>
+                  {new Date(planExpiresAt!).toLocaleDateString('vi-VN', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </span>
+                . Vui lòng chọn một gói bên dưới để tiếp tục sử dụng dịch vụ.
+              </p>
+            </div>
+          </div>
+        )}
+
+        <div className='grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8'>
           {(isAdminMode ? plans : visiblePlans).map((plan) => {
             const discountActive = isDiscountActive(plan)
             let displayPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
 
+            // Check if this was the user's expired plan
+            const isExpiredPlan = planExpired && wedding?.content?.plan === plan.id
             // Check if this plan is lower than current plan
             const isLowerThanCurrent = currentPlanDetails && displayPrice <= currentPlanPrice
             const isCurrentPlan = currentPlan === plan.id
@@ -278,13 +306,18 @@ export default function UpgradePage() {
             return (
               <div
                 key={plan.id}
-                className={`bg-white p-8 rounded-3xl border shadow-sm relative ${
+                className={`bg-white p-8 rounded-3xl border shadow-sm relative flex flex-col ${
                   plan.highlight ? 'border-pink-500 shadow-xl' : 'border-gray-100'
-                } ${plan.isActive === false ? 'opacity-60' : ''}`}
+                } ${plan.isActive === false ? 'opacity-60' : ''} ${isExpiredPlan ? 'border-amber-300' : ''}`}
               >
                 {plan.highlight && (
                   <div className='absolute top-0 right-0 bg-gradient-to-l from-pink-500 to-rose-500 text-white text-sm font-bold px-4 py-1 rounded-bl-xl uppercase tracking-wider'>
                     Phổ Biến Nhất
+                  </div>
+                )}
+                {isExpiredPlan && (
+                  <div className='absolute top-0 left-0 bg-gradient-to-r from-amber-500 to-orange-400 text-white text-sm font-bold px-4 py-1 rounded-br-xl uppercase tracking-wider flex items-center gap-1'>
+                    <AlertTriangle size={13} /> Đã Hết Hạn
                   </div>
                 )}
                 <div className='mb-6'>
@@ -327,7 +360,7 @@ export default function UpgradePage() {
                   )}
                   <p className='mt-4 text-gray-500'>{plan.description}</p>
                 </div>
-                <ul className='space-y-4 mb-8'>
+                <ul className='space-y-4 mb-8 flex-1'>
                   {Array.isArray(plan.features) && plan.features.length > 0 ? (
                     plan.features.map((feature, idx) => (
                       <li key={idx} className='flex items-center text-gray-700 font-medium'>
