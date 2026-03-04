@@ -4,6 +4,12 @@ import { supabase } from './initSupabase'
 export interface Wedding extends Omit<Database['public']['Tables']['weddings']['Row'], 'content'> {
   content: WeddingContent
   template?: Template
+  package?: {
+    id: number
+    name: string
+    price: number
+    is_active: boolean
+  } | null
 }
 
 export type RSVP = Database['public']['Tables']['rsvps']['Row']
@@ -32,7 +38,7 @@ export const dataService = {
 
     const { data, error } = await supabase
       .from('weddings')
-      .select('*, template:templates(*)')
+      .select('*, template:templates(*), package:packages(id, name, price, is_active)')
       .eq('host_id', user.id)
       .maybeSingle()
 
@@ -41,7 +47,6 @@ export const dataService = {
       return null
     }
 
-    // Kiểm tra data trước khi truy cập properties
     if (!data) {
       return null
     }

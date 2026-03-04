@@ -42,9 +42,14 @@ export default function TemplatesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'hidden'>('all')
   const [planFilter, setPlanFilter] = useState('all')
+  const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'mine'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = isAdminMode ? 6 : 9
   const { toast, success, error } = useToast()
+
+  // Derived from wedding join — user's currently active package
+  const userPackageId = (wedding as any)?.package?.id as number | null | undefined
+  const userPackageName = (wedding as any)?.package?.name as string | undefined
 
   useEffect(() => {
     if (router.query.admin === '1' || router.query.admin === 'true') {
@@ -161,16 +166,25 @@ export default function TemplatesPage() {
     }
 
     return data.sort((a, b) => a.meta.sort_order - b.meta.sort_order)
-  }, [templatesWithMeta, isAdminMode, planFilter, searchTerm, selectedStyle, statusFilter])
+  }, [templatesWithMeta, isAdminMode, planFilter, searchTerm, selectedStyle, statusFilter, ownershipFilter])
 
   const pagedTemplates = useMemo(() => {
+    let owned = filteredTemplates
+    if (!isAdminMode && ownershipFilter === 'mine') {
+      owned = filteredTemplates.filter((t) => {
+        const pkgs: any[] = (t as any).packages || []
+        if (pkgs.length === 0) return true // free templates belong to everyone
+        if (!userPackageId) return false
+        return pkgs.some((p: any) => p.id === userPackageId)
+      })
+    }
     const start = (currentPage - 1) * itemsPerPage
-    return filteredTemplates.slice(start, start + itemsPerPage)
-  }, [currentPage, filteredTemplates, itemsPerPage])
+    return owned.slice(start, start + itemsPerPage)
+  }, [currentPage, filteredTemplates, itemsPerPage, ownershipFilter, userPackageId, isAdminMode])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, selectedStyle, statusFilter, planFilter, isAdminMode])
+  }, [searchTerm, selectedStyle, statusFilter, planFilter, isAdminMode, ownershipFilter])
 
   if (loadingTemplates) {
     return (
@@ -181,10 +195,6 @@ export default function TemplatesPage() {
   }
 
   const applyTemplate = async (templateId: number) => {
-    const meta = templateMeta[templateId] || DEFAULT_META
-    if (!isAdminMode && meta.allowed_plans.length > 0) {
-      toast(`Mẫu này thuộc gói: ${meta.allowed_plans.join(', ')}. Hãy nâng cấp để mở khóa đầy đủ.`, 'info')
-    }
     try {
       if (wedding) {
         await dataService.updateWeddingTemplate(wedding.id, templateId)
@@ -194,6 +204,23 @@ export default function TemplatesPage() {
     } catch (e) {
       error('Không thể áp dụng mẫu. Vui lòng thử lại.')
     }
+  }
+
+  // Returns true if user can apply this template
+  // (free template = no packages attached, OR user's package is in the allowed list)
+  const canUseTemplate = (templateId: number): boolean => {
+    const tpl = templates.find((t) => t.id === templateId) as any
+    if (!tpl) return false
+    const pkgs: any[] = tpl.packages || []
+    if (pkgs.length === 0) return true // free template — accessible by all
+    if (!userPackageId) return false
+    return pkgs.some((p: any) => p.id === userPackageId)
+  }
+
+  const previewTemplate = (templateId: number) => {
+    const tpl = templates.find((t) => t.id === templateId)
+    const branch = (tpl as any)?.repo_branch || 'default'
+    window.open(`/studio/templates/preview/${encodeURIComponent(branch)}`, '_blank', 'noopener,noreferrer')
   }
 
   return (
@@ -255,6 +282,32 @@ export default function TemplatesPage() {
             <option value='minimal'>Minimal</option>
           </select>
         </div>
+        {/* Ownership filter — only for regular users */}
+        {!isAdminMode && (
+          <div className='flex gap-1 bg-gray-100 rounded-xl p-1'>
+            <button
+              onClick={() => setOwnershipFilter('all')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                ownershipFilter === 'all' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Tất cả
+            </button>
+            <button
+              onClick={() => setOwnershipFilter('mine')}
+              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+                ownershipFilter === 'mine' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Gói của tôi
+              {userPackageName && (
+                <span className='ml-1.5 px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-full text-xs'>
+                  {userPackageName}
+                </span>
+              )}
+            </button>
+          </div>
+        )}
         {isAdminMode && (
           <>
             <div className='flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2'>
@@ -326,7 +379,7 @@ export default function TemplatesPage() {
                 {/* <p className='text-sm text-gray-500'>Gợi ý phong cách: {template.repo_branch}</p> */}
                 <div className='flex flex-wrap gap-2 text-sm'>
                   <span className='px-2 py-1 rounded-full bg-gray-100 text-gray-600'>
-                    Giá: {formatPrice(meta.price)}
+                    Gói giá: {formatPrice(meta.price)}
                   </span>
                   <span
                     className={`px-2 py-1 rounded-full ${
@@ -336,12 +389,55 @@ export default function TemplatesPage() {
                     {hasPlanLimit ? `Gói: ${meta.allowed_plans.join(', ')}` : 'Tất cả gói'}
                   </span>
                 </div>
+                {/* Preview template button */}
                 <button
-                  onClick={() => applyTemplate(template.id)}
-                  className='w-full py-2.5 bg-gradient-to-r from-pink-600 to-rose-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:shadow-lg shadow-pink-200'
+                  onClick={() => previewTemplate(template.id)}
+                  className='w-full py-2.5 bg-gradient-to-r from-violet-600 to-blue-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:shadow-lg shadow-blue-200 transition-all hover:scale-[1.01] active:scale-[0.99]'
                 >
-                  <Sparkles size={16} /> Áp Dụng Mẫu
+                  <Eye size={16} /> Xem trước
                 </button>
+
+                {/* Apply / Upgrade / Active button */}
+                {!isAdminMode && !canUseTemplate(template.id) ? (
+                  // User doesn’t own the required plan
+                  <div>
+                    <button
+                      onClick={() => router.push('/studio/upgrade')}
+                      className='w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:shadow-lg shadow-amber-200 hover:scale-[1.01] active:scale-[0.99] transition-all'
+                    >
+                      ⚡ Nâng cấp gói
+                    </button>
+                    <p className='mt-2 text-xs text-center text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2'>
+                      Bạn cần nâng cấp gói để sử dụng mẫu này
+                      {meta.allowed_plans.length > 0 && (
+                        <>
+                          <br />
+                          <span className='font-semibold'>{meta.allowed_plans.join(', ')}</span>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                ) : (
+                  <button
+                    disabled={isActive}
+                    onClick={() => !isActive && applyTemplate(template.id)}
+                    className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+                      isActive
+                        ? 'bg-green-50 text-green-600 border-2 border-green-200 cursor-default'
+                        : 'bg-gradient-to-r from-pink-600 to-rose-500 text-white hover:shadow-lg shadow-pink-200 hover:scale-[1.01] active:scale-[0.99]'
+                    }`}
+                  >
+                    {isActive ? (
+                      <>
+                        <Check size={16} /> Đang áp dụng
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles size={16} /> Áp Dụng Mẫu
+                      </>
+                    )}
+                  </button>
+                )}
                 {isAdminMode && (
                   <button
                     onClick={() => router.push(`/studio/templates/${template.id}/edit`)}

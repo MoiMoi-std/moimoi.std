@@ -7,7 +7,7 @@ import { useToast } from '../../components/ui/ToastProvider'
 import { dataService } from '../../lib/data-service'
 import { useWedding } from '../../lib/useWedding'
 
-const baseUrl = process.env.NEXT_SITE_URL || 'https://www.moimoi.io.vn/'
+const getBaseUrl = () => (typeof window !== 'undefined' ? window.location.origin : 'https://www.moimoi.io.vn')
 
 const Dashboard = () => {
   const { wedding, setWedding, loading } = useWedding()
@@ -17,8 +17,19 @@ const Dashboard = () => {
     minutes: number
     seconds: number
   } | null>(null)
+  const [rsvpStats, setRsvpStats] = useState({ totalGuests: 0, withWishes: 0 })
   const [creating, setCreating] = useState(false)
   const { toast } = useToast()
+
+  // Fetch live RSVP stats
+  useEffect(() => {
+    if (!wedding?.id) return
+    dataService.getRSVPs(wedding.id).then((rsvps) => {
+      const totalGuests = rsvps.reduce((sum, r) => sum + (r.party_size ?? 1), 0)
+      const withWishes = rsvps.filter((r) => r.wishes && r.wishes.trim()).length
+      setRsvpStats({ totalGuests, withWishes })
+    })
+  }, [wedding?.id])
 
   useEffect(() => {
     if (wedding?.content?.wedding_date) {
@@ -88,8 +99,20 @@ const Dashboard = () => {
       color: 'text-blue-600',
       bg: 'bg-blue-100'
     },
-    { label: 'Khách Đã Mời', value: '0', icon: Users, color: 'text-purple-600', bg: 'bg-purple-100' },
-    { label: 'Lời Chúc', value: '0', icon: Heart, color: 'text-red-600', bg: 'bg-red-100' }
+    {
+      label: 'Khách Đã Mời',
+      value: rsvpStats.totalGuests,
+      icon: Users,
+      color: 'text-purple-600',
+      bg: 'bg-purple-100'
+    },
+    {
+      label: 'Lời Chúc',
+      value: rsvpStats.withWishes,
+      icon: Heart,
+      color: 'text-red-600',
+      bg: 'bg-red-100'
+    }
   ]
 
   return (
@@ -308,11 +331,11 @@ const Dashboard = () => {
             <p className='text-sm text-gray-600 mb-4'>Gửi link website cho bạn bè và người thân.</p>
             <div className='bg-white p-3 rounded-xl border border-pink-200 flex items-center justify-between gap-2 shadow-sm'>
               <code className='text-xs text-gray-500 truncate flex-1'>
-                {baseUrl}/{wedding.slug}
+                {getBaseUrl()}/{wedding.slug}
               </code>
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(`${baseUrl}/${wedding.slug}`)
+                  navigator.clipboard.writeText(`${getBaseUrl()}/${wedding.slug}`)
                   toast('Đã sao chép liên kết!', 'success')
                 }}
                 className='text-xs font-bold text-pink-600 hover:text-pink-700 whitespace-nowrap'
