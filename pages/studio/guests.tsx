@@ -25,6 +25,7 @@ import { useWedding } from '../../lib/useWedding'
 
 interface LinkFormData {
   name: string
+  rsvpId: number | null
 }
 
 const getBaseUrl = () => (typeof window !== 'undefined' ? window.location.origin : 'https://www.moimoi.io.vn')
@@ -34,7 +35,7 @@ const Guests = () => {
   const [filteredRsvps, setFilteredRsvps] = useState<RSVP[]>([])
   const { wedding, loading: weddingLoading } = useWedding()
   const [loading, setLoading] = useState(true)
-  const [linkFormData, setLinkFormData] = useState<LinkFormData>({ name: '' })
+  const [linkFormData, setLinkFormData] = useState<LinkFormData>({ name: '', rsvpId: null })
   const [generatedLink, setGeneratedLink] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
 
@@ -104,11 +105,53 @@ const Guests = () => {
       .replace(/\//g, '_')
       .replace(/=+$/, '')
 
-  const generateLink = () => {
+  const generateLink = async () => {
     if (!linkFormData.name.trim() || !wedding) return
 
-    const encoded = encodeGuestName(linkFormData.name)
-    const link = `http://localhost:3000/${wedding.slug}/${encoded}`
+    // Tìm record rsvp theo tên để lấy id
+    const matchedRsvp = rsvps.find((r) => r.guest_name.trim().toLowerCase() === linkFormData.name.trim().toLowerCase())
+
+    let link: string
+    if (matchedRsvp) {
+      // Dùng id record rsvp đã có
+      link = `http://localhost:3000/${wedding.slug}/${matchedRsvp.id}`
+
+      // Lưu link vào bảng rsvp
+      const updated = await dataService.updateRSVP(matchedRsvp.id, { link })
+      if (updated) {
+        const newRsvps = rsvps.map((r) => (r.id === matchedRsvp.id ? { ...r, link } : r))
+        setRsvps(newRsvps)
+        setFilteredRsvps(newRsvps)
+      }
+    } else {
+      // Không tìm thấy → tạo record mới, các trường chưa có để null
+      const newRsvp = await dataService.createRSVP({
+        wedding_id: wedding.id,
+        guest_name: linkFormData.name.trim(),
+        phone: null,
+        wishes: null,
+        party_size: null,
+        is_attending: null
+      })
+
+      if (newRsvp) {
+        // Dùng id record vừa tạo để sinh link
+        link = `http://localhost:3000/${wedding.slug}/${newRsvp.id}`
+
+        // Lưu link vào record mới
+        const updated = await dataService.updateRSVP(newRsvp.id, { link })
+        const finalRsvp = updated ?? { ...newRsvp, link }
+
+        // Thêm vào đầu danh sách
+        const newRsvps = [finalRsvp, ...rsvps]
+        setRsvps(newRsvps)
+        setFilteredRsvps(newRsvps)
+      } else {
+        // Fallback nếu DB lỗi
+        link = `http://localhost:3000/${wedding.slug}/${linkFormData.name.trim().replace(/\s+/g, '-')}`
+      }
+    }
+
     setGeneratedLink(link)
   }
 
@@ -245,8 +288,8 @@ const Guests = () => {
 
   const handleShowQR = (rsvp: RSVP) => {
     if (!wedding) return
-    const encoded = encodeGuestName(rsvp.guest_name)
-    const link = `${getBaseUrl()}/${wedding.slug}/${encoded}`
+    // Ưu tiên link đã lưu trong DB, fallback dùng id
+    const link = rsvp.link || `http://localhost:3000/${wedding.slug}/${rsvp.id}`
     setQrGuest({ name: rsvp.guest_name, link })
   }
 
@@ -262,8 +305,9 @@ const Guests = () => {
 
   const getGuestLink = (rsvp: RSVP) => {
     if (!wedding) return ''
-    const encoded = encodeGuestName(rsvp.guest_name)
-    return `${getBaseUrl()}/${wedding.slug}/${encoded}`
+    // Ưu tiên link đã lưu trong DB
+    if (rsvp.link) return rsvp.link
+    return `http://localhost:3000/${wedding.slug}/${rsvp.id}`
   }
 
   useEffect(() => {
@@ -431,7 +475,7 @@ const Guests = () => {
                   className='w-full pl-10 pr-4 py-3 bg-gray-50 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-500 transition-all'
                   placeholder='Ví dụ: Anh Nam & Chị Lan'
                   value={linkFormData.name}
-                  onChange={(e) => setLinkFormData({ name: e.target.value })}
+                  onChange={(e) => setLinkFormData((prev) => ({ ...prev, name: e.target.value }))}
                 />
               </div>
             </div>

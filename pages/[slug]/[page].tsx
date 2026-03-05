@@ -6,9 +6,10 @@ interface Props {
   wedding: any
   guestName: string
   slug: string
+  rsvpId: number
 }
 
-export default function GuestWeddingPage({ wedding, guestName, slug }: Props) {
+export default function GuestWeddingPage({ wedding, guestName, slug, rsvpId }: Props) {
   if (!wedding) {
     return (
       <div
@@ -34,27 +35,30 @@ export default function GuestWeddingPage({ wedding, guestName, slug }: Props) {
   const branch = wedding.template?.repo_branch || 'default'
   const SelectedTemplate = getTemplate(branch).GuestView
 
-  return <SelectedTemplate wedding={wedding} guestName={guestName} />
+  return <SelectedTemplate wedding={wedding} guestName={guestName} rsvpId={rsvpId} />
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { slug, page } = context.params as { slug: string; page: string }
 
-  // Decode Base64 URL-safe → tên thật của khách
-  let guestName = page
-  try {
-    const base64 = page.replace(/-/g, '+').replace(/_/g, '/')
-    const padded = base64 + '=='.slice(0, (4 - (base64.length % 4)) % 4)
-    guestName = decodeURIComponent(escape(atob(padded)))
-  } catch {
-    // Nếu decode thất bại (ví dụ: URL cũ dạng slug), dùng thẳng page
-    guestName = page
-  }
-
   const supabaseServer = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   )
+
+  // Chỉ chấp nhận RSVP id hợp lệ — mọi dạng khác → 404
+  const rsvpId = parseInt(page, 10)
+  if (isNaN(rsvpId) || page !== String(rsvpId)) {
+    return { notFound: true }
+  }
+
+  const { data: rsvpData } = await supabaseServer.from('rsvps').select('guest_name').eq('id', rsvpId).single()
+
+  if (!rsvpData?.guest_name) {
+    return { notFound: true }
+  }
+
+  const guestName = rsvpData.guest_name
 
   // Single query with join — lấy wedding + template trong 1 lần
   const { data: weddingData, error: weddingError } = await supabaseServer
@@ -78,6 +82,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     props: {
       slug,
       guestName,
+      rsvpId,
       wedding: {
         ...weddingData,
         content: weddingData.content || {},
