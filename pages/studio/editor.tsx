@@ -9,7 +9,7 @@ import TabBank from '../../components/studio/TabBank'
 import TabInfo from '../../components/studio/TabInfo'
 import { useToast } from '../../components/ui/ToastProvider'
 import { dataService } from '../../lib/data-service'
-import { processImages } from '../../lib/image-processor'
+import { processImages, processSingleImage } from '../../lib/image-processor'
 import { useWedding } from '../../lib/useWedding'
 
 const Editor = () => {
@@ -23,6 +23,7 @@ const Editor = () => {
   const [customFieldValue, setCustomFieldValue] = useState('')
   const [adminLogs, setAdminLogs] = useState<string[]>([])
   const [originalImages, setOriginalImages] = useState<string[]>([])
+  const [originalCoverImage, setOriginalCoverImage] = useState<string | null>(null)
   const { success, error } = useToast()
 
   // Store original images when wedding loads
@@ -30,6 +31,7 @@ const Editor = () => {
     if (wedding?.content?.images) {
       setOriginalImages(wedding.content.images)
     }
+    setOriginalCoverImage(wedding?.content?.cover_image || null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding?.id])
 
@@ -49,6 +51,14 @@ const Editor = () => {
     })
   }
 
+  const handleCoverImageChange = (coverImage: string | null) => {
+    if (!wedding) return
+    setWedding({
+      ...wedding,
+      content: { ...wedding.content, cover_image: coverImage }
+    })
+  }
+
   const handleSave = async () => {
     if (!wedding) return
     setSaving(true)
@@ -56,18 +66,29 @@ const Editor = () => {
       const previousImages = originalImages
       const currentImages = wedding.content.images || []
 
-      const { newImages, uploadedCount, deletedCount } = await processImages(currentImages, previousImages)
+      const { newImages, uploadedCount, deletedCount } = await processImages(
+        currentImages,
+        previousImages,
+        wedding.slug ?? undefined
+      )
+
+      const newCoverImage = await processSingleImage(
+        wedding.content.cover_image,
+        originalCoverImage,
+        wedding.slug ?? undefined
+      )
 
       if (uploadedCount > 0 || deletedCount > 0) {
         console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
       }
 
-      const updatedContent = { ...wedding.content, images: newImages }
+      const updatedContent = { ...wedding.content, images: newImages, cover_image: newCoverImage }
       await dataService.updateWedding(wedding.id, updatedContent)
 
       // Update local state and original images
       setWedding({ ...wedding, content: updatedContent })
       setOriginalImages(newImages)
+      setOriginalCoverImage(newCoverImage)
 
       success('Lưu thay đổi thành công!')
     } catch (e) {
@@ -85,13 +106,23 @@ const Editor = () => {
       const previousImages = originalImages
       const currentImages = wedding.content.images || []
 
-      const { newImages, uploadedCount, deletedCount } = await processImages(currentImages, previousImages)
+      const { newImages, uploadedCount, deletedCount } = await processImages(
+        currentImages,
+        previousImages,
+        wedding.slug ?? undefined
+      )
+
+      const newCoverImage = await processSingleImage(
+        wedding.content.cover_image,
+        originalCoverImage,
+        wedding.slug ?? undefined
+      )
 
       if (uploadedCount > 0 || deletedCount > 0) {
         console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
       }
 
-      const updatedContent = { ...wedding.content, images: newImages }
+      const updatedContent = { ...wedding.content, images: newImages, cover_image: newCoverImage }
       await dataService.updateWedding(wedding.id, updatedContent)
 
       const supabase = (await import('../../lib/initSupabase')).supabase
@@ -104,6 +135,7 @@ const Editor = () => {
 
       setWedding({ ...wedding, content: updatedContent, deployment_status: 'published' })
       setOriginalImages(newImages)
+      setOriginalCoverImage(newCoverImage)
 
       success('Xuất bản thành công! Thiệp của bạn đã được công khai.')
     } catch (e) {
@@ -274,7 +306,12 @@ const Editor = () => {
               <TabInfo content={wedding?.content} onChange={handleInfoChange} />
             </div>
             <div className={activeTab === 'album' ? 'block' : 'hidden'}>
-              <TabAlbum images={wedding?.content?.images || []} onChange={handleImagesChange} />
+              <TabAlbum
+                images={wedding?.content?.images || []}
+                onChange={handleImagesChange}
+                coverImage={wedding?.content?.cover_image || undefined}
+                onCoverImageChange={handleCoverImageChange}
+              />
             </div>
             <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
               <TabBank content={wedding?.content} onChange={handleInfoChange} />
@@ -351,7 +388,7 @@ const Editor = () => {
           </div>
         </div>
 
-        <LivePreview content={wedding?.content} />
+        <LivePreview wedding={wedding} />
       </div>
     </StudioLayout>
   )

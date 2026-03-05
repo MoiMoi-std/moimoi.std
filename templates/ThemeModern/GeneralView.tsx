@@ -1,4 +1,3 @@
-import RSVPForm from '@/components/guest/RSVPForm'
 import { Calendar, Clock, Heart, MapPin } from 'lucide-react'
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
@@ -699,51 +698,6 @@ export default function ModernGeneralView({ wedding }: TemplateProps) {
             </div>
           </section>
         )}
-
-        {/* ══ RSVP ══ */}
-        <section style={{ padding: '80px 20px', position: 'relative' }}>
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: `linear-gradient(180deg, transparent, ${accent}06, transparent)`
-            }}
-          />
-          <div style={{ maxWidth: 600, margin: '0 auto', position: 'relative' }}>
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <p
-                className='m-fade'
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  letterSpacing: '0.3em',
-                  textTransform: 'uppercase',
-                  color: accentLight,
-                  marginBottom: 12
-                }}
-              >
-                RSVP
-              </p>
-              <h2
-                className='gradient-text m-fade'
-                style={{
-                  fontFamily: "'Outfit', sans-serif",
-                  fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
-                  fontWeight: 700,
-                  marginBottom: 8
-                }}
-              >
-                Xác Nhận Tham Dự
-              </h2>
-              <p className='m-fade' style={{ color: '#64748b', fontSize: 15 }}>
-                Vui lòng cho chúng tôi biết bạn có thể tham dự
-              </p>
-            </div>
-            <div className='glass-card m-fade' style={{ padding: 32, animation: 'borderGlow 3s ease-in-out infinite' }}>
-              <RSVPForm weddingId={wedding.id} />
-            </div>
-          </div>
-        </section>
 
         {/* ══ Footer ══ */}
         <footer style={{ padding: '60px 20px', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,.05)' }}>

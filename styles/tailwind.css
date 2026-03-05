@@ -37,3 +37,8 @@ h1 {
   font-weight: bold;
   display: block;
 }
+
+/* Hide scrollbar but keep scrollable — used in LivePreview phone frame */
+.preview-scroll::-webkit-scrollbar {
+  display: none;
+}
