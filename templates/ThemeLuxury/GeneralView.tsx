@@ -1,4 +1,3 @@
-import RSVPForm from '@/components/guest/RSVPForm'
 import { Calendar, Clock, Heart, MapPin } from 'lucide-react'
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
@@ -636,38 +635,6 @@ export default function LuxuryGeneralView({ wedding }: TemplateProps) {
             </div>
           </section>
         )}
-
-        {/* ══ RSVP ══ */}
-        <section style={{ padding: '80px 20px', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1 }}>
-            <div className='marble-divider' style={{ width: '60%' }} />
-          </div>
-          <div style={{ maxWidth: 600, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <div className='lx-pulse' style={{ marginBottom: 16 }}>
-                <span className='diamond-accent' />
-              </div>
-              <h2
-                className='gold-shimmer-text lx-up'
-                style={{
-                  fontFamily: "'Cinzel', serif",
-                  fontSize: 'clamp(1.3rem, 4vw, 2rem)',
-                  fontWeight: 700,
-                  letterSpacing: '0.1em',
-                  marginBottom: 8
-                }}
-              >
-                RSVP
-              </h2>
-              <p className='lx-up' style={{ color: '#777', fontStyle: 'italic', fontSize: 15 }}>
-                Xin hãy cho chúng tôi biết sự hiện diện quý giá của bạn
-              </p>
-            </div>
-            <div className='luxury-card gold-border-glow lx-up' style={{ padding: 32 }}>
-              <RSVPForm weddingId={wedding.id} />
-            </div>
-          </div>
-        </section>
 
         {/* ══ Footer ══ */}
         <footer style={{ padding: '60px 20px', textAlign: 'center', position: 'relative' }}>

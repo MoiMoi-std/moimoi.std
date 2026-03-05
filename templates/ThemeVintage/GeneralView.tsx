@@ -1,4 +1,3 @@
-import RSVPForm from '@/components/guest/RSVPForm'
 import { Calendar, Clock, Heart, MapPin } from 'lucide-react'
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
@@ -602,33 +601,6 @@ export default function VintageGeneralView({ wedding }: TemplateProps) {
             </div>
           </section>
         )}
-
-        {/* ═══ RSVP Section ═══ */}
-        <section style={{ padding: '80px 20px', background: creamBg }}>
-          <div style={{ maxWidth: 600, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
-              <div style={{ fontSize: 14, opacity: 0.35, color: accentColor, marginBottom: 8 }}>── ✦ ──</div>
-              <h2
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
-                  fontWeight: 700,
-                  color: primaryColor,
-                  marginBottom: 8
-                }}
-              >
-                Xác Nhận Tham Dự
-              </h2>
-              <p style={{ color: '#8B7355', fontSize: 15, fontStyle: 'italic' }}>
-                Vui lòng cho chúng tôi biết bạn có thể tham dự hay không
-              </p>
-            </div>
-
-            <div className='vintage-card' style={{ padding: 32 }}>
-              <RSVPForm weddingId={wedding.id} />
-            </div>
-          </div>
-        </section>
 
         {/* ═══ Footer ═══ */}
         <footer
