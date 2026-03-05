@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
 
 const supabase = createClient(
@@ -8,7 +8,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
-export default function ModernGuestView({ wedding, guestName = '' }: TemplateProps) {
+export default function ModernGuestView({ wedding, guestName = '', rsvpId }: TemplateProps) {
   const [wish, setWish] = useState('')
   const [phone, setPhone] = useState('')
   const [isAttending, setIsAttending] = useState<boolean | null>(null)
@@ -16,6 +16,22 @@ export default function ModernGuestView({ wedding, guestName = '' }: TemplatePro
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
+
+  useEffect(() => {
+    if (!rsvpId) return
+    supabase
+      .from('rsvps')
+      .select('wishes, phone, is_attending, party_size')
+      .eq('id', rsvpId)
+      .single()
+      .then(({ data }) => {
+        if (!data) return
+        if (data.wishes) setWish(data.wishes)
+        if (data.phone) setPhone(data.phone)
+        if (data.is_attending != null) setIsAttending(data.is_attending)
+        if (data.party_size) setPartySize(data.party_size)
+      })
+  }, [rsvpId])
 
   const accent = '#6366f1'
   const accentLight = '#818cf8'
@@ -54,15 +70,18 @@ export default function ModernGuestView({ wedding, guestName = '' }: TemplatePro
     setLoading(true)
     setSubmitError('')
     try {
-      const { error } = await supabase.from('rsvps').insert({
-        wedding_id: wedding.id,
-        guest_name: formattedName,
-        phone: phone.trim() || null,
-        is_attending: isAttending,
-        party_size: isAttending ? partySize : 1,
-        wishes: wish.trim() || null
-      })
-      if (error) throw error
+      if (rsvpId) {
+        const { error } = await supabase
+          .from('rsvps')
+          .update({
+            phone: phone.trim() || null,
+            is_attending: isAttending,
+            party_size: isAttending ? partySize : 1,
+            wishes: wish.trim() || null
+          })
+          .eq('id', rsvpId)
+        if (error) throw error
+      }
       setSubmitted(true)
     } catch (err: any) {
       console.error('RSVP error:', err)

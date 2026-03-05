@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
 
 const supabase = createClient(
@@ -8,7 +8,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
-export default function DefaultGuestView({ wedding, guestName = '' }: TemplateProps) {
+export default function DefaultGuestView({ wedding, guestName = '', rsvpId }: TemplateProps) {
   const [wish, setWish] = useState('')
   const [phone, setPhone] = useState('')
   const [isAttending, setIsAttending] = useState<boolean | null>(null)
@@ -16,6 +16,24 @@ export default function DefaultGuestView({ wedding, guestName = '' }: TemplatePr
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
+
+  // Pre-fill form nếu khách đã từng gửi RSVP
+  useEffect(() => {
+    if (!rsvpId) return
+    supabase
+      .from('rsvps')
+      .select('wishes, phone, is_attending, party_size')
+      .eq('id', rsvpId)
+      .single()
+      .then(({ data, error }) => {
+        console.log('[RSVP fetch]', { data, error, rsvpId })
+        if (!data) return
+        if (data.wishes) setWish(data.wishes)
+        if (data.phone) setPhone(data.phone)
+        if (data.is_attending != null) setIsAttending(data.is_attending)
+        if (data.party_size) setPartySize(data.party_size)
+      })
+  }, [rsvpId])
 
   // 404
   if (!wedding) {
@@ -51,16 +69,20 @@ export default function DefaultGuestView({ wedding, guestName = '' }: TemplatePr
     setSubmitError('')
 
     try {
-      const { error } = await supabase.from('rsvps').insert({
-        wedding_id: wedding.id,
-        guest_name: formattedName,
-        phone: phone.trim() || null,
-        is_attending: isAttending,
-        party_size: isAttending ? partySize : 1,
-        wishes: wish.trim() || null
-      })
+      if (rsvpId) {
+        // UPDATE record RSVP đã có (luôn là trường hợp này vì link = id)
+        const { error } = await supabase
+          .from('rsvps')
+          .update({
+            phone: phone.trim() || null,
+            is_attending: isAttending,
+            party_size: isAttending ? partySize : 1,
+            wishes: wish.trim() || null
+          })
+          .eq('id', rsvpId)
 
-      if (error) throw error
+        if (error) throw error
+      }
       setSubmitted(true)
     } catch (err: any) {
       console.error('RSVP error:', err)

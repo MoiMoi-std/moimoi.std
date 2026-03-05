@@ -1,49 +1,20 @@
-import { Calendar, Clock, Heart, MapPin } from 'lucide-react'
 import Head from 'next/head'
-import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
 
+// Mock data album ảnh cưới
+const mockAlbum = [
+  'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=500&fit=crop' // để test vụ +1
+]
+
 export default function VintageGeneralView({ wedding }: TemplateProps) {
-  const [timeRemaining, setTimeRemaining] = useState<{
-    days: number
-    hours: number
-    minutes: number
-    seconds: number
-  } | null>(null)
-
-  const { content, template } = wedding || {}
-  const templateData = template as any
-  const mergedContent = {
-    ...(templateData?.default_content || {}),
-    ...content
-  }
-
-  const primaryColor = mergedContent.primary_color || '#8B6914'
-  const accentColor = '#D4A853'
-  const creamBg = '#FFF8E7'
-  const parchment = '#F5E6C8'
-
-  // Countdown timer
-  useEffect(() => {
-    if (mergedContent.wedding_date) {
-      const interval = setInterval(() => {
-        const weddingDate = new Date(`${mergedContent.wedding_date}T${mergedContent.wedding_time || '00:00'}`)
-        const now = new Date()
-        const diff = weddingDate.getTime() - now.getTime()
-
-        if (diff > 0) {
-          const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-          const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-          const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60))
-          const seconds = Math.floor((diff % (1000 * 60)) / 1000)
-          setTimeRemaining({ days, hours, minutes, seconds })
-        } else {
-          setTimeRemaining(null)
-        }
-      }, 1000)
-      return () => clearInterval(interval)
-    }
-  }, [mergedContent.wedding_date, mergedContent.wedding_time])
+  const red = '#9a2a2a'
+  const cream = '#f2e8de'
+  const creamLight = '#f8f1e9'
+  const textDark = '#4a4a4a'
 
   if (!wedding) {
     return (
@@ -53,598 +24,465 @@ export default function VintageGeneralView({ wedding }: TemplateProps) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: creamBg,
-          fontFamily: "'Lora', Georgia, serif"
+          background: cream,
+          fontFamily: "'Playfair Display', serif"
         }}
       >
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ color: primaryColor, marginBottom: '8px', fontFamily: "'Playfair Display', serif" }}>
-            404 — Không tìm thấy thiệp cưới
-          </h1>
-          <p style={{ color: '#8B7355' }}>Slug này không tồn tại hoặc đã bị xóa.</p>
+        <div style={{ textAlign: 'center', padding: 40 }}>
+          <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>💔</div>
+          <h1 style={{ color: red, marginBottom: 8 }}>Không tìm thấy thông tin</h1>
+          <p style={{ color: '#888' }}>Thiệp mời có thể đã bị xóa hoặc không hợp lệ.</p>
         </div>
       </div>
     )
+  }
+
+  const { content, template } = wedding
+  const templateData = template as any
+  const mergedContent = { ...(templateData?.default_content || {}), ...content }
+
+  // Mock data cho phần chưa có trong DB
+  const groomName = mergedContent.groom_name || 'Hoàng Nam'
+  const brideName = mergedContent.bride_name || 'Thanh Tú'
+  const groomImage =
+    mergedContent.groom_image ||
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face'
+  const brideImage =
+    mergedContent.bride_image ||
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face'
+  const groomParents = mergedContent.groom_parents || 'Nguyễn Văn Tuấn\nTrần Thị Mai'
+  const brideParents = mergedContent.bride_parents || 'Lê Văn Hùng\nHồ Thị Lan'
+  const groomAddress =
+    mergedContent.groom_address || '23 Đường Nguyễn Trãi, Phường Bến Thành, Quận 1, Thành phố\nHồ Chí Minh'
+  const brideAddress = mergedContent.bride_address || '68 Đường Sư Vạn Hạnh, Phường 12, Quận 10, Thành phố Hồ\nChí Minh'
+  const weddingTime = mergedContent.wedding_time || '09:00'
+  const partyTime = mergedContent.party_time || '10:30'
+  const eventDate = mergedContent.event_date || '01/02/2026'
+  const lunarDate = mergedContent.lunar_date || '14/12 Ất Tỵ'
+  const address = mergedContent.address || 'Queen Plaza Kỳ Hòa, 16A Lê Hồng Phong, Phường 12, Quận 10, TP. Hồ Chí Minh'
+  const albumImages = mergedContent.album_images?.length > 0 ? mergedContent.album_images : mockAlbum
+
+  // Xử lý xuống dòng cho phụ huynh
+  const formatParents = (text: string) => {
+    const lines = text.split('\n')
+    if (lines.length === 2) {
+      return (
+        <>
+          <div>{lines[0]}</div>
+          <div>{lines[1]}</div>
+        </>
+      )
+    }
+    return text
+  }
+
+  // Parse date
+  const dateParts = eventDate.split('/')
+  const day = dateParts[0] || '01'
+  const month = dateParts[1] || '02'
+  const year = dateParts[2] || '2026'
+  const dayName = 'CHỦ NHẬT'
+
+  // Chữ thập (pattern) có thể giả bằng CSS pattern hoặc overlay màu. Để đơn giản ta dùng gradient css pattern.
+  const redPatternStyle = {
+    backgroundColor: red,
+    backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px)`
+  }
+
+  const creamPatternStyle = {
+    backgroundColor: creamLight,
+    backgroundImage: `repeating-radial-gradient(circle at 0 0, transparent 0, ${creamLight} 10px), repeating-linear-gradient(rgba(200,100,100,0.03), rgba(200,100,100,0.03))`
   }
 
   return (
     <>
       <Head>
         <title>
-          {mergedContent.groom_name} &amp; {mergedContent.bride_name} — Thiệp Cưới Vintage
+          Thiệp cưới - {groomName} & {brideName}
         </title>
-        <meta
-          name='description'
-          content={`Trân trọng kính mời bạn đến dự lễ thành hôn của ${mergedContent.groom_name} và ${mergedContent.bride_name}`}
-        />
+        <meta name='viewport' content='width=device-width, initial-scale=1' />
         <link rel='preconnect' href='https://fonts.googleapis.com' />
         <link rel='preconnect' href='https://fonts.gstatic.com' crossOrigin='anonymous' />
         <link
-          href='https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Great+Vibes&display=swap'
+          href='https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Great+Vibes&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap'
           rel='stylesheet'
         />
         <style>{`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-          body { background: ${creamBg}; -webkit-font-smoothing: antialiased; }
-
-          @keyframes vintageFadeIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes gentlePulse {
-            0%, 100% { transform: scale(1); }
-            50%      { transform: scale(1.05); }
-          }
-          @keyframes floatSoft {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50%      { transform: translateY(-8px) rotate(1deg); }
-          }
-          @keyframes shimmerGold {
-            0%   { background-position: -200% center; }
-            100% { background-position: 200% center; }
-          }
-          .v-fade { animation: vintageFadeIn 0.8s cubic-bezier(.22,.68,0,1.1) both; }
-          .v-fade-d1 { animation-delay: 0.15s; }
-          .v-fade-d2 { animation-delay: 0.3s; }
-          .v-fade-d3 { animation-delay: 0.45s; }
-          .v-pulse { animation: gentlePulse 3s ease-in-out infinite; }
-          .v-float { animation: floatSoft 4s ease-in-out infinite; }
-
-          .ornate-border {
-            border: 2px solid ${accentColor};
-            border-image: repeating-linear-gradient(
-              45deg,
-              ${accentColor},
-              ${accentColor} 3px,
-              transparent 3px,
-              transparent 6px
-            ) 8;
-          }
-
-          .vintage-card {
-            background: linear-gradient(145deg, ${creamBg}, ${parchment}90);
-            border: 1.5px solid ${accentColor}60;
-            border-radius: 16px;
-            box-shadow: 0 4px 24px rgba(139,105,20,.08), inset 0 1px 0 rgba(255,255,255,.6);
-          }
-
-          .gold-shimmer {
-            background: linear-gradient(90deg, ${primaryColor}, ${accentColor}, ${primaryColor});
-            background-size: 200% 100%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: shimmerGold 4s linear infinite;
-          }
-
-          .polaroid {
-            background: #fff;
-            padding: 8px 8px 32px;
-            box-shadow: 0 6px 24px rgba(0,0,0,.12), 0 2px 6px rgba(0,0,0,.08);
-            transform: rotate(var(--rot, 0deg));
-            transition: transform 0.4s ease, box-shadow 0.4s ease;
-          }
-          .polaroid:hover {
-            transform: rotate(0deg) scale(1.03);
-            box-shadow: 0 12px 40px rgba(0,0,0,.18);
-          }
-
-          .parchment-texture {
-            position: relative;
-          }
-          .parchment-texture::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.03'/%3E%3C/svg%3E");
-            pointer-events: none;
-            border-radius: inherit;
-          }
+          body { background: #fff; -webkit-font-smoothing: antialiased; }
+          .btn-calendar:hover { opacity: 0.9; transform: scale(1.02); }
         `}</style>
       </Head>
 
-      <div
-        className='parchment-texture'
-        style={{
-          minHeight: '100vh',
-          background: `linear-gradient(170deg, ${creamBg} 0%, #FDF5E6 40%, ${parchment}50 100%)`,
-          fontFamily: "'Lora', Georgia, serif",
-          color: '#4A3728'
-        }}
-      >
-        {/* ═══ Hero Section ═══ */}
-        <section
+      <div style={{ minHeight: '100vh', background: '#fff' }}>
+        <div
           style={{
-            position: 'relative',
+            maxWidth: 600,
+            margin: '0 auto',
+            background: cream,
             minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'hidden',
-            padding: '60px 20px'
+            fontFamily: "'Lora', serif",
+            color: textDark,
+            paddingBottom: 60,
+            boxShadow: '0 0 20px rgba(0,0,0,0.05)'
           }}
         >
-          {/* Decorative corner ornaments */}
-          {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((pos) => {
-            const isTop = pos.includes('top')
-            const isLeft = pos.includes('left')
-            return (
+          {/* ═════════ HERO SECTION ═════════ */}
+          <div style={{ width: '100%', height: 60, ...redPatternStyle }} />
+
+          <div
+            style={{
+              width: '100%',
+              padding: '24px 0',
+              textAlign: 'center',
+              ...creamPatternStyle
+            }}
+          >
+            <h1
+              style={{
+                fontFamily: "'Great Vibes', cursive",
+                fontSize: '3rem',
+                color: red,
+                fontWeight: 400
+              }}
+            >
+              Happy Wedding
+            </h1>
+          </div>
+
+          <div style={{ width: '100%', height: 100, ...redPatternStyle }} />
+
+          {/* avatars overlapping */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8%', marginTop: -80, padding: '0 20px' }}>
+            {/* Groom */}
+            <div style={{ textAlign: 'center', width: '40%' }}>
               <div
-                key={pos}
                 style={{
-                  position: 'absolute',
-                  [isTop ? 'top' : 'bottom']: 24,
-                  [isLeft ? 'left' : 'right']: 24,
-                  width: 60,
-                  height: 60,
-                  borderTop: isTop ? `2px solid ${accentColor}70` : 'none',
-                  borderBottom: !isTop ? `2px solid ${accentColor}70` : 'none',
-                  borderLeft: isLeft ? `2px solid ${accentColor}70` : 'none',
-                  borderRight: !isLeft ? `2px solid ${accentColor}70` : 'none',
-                  opacity: 0.6
+                  width: '100%',
+                  aspectRatio: '1/1',
+                  borderRadius: '50%',
+                  border: '4px solid #fff',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  margin: '0 auto 16px'
                 }}
-              />
-            )
-          })}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={groomImage} alt={groomName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <h3
+                style={{
+                  fontFamily: "'Great Vibes', cursive",
+                  fontSize: '2.2rem',
+                  color: red,
+                  fontWeight: 400
+                }}
+              >
+                {groomName}
+              </h3>
+            </div>
 
-          {/* Background decorative circles */}
+            {/* Bride */}
+            <div style={{ textAlign: 'center', width: '40%' }}>
+              <div
+                style={{
+                  width: '100%',
+                  aspectRatio: '1/1',
+                  borderRadius: '50%',
+                  border: '4px solid #fff',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  margin: '0 auto 16px'
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={brideImage} alt={brideName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <h3
+                style={{
+                  fontFamily: "'Great Vibes', cursive",
+                  fontSize: '2.2rem',
+                  color: red,
+                  fontWeight: 400
+                }}
+              >
+                {brideName}
+              </h3>
+            </div>
+          </div>
+
+          {/* ═════════ PARENTS INFO ═════════ */}
           <div
-            style={{
-              position: 'absolute',
-              top: '10%',
-              right: '-5%',
-              width: 300,
-              height: 300,
-              borderRadius: '50%',
-              border: `1px solid ${accentColor}20`,
-              pointerEvents: 'none'
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '5%',
-              left: '-8%',
-              width: 250,
-              height: 250,
-              borderRadius: '50%',
-              border: `1px solid ${accentColor}15`,
-              pointerEvents: 'none'
-            }}
-          />
+            style={{ display: 'flex', justifyContent: 'space-between', padding: '30px 40px 40px', textAlign: 'center' }}
+          >
+            {/* Groom Parents */}
+            <div style={{ flex: 1, padding: '0 10px' }}>
+              <div style={{ width: '100%', height: 1, backgroundColor: '#c8b6a6', marginBottom: 16 }} />
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  fontStyle: 'italic',
+                  color: textDark,
+                  lineHeight: 1.5,
+                  marginBottom: 10
+                }}
+              >
+                {formatParents(groomParents)}
+              </div>
+              <p style={{ fontSize: '0.75rem', color: '#666', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
+                {groomAddress}
+              </p>
+            </div>
+            {/* Bride Parents */}
+            <div style={{ flex: 1, padding: '0 10px' }}>
+              <div style={{ width: '100%', height: 1, backgroundColor: '#c8b6a6', marginBottom: 16 }} />
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  fontStyle: 'italic',
+                  color: textDark,
+                  lineHeight: 1.5,
+                  marginBottom: 10
+                }}
+              >
+                {formatParents(brideParents)}
+              </div>
+              <p style={{ fontSize: '0.75rem', color: '#666', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
+                {brideAddress}
+              </p>
+            </div>
+          </div>
 
-          <div className='v-fade' style={{ textAlign: 'center', maxWidth: 700, position: 'relative', zIndex: 1 }}>
-            {/* Flourish top */}
-            <div style={{ fontSize: '2rem', marginBottom: 12, opacity: 0.4, color: accentColor }}>✦ ✧ ✦</div>
-
-            {/* Save The Date */}
+          {/* ═════════ WEDDING EVENT (Nhà trai/Nhà gái - Lễ Thành Hôn) ═════════ */}
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <p style={{ fontSize: '0.85rem', color: textDark, fontWeight: 500, marginBottom: 4 }}>
+              LỄ THÀNH HÔN ĐƯỢC CỬ HÀNH TẠI
+            </p>
+            <p style={{ fontSize: '1rem', color: textDark, fontWeight: 600, marginBottom: 4 }}>TƯ GIA</p>
+            <p style={{ fontSize: '0.85rem', color: textDark, fontWeight: 500, marginBottom: 8 }}>VÀO LÚC</p>
             <p
               style={{
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.35em',
-                textTransform: 'uppercase',
-                color: primaryColor,
-                marginBottom: 24
+                fontSize: '1.6rem',
+                color: red,
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                marginBottom: 16
               }}
             >
-              SAVE THE DATE
+              {weddingTime}
             </p>
 
-            {/* Names */}
-            <h1
-              className='gold-shimmer'
-              style={{
-                fontFamily: "'Great Vibes', 'Playfair Display', cursive",
-                fontSize: 'clamp(3rem, 10vw, 5.5rem)',
-                fontWeight: 400,
-                lineHeight: 1.2,
-                marginBottom: 8
-              }}
-            >
-              {mergedContent.groom_name}
-            </h1>
-
-            <div className='v-pulse' style={{ fontSize: '1.5rem', color: accentColor, margin: '8px 0' }}>
-              &amp;
-            </div>
-
-            <h1
-              className='gold-shimmer'
-              style={{
-                fontFamily: "'Great Vibes', 'Playfair Display', cursive",
-                fontSize: 'clamp(3rem, 10vw, 5.5rem)',
-                fontWeight: 400,
-                lineHeight: 1.2,
-                marginBottom: 24
-              }}
-            >
-              {mergedContent.bride_name}
-            </h1>
-
-            {/* Ornate divider */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, margin: '24px 0' }}>
-              <div
+            {/* Date format: CHỦ NHẬT | 01 | THÁNG 02 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: textDark }}>{dayName}</span>
+              <div style={{ width: 1, height: 24, backgroundColor: '#c8b6a6' }} />
+              <span
                 style={{
-                  height: 1,
-                  width: 80,
-                  background: `linear-gradient(to right, transparent, ${accentColor})`
-                }}
-              />
-              <Heart size={20} fill={accentColor} color={accentColor} style={{ opacity: 0.8 }} />
-              <div
-                style={{
-                  height: 1,
-                  width: 80,
-                  background: `linear-gradient(to left, transparent, ${accentColor})`
-                }}
-              />
-            </div>
-
-            {/* Date */}
-            {mergedContent.wedding_date && (
-              <p
-                style={{
-                  fontSize: 18,
-                  color: '#6B5B3E',
+                  fontSize: '2.5rem',
+                  fontWeight: 700,
+                  color: red,
                   fontFamily: "'Playfair Display', serif",
-                  fontStyle: 'italic',
-                  letterSpacing: '0.05em'
+                  lineHeight: 1
                 }}
               >
-                {new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
-            )}
+                {day}
+              </span>
+              <div style={{ width: 1, height: 24, backgroundColor: '#c8b6a6' }} />
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: textDark }}>THÁNG {month}</span>
+            </div>
 
-            {/* Subtitle */}
-            <p style={{ marginTop: 20, fontSize: 15, color: '#8B7355', fontStyle: 'italic', lineHeight: 1.7 }}>
-              Trân trọng kính mời bạn đến dự buổi lễ thành hôn của chúng tôi
+            <p
+              style={{
+                fontSize: '1.1rem',
+                color: red,
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                marginBottom: 6
+              }}
+            >
+              {year}
             </p>
-
-            {/* Scroll indicator */}
-            <div className='v-float' style={{ marginTop: 48, fontSize: 24, color: accentColor, opacity: 0.5 }}>
-              ▽
-            </div>
+            <p style={{ fontSize: '0.9rem', color: '#666', fontStyle: 'italic' }}>(Tức ngày {lunarDate})</p>
           </div>
-        </section>
 
-        {/* ═══ Countdown Section ═══ */}
-        {timeRemaining && (
-          <section style={{ padding: '64px 20px', background: `linear-gradient(135deg, ${parchment}40, ${creamBg})` }}>
-            <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' }}>
-              <div style={{ fontSize: 14, opacity: 0.35, color: accentColor, marginBottom: 8 }}>── ✦ ──</div>
-              <h2
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 'clamp(1.5rem, 5vw, 2.5rem)',
-                  fontWeight: 700,
-                  color: primaryColor,
-                  marginBottom: 8
-                }}
-              >
-                Đếm Ngược Đến Ngày Vui
-              </h2>
-              <p style={{ color: '#8B7355', fontSize: 15, fontStyle: 'italic', marginBottom: 32 }}>
-                Chỉ còn một chút nữa thôi...
-              </p>
+          {/* ═════════ ALBUM ═════════ */}
+          <div style={{ padding: '0 20px', marginBottom: 40 }}>
+            <h2
+              style={{
+                fontFamily: "'Great Vibes', cursive",
+                fontSize: '2.5rem',
+                color: red,
+                fontWeight: 400,
+                textAlign: 'center',
+                marginBottom: 20
+              }}
+            >
+              Album Ảnh Cưới
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+              {albumImages.slice(0, 4).map((img: string, i: number) => {
+                const isLast = i === 3
+                const extraCount = albumImages.length - 4
 
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(4, 1fr)',
-                  gap: 16,
-                  maxWidth: 500,
-                  margin: '0 auto'
-                }}
-              >
-                {[
-                  { label: 'Ngày', value: timeRemaining.days },
-                  { label: 'Giờ', value: timeRemaining.hours },
-                  { label: 'Phút', value: timeRemaining.minutes },
-                  { label: 'Giây', value: timeRemaining.seconds }
-                ].map((item) => (
-                  <div key={item.label} className='vintage-card' style={{ padding: '20px 8px', textAlign: 'center' }}>
-                    <div
-                      style={{
-                        fontFamily: "'Playfair Display', serif",
-                        fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
-                        fontWeight: 700,
-                        color: primaryColor,
-                        lineHeight: 1,
-                        marginBottom: 6
-                      }}
-                    >
-                      {String(item.value).padStart(2, '0')}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 600,
-                        letterSpacing: '0.15em',
-                        textTransform: 'uppercase',
-                        color: '#8B7355'
-                      }}
-                    >
-                      {item.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ═══ Event Details Section ═══ */}
-        <section style={{ padding: '80px 20px', background: creamBg }}>
-          <div style={{ maxWidth: 700, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <div style={{ fontSize: 14, opacity: 0.35, color: accentColor, marginBottom: 8 }}>── ✦ ──</div>
-              <h2
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
-                  fontWeight: 700,
-                  color: primaryColor,
-                  marginBottom: 12
-                }}
-              >
-                Thông Tin Sự Kiện
-              </h2>
-              <div
-                style={{
-                  width: 60,
-                  height: 2,
-                  margin: '0 auto',
-                  background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`
-                }}
-              />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-              {/* Date & Time Card */}
-              <div className='vintage-card v-fade v-fade-d1' style={{ padding: '32px 28px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+                return (
                   <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      background: `${accentColor}18`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: `1px solid ${accentColor}40`
-                    }}
+                    key={i}
+                    style={{ borderRadius: 8, overflow: 'hidden', aspectRatio: '3/4', position: 'relative' }}
                   >
-                    <Calendar size={22} color={primaryColor} />
-                  </div>
-                  <h3
-                    style={{
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: 18,
-                      fontWeight: 600,
-                      color: '#4A3728'
-                    }}
-                  >
-                    Thời Gian
-                  </h3>
-                </div>
-                <p style={{ color: '#5C4A35', fontSize: 16, lineHeight: 1.6, marginBottom: 8 }}>
-                  {mergedContent.wedding_date &&
-                    new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                </p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#8B7355' }}>
-                  <Clock size={16} />
-                  <span style={{ fontSize: 15 }}>Lúc {mergedContent.wedding_time || '00:00'}</span>
-                </div>
-              </div>
-
-              {/* Location Card */}
-              <div className='vintage-card v-fade v-fade-d2' style={{ padding: '32px 28px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      background: `${accentColor}18`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      border: `1px solid ${accentColor}40`
-                    }}
-                  >
-                    <MapPin size={22} color={primaryColor} />
-                  </div>
-                  <h3
-                    style={{
-                      fontFamily: "'Playfair Display', serif",
-                      fontSize: 18,
-                      fontWeight: 600,
-                      color: '#4A3728'
-                    }}
-                  >
-                    Địa Điểm
-                  </h3>
-                </div>
-                <p style={{ color: '#5C4A35', fontSize: 16, lineHeight: 1.6, marginBottom: 12 }}>
-                  {mergedContent.address || '—'}
-                </p>
-                {mergedContent.map_url && (
-                  <a
-                    href={mergedContent.map_url}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '10px 20px',
-                      background: `linear-gradient(135deg, ${primaryColor}, ${accentColor})`,
-                      color: '#fff',
-                      borderRadius: 10,
-                      fontSize: 14,
-                      fontWeight: 600,
-                      textDecoration: 'none',
-                      transition: 'transform 0.2s, box-shadow 0.2s'
-                    }}
-                  >
-                    <MapPin size={16} />
-                    Xem Bản Đồ
-                  </a>
-                )}
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ═══ Gallery Section — Polaroid Style ═══ */}
-        {mergedContent.images && mergedContent.images.length > 0 && (
-          <section
-            style={{ padding: '80px 20px', background: `linear-gradient(to bottom, ${creamBg}, ${parchment}30)` }}
-          >
-            <div style={{ maxWidth: 900, margin: '0 auto' }}>
-              <div style={{ textAlign: 'center', marginBottom: 48 }}>
-                <div style={{ fontSize: 14, opacity: 0.35, color: accentColor, marginBottom: 8 }}>── ✦ ──</div>
-                <h2
-                  style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
-                    fontWeight: 700,
-                    color: primaryColor,
-                    marginBottom: 12
-                  }}
-                >
-                  Khoảnh Khắc Của Chúng Tôi
-                </h2>
-                <div
-                  style={{
-                    width: 60,
-                    height: 2,
-                    margin: '0 auto',
-                    background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)`
-                  }}
-                />
-              </div>
-
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                  gap: 32,
-                  justifyItems: 'center'
-                }}
-              >
-                {mergedContent.images.slice(0, 6).map((img: string, idx: number) => {
-                  const rotations = [-3, 2, -1.5, 2.5, -2, 1.5]
-                  return (
-                    <div
-                      key={idx}
-                      className='polaroid v-fade'
-                      style={
-                        {
-                          '--rot': `${rotations[idx % rotations.length]}deg`,
-                          maxWidth: 280,
-                          width: '100%',
-                          animationDelay: `${idx * 0.12}s`
-                        } as React.CSSProperties
-                      }
-                    >
-                      <div style={{ overflow: 'hidden', aspectRatio: '4/3' }}>
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={img}
-                          alt={`Wedding photo ${idx + 1}`}
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            filter: 'sepia(15%) saturate(90%)',
-                            transition: 'filter 0.4s ease'
-                          }}
-                        />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img}
+                      alt={`Album ${i + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    {isLast && extraCount > 0 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundColor: 'rgba(0,0,0,0.5)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontSize: '1.2rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        +{extraCount}
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
-          </section>
-        )}
-
-        {/* ═══ Footer ═══ */}
-        <footer
-          style={{
-            padding: '60px 20px',
-            textAlign: 'center',
-            background: `linear-gradient(to bottom, ${creamBg}, ${parchment}50)`
-          }}
-        >
-          {/* Ornate top flourish */}
-          <div style={{ fontSize: 14, opacity: 0.35, color: accentColor, marginBottom: 20 }}>═══ ❦ ═══</div>
-
-          <div className='v-pulse' style={{ marginBottom: 16 }}>
-            <Heart size={28} fill={accentColor} color={accentColor} />
           </div>
 
-          <p
-            style={{
-              fontFamily: "'Great Vibes', cursive",
-              fontSize: 'clamp(1.5rem, 4vw, 2rem)',
-              color: primaryColor,
-              marginBottom: 8
-            }}
-          >
-            {mergedContent.groom_name} &amp; {mergedContent.bride_name}
-          </p>
+          {/* ═════════ PARTY EVENT ═════════ */}
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <h2
+              style={{
+                fontFamily: "'Great Vibes', cursive",
+                fontSize: '2.2rem',
+                color: red,
+                fontWeight: 400,
+                marginBottom: 16
+              }}
+            >
+              Tiệc cưới sẽ diễn ra vào lúc:
+            </h2>
+            <p
+              style={{
+                fontSize: '1.6rem',
+                color: red,
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                marginBottom: 16
+              }}
+            >
+              {partyTime}
+            </p>
 
-          <p style={{ color: '#8B7355', fontSize: 14, fontStyle: 'italic', marginBottom: 24 }}>
-            Cảm ơn bạn đã đến chung vui cùng chúng tôi
-          </p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: textDark }}>{dayName}</span>
+              <div style={{ width: 1, height: 24, backgroundColor: '#c8b6a6' }} />
+              <span
+                style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 700,
+                  color: red,
+                  fontFamily: "'Playfair Display', serif",
+                  lineHeight: 1
+                }}
+              >
+                {day}
+              </span>
+              <div style={{ width: 1, height: 24, backgroundColor: '#c8b6a6' }} />
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: textDark }}>THÁNG {month}</span>
+            </div>
 
-          <div
-            style={{
-              fontSize: 12,
-              color: '#B8A88A',
-              borderTop: `1px solid ${accentColor}30`,
-              paddingTop: 20,
-              maxWidth: 300,
-              margin: '0 auto'
-            }}
-          >
-            Powered by MoiMoi Studio
+            <p
+              style={{
+                fontSize: '1.1rem',
+                color: red,
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                marginBottom: 6
+              }}
+            >
+              {year}
+            </p>
+            <p style={{ fontSize: '0.9rem', color: '#666', fontStyle: 'italic', marginBottom: 16 }}>
+              (Tức ngày {lunarDate})
+            </p>
+
+            <p style={{ fontSize: '0.8rem', color: textDark, textTransform: 'uppercase', marginBottom: 4 }}>
+              KHAI TIỆC
+            </p>
+            <p
+              style={{
+                fontSize: '1.2rem',
+                color: red,
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                marginBottom: 20
+              }}
+            >
+              {partyTime}
+            </p>
+
+            {/* Nut Thêm vào lịch (fake / mockup action) */}
+            <button
+              className='btn-calendar'
+              style={{
+                backgroundColor: '#7e2b2b',
+                color: '#fff',
+                border: 'none',
+                padding: '10px 24px',
+                borderRadius: 20,
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.3s'
+              }}
+            >
+              Thêm vào lịch
+            </button>
           </div>
-        </footer>
+
+          {/* ═════════ VENUE ═════════ */}
+          <div style={{ textAlign: 'center', padding: '0 20px', marginBottom: 40 }}>
+            <h2
+              style={{
+                fontFamily: "'Great Vibes', cursive",
+                fontSize: '2.2rem',
+                color: red,
+                fontWeight: 400,
+                marginBottom: 16
+              }}
+            >
+              Tiệc cưới sẽ tổ chức tại
+            </h2>
+            <div
+              style={{
+                backgroundColor: '#e6dacb',
+                padding: '16px 20px',
+                borderRadius: 8,
+                fontSize: '0.9rem',
+                color: textDark,
+                fontWeight: 600,
+                lineHeight: 1.5,
+                border: '1px solid #d4c4b4'
+              }}
+            >
+              {address}
+            </div>
+          </div>
+        </div>
       </div>
     </>
   )

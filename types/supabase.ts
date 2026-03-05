@@ -14,6 +14,7 @@ export type Database = {
           guest_name: string
           id: number
           is_attending: boolean | null
+          link: string | null
           party_size: number | null
           phone: string | null
           wedding_id: string
@@ -24,6 +25,7 @@ export type Database = {
           guest_name: string
           id?: number
           is_attending?: boolean | null
+          link?: string | null
           party_size?: number | null
           phone?: string | null
           wedding_id: string
@@ -34,6 +36,7 @@ export type Database = {
           guest_name?: string
           id?: number
           is_attending?: boolean | null
+          link?: string | null
           party_size?: number | null
           phone?: string | null
           wedding_id?: string

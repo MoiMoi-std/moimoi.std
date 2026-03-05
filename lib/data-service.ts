@@ -206,6 +206,19 @@ export const dataService = {
       return null
     }
     return data
+  },
+
+  updateRSVP: async (
+    rsvpId: number,
+    updates: Database['public']['Tables']['rsvps']['Update']
+  ): Promise<RSVP | null> => {
+    const { data, error } = await supabase.from('rsvps').update(updates).eq('id', rsvpId).select().single()
+
+    if (error) {
+      console.error('Error updating RSVP:', error)
+      return null
+    }
+    return data
   }
 }
 
@@ -324,7 +337,6 @@ const createMockGuests = (count: number, weddingId: string): RSVP[] => {
     return {
       id: index + 1000,
       created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
       wedding_id: weddingId,
       guest_name: fullName,
       phone: hasPhone
@@ -332,11 +344,10 @@ const createMockGuests = (count: number, weddingId: string): RSVP[] => {
             .toString()
             .padStart(8, '0')}`
         : null,
-      email: null,
+      link: null,
       party_size: Math.floor(Math.random() * 3) + 1, // 1-4 people
       is_attending: isAttending,
-      wishes: wishes[Math.floor(Math.random() * wishes.length)],
-      dietary_restrictions: null
+      wishes: wishes[Math.floor(Math.random() * wishes.length)]
     }
   })
 }

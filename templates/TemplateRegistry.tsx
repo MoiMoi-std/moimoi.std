@@ -5,6 +5,7 @@ import { Wedding } from '@/lib/data-service'
 export interface TemplateProps {
   wedding: Wedding
   guestName?: string
+  rsvpId?: number
 }
 
 // Map 'repo_branch' từ DB với Component giao diện tương ứng
