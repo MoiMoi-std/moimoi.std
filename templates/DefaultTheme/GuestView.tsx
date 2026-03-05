@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
 
 const supabase = createClient(
@@ -16,6 +16,24 @@ export default function DefaultGuestView({ wedding, guestName = '', rsvpId }: Te
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
+
+  // Pre-fill form nếu khách đã từng gửi RSVP
+  useEffect(() => {
+    if (!rsvpId) return
+    supabase
+      .from('rsvps')
+      .select('wishes, phone, is_attending, party_size')
+      .eq('id', rsvpId)
+      .single()
+      .then(({ data, error }) => {
+        console.log('[RSVP fetch]', { data, error, rsvpId })
+        if (!data) return
+        if (data.wishes) setWish(data.wishes)
+        if (data.phone) setPhone(data.phone)
+        if (data.is_attending != null) setIsAttending(data.is_attending)
+        if (data.party_size) setPartySize(data.party_size)
+      })
+  }, [rsvpId])
 
   // 404
   if (!wedding) {

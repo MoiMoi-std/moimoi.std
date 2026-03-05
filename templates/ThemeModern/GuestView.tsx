@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
 
 const supabase = createClient(
@@ -16,6 +16,22 @@ export default function ModernGuestView({ wedding, guestName = '', rsvpId }: Tem
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
+
+  useEffect(() => {
+    if (!rsvpId) return
+    supabase
+      .from('rsvps')
+      .select('wishes, phone, is_attending, party_size')
+      .eq('id', rsvpId)
+      .single()
+      .then(({ data }) => {
+        if (!data) return
+        if (data.wishes) setWish(data.wishes)
+        if (data.phone) setPhone(data.phone)
+        if (data.is_attending != null) setIsAttending(data.is_attending)
+        if (data.party_size) setPartySize(data.party_size)
+      })
+  }, [rsvpId])
 
   const accent = '#6366f1'
   const accentLight = '#818cf8'
