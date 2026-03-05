@@ -14,7 +14,8 @@ export interface ProcessImagesResult {
  */
 export async function processImages(
   currentImages: string[],
-  previousImages: string[] = []
+  previousImages: string[] = [],
+  slug?: string
 ): Promise<ProcessImagesResult> {
   const newImages: string[] = []
   let uploadedCount = 0
@@ -28,6 +29,7 @@ export async function processImages(
 
         const formData = new FormData()
         formData.append('file', file)
+        if (slug) formData.append('slug', slug)
 
         const response = await fetch('/api/upload-image', {
           method: 'POST',
@@ -76,4 +78,55 @@ export async function processImages(
     uploadedCount,
     deletedCount
   }
+}
+
+/**
+ * Process a single image: upload base64 to Cloudinary, delete old if changed
+ */
+export async function processSingleImage(
+  current: string | null | undefined,
+  previous: string | null | undefined,
+  slug?: string
+): Promise<string | null> {
+  let result: string | null = null
+
+  if (current) {
+    if (current.startsWith('data:')) {
+      try {
+        const blob = await fetch(current).then((r) => r.blob())
+        const file = new File([blob], 'image.jpg', { type: blob.type })
+        const formData = new FormData()
+        formData.append('file', file)
+        if (slug) formData.append('slug', slug)
+        const response = await fetch('/api/upload-image', {
+          method: 'POST',
+          body: formData
+        })
+        if (response.ok) {
+          const data = await response.json()
+          result = data.urls[0]
+        } else {
+          console.error('Failed to upload cover image')
+        }
+      } catch (error) {
+        console.error('Error uploading cover image:', error)
+      }
+    } else {
+      result = current
+    }
+  }
+
+  if (previous && previous !== result && (previous.startsWith('http://') || previous.startsWith('https://'))) {
+    try {
+      await fetch('/api/delete-image', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: previous })
+      })
+    } catch (error) {
+      console.error('Error deleting old cover image:', error)
+    }
+  }
+
+  return result
 }
