@@ -1,15 +1,12 @@
 import Pagination from '@/components/common/Pagination'
-import StudioEmptyState from '@/components/studio/StudioEmptyState'
 import StudioLayout from '@/components/studio/StudioLayout'
 import StudioLoading from '@/components/studio/StudioLoading'
 import { useToast } from '@/components/ui/ToastProvider'
 import { dataService, Template } from '@/lib/data-service'
 import { useWedding } from '@/lib/useWedding'
-import { Check, Eye, EyeOff, LayoutTemplate, Search, Sparkles } from 'lucide-react'
+import { Check, Eye, LayoutTemplate, Search, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
-
-const PLAN_OPTIONS = ['Sinh Viên', 'Gói Cơ Bản', 'Gói Nâng Cao', 'Gói Cao Cấp']
 
 type TemplateAdminMeta = {
   is_active: boolean
@@ -38,24 +35,15 @@ export default function TemplatesPage() {
   const [templateMeta, setTemplateMeta] = useState<Record<number, TemplateAdminMeta>>({})
   const [selectedStyle, setSelectedStyle] = useState('all')
   const [loadingTemplates, setLoadingTemplates] = useState(true)
-  const [isAdminMode, setIsAdminMode] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'hidden'>('all')
-  const [planFilter, setPlanFilter] = useState('all')
   const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'mine'>('all')
   const [currentPage, setCurrentPage] = useState(1)
-  const itemsPerPage = isAdminMode ? 6 : 9
+  const itemsPerPage = 9
   const { toast, success, error } = useToast()
 
   // Derived from wedding join — user's currently active package
   const userPackageId = (wedding as any)?.package?.id as number | null | undefined
   const userPackageName = (wedding as any)?.package?.name as string | undefined
-
-  useEffect(() => {
-    if (router.query.admin === '1' || router.query.admin === 'true') {
-      setIsAdminMode(true)
-    }
-  }, [router.query.admin])
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -103,32 +91,6 @@ export default function TemplatesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const updateMeta = (templateId: number, patch: Partial<TemplateAdminMeta>) => {
-    setTemplateMeta((prev) => {
-      const current = prev[templateId] || DEFAULT_META
-      return {
-        ...prev,
-        [templateId]: { ...current, ...patch }
-      }
-    })
-  }
-
-  const togglePlan = (templateId: number, plan: string) => {
-    setTemplateMeta((prev) => {
-      const current = prev[templateId] || DEFAULT_META
-      const allowed = new Set(current.allowed_plans)
-      if (allowed.has(plan)) {
-        allowed.delete(plan)
-      } else {
-        allowed.add(plan)
-      }
-      return {
-        ...prev,
-        [templateId]: { ...current, allowed_plans: Array.from(allowed) }
-      }
-    })
-  }
-
   const templatesWithMeta = useMemo(() => {
     return templates.map((template) => ({
       ...template,
@@ -137,10 +99,7 @@ export default function TemplatesPage() {
   }, [templates, templateMeta])
 
   const filteredTemplates = useMemo(() => {
-    let data = templatesWithMeta
-    if (!isAdminMode) {
-      data = data.filter((template) => template.meta.is_active)
-    }
+    let data = templatesWithMeta.filter((template) => template.meta.is_active)
 
     if (selectedStyle !== 'all') {
       const keyword = selectedStyle.toLowerCase()
@@ -154,23 +113,12 @@ export default function TemplatesPage() {
       })
     }
 
-    if (isAdminMode) {
-      if (statusFilter !== 'all') {
-        data = data.filter((template) =>
-          statusFilter === 'active' ? template.meta.is_active : !template.meta.is_active
-        )
-      }
-      if (planFilter !== 'all') {
-        data = data.filter((template) => template.meta.allowed_plans.includes(planFilter))
-      }
-    }
-
     return data.sort((a, b) => a.meta.sort_order - b.meta.sort_order)
-  }, [templatesWithMeta, isAdminMode, planFilter, searchTerm, selectedStyle, statusFilter, ownershipFilter])
+  }, [templatesWithMeta, searchTerm, selectedStyle])
 
   const pagedTemplates = useMemo(() => {
     let owned = filteredTemplates
-    if (!isAdminMode && ownershipFilter === 'mine') {
+    if (ownershipFilter === 'mine') {
       owned = filteredTemplates.filter((t) => {
         const pkgs: any[] = (t as any).packages || []
         if (pkgs.length === 0) return true // free templates belong to everyone
@@ -180,11 +128,11 @@ export default function TemplatesPage() {
     }
     const start = (currentPage - 1) * itemsPerPage
     return owned.slice(start, start + itemsPerPage)
-  }, [currentPage, filteredTemplates, itemsPerPage, ownershipFilter, userPackageId, isAdminMode])
+  }, [currentPage, filteredTemplates, itemsPerPage, ownershipFilter, userPackageId])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, selectedStyle, statusFilter, planFilter, isAdminMode, ownershipFilter])
+  }, [searchTerm, selectedStyle, ownershipFilter])
 
   if (loadingTemplates) {
     return (
@@ -229,33 +177,6 @@ export default function TemplatesPage() {
         <div>
           <h1 className='text-3xl font-serif font-bold text-gray-900'>Kho Giao Diện</h1>
           <p className='text-gray-500'>Chọn mẫu thiệp phù hợp với phong cách của bạn</p>
-          {isAdminMode && <p className='mt-2 text-xs text-pink-600 font-semibold'>Đang bật chế độ quản trị (mock)</p>}
-        </div>
-        <div className='flex items-center gap-3'>
-          <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
-            <span>Chế độ quản trị</span>
-            <button
-              type='button'
-              onClick={() => setIsAdminMode((prev) => !prev)}
-              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
-                isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
-                  isAdminMode ? 'translate-x-7' : 'translate-x-1'
-                }`}
-              />
-            </button>
-          </label>
-          {isAdminMode && (
-            <button
-              onClick={() => router.push('/studio/templates/add')}
-              className='px-4 py-2 bg-gradient-to-r from-pink-600 to-rose-500 text-white rounded-xl text-sm font-bold'
-            >
-              + Thêm Template
-            </button>
-          )}
         </div>
       </div>
 
@@ -282,61 +203,30 @@ export default function TemplatesPage() {
             <option value='minimal'>Minimal</option>
           </select>
         </div>
-        {/* Ownership filter — only for regular users */}
-        {!isAdminMode && (
-          <div className='flex gap-1 bg-gray-100 rounded-xl p-1'>
-            <button
-              onClick={() => setOwnershipFilter('all')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                ownershipFilter === 'all' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Tất cả
-            </button>
-            <button
-              onClick={() => setOwnershipFilter('mine')}
-              className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-                ownershipFilter === 'mine' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              Gói của tôi
-              {userPackageName && (
-                <span className='ml-1.5 px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-full text-xs'>
-                  {userPackageName}
-                </span>
-              )}
-            </button>
-          </div>
-        )}
-        {isAdminMode && (
-          <>
-            <div className='flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2'>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'hidden')}
-                className='text-sm font-medium text-gray-700 focus:outline-none'
-              >
-                <option value='all'>Tất cả trạng thái</option>
-                <option value='active'>Đang hiển thị</option>
-                <option value='hidden'>Đang ẩn</option>
-              </select>
-            </div>
-            <div className='flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2'>
-              <select
-                value={planFilter}
-                onChange={(e) => setPlanFilter(e.target.value)}
-                className='text-sm font-medium text-gray-700 focus:outline-none'
-              >
-                <option value='all'>Tất cả gói</option>
-                {PLAN_OPTIONS.map((plan) => (
-                  <option key={plan} value={plan}>
-                    {plan}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </>
-        )}
+        {/* Ownership filter */}
+        <div className='flex gap-1 bg-gray-100 rounded-xl p-1'>
+          <button
+            onClick={() => setOwnershipFilter('all')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              ownershipFilter === 'all' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Tất cả
+          </button>
+          <button
+            onClick={() => setOwnershipFilter('mine')}
+            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
+              ownershipFilter === 'mine' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            Gói của tôi
+            {userPackageName && (
+              <span className='ml-1.5 px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-full text-xs'>
+                {userPackageName}
+              </span>
+            )}
+          </button>
+        </div>
         <button
           onClick={() => toast('Bộ lọc demo dựa theo tên mẫu', 'info')}
           className='px-4 py-2 bg-pink-50 text-pink-600 rounded-xl text-sm font-bold'
@@ -353,9 +243,7 @@ export default function TemplatesPage() {
           return (
             <div
               key={template.id}
-              className={`bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow ${
-                !meta.is_active && isAdminMode ? 'opacity-80 border-dashed' : ''
-              }`}
+              className='bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow'
             >
               <div className='aspect-[4/3] bg-gray-100'>
                 {template.thumbnail_url ? (
@@ -398,8 +286,8 @@ export default function TemplatesPage() {
                 </button>
 
                 {/* Apply / Upgrade / Active button */}
-                {!isAdminMode && !canUseTemplate(template.id) ? (
-                  // User doesn’t own the required plan
+                {!canUseTemplate(template.id) ? (
+                  // User doesn't own the required plan
                   <div>
                     <button
                       onClick={() => router.push('/studio/upgrade')}
@@ -438,15 +326,7 @@ export default function TemplatesPage() {
                     )}
                   </button>
                 )}
-                {isAdminMode && (
-                  <button
-                    onClick={() => router.push(`/studio/templates/${template.id}/edit`)}
-                    className='w-full py-2.5 border-2 border-pink-500 text-pink-600 rounded-xl font-bold hover:bg-pink-50'
-                  >
-                    Chỉnh sửa
-                  </button>
-                )}
-                {!isAdminMode && hasPlanLimit && (
+                {hasPlanLimit && (
                   <div className='text-sm text-gray-500 bg-pink-50/60 border border-pink-100 rounded-lg p-3'>
                     Mẫu này thuộc gói trả phí. Nâng cấp để mở khóa và được giảm giá bằng với gói đã mua trước đó.
                   </div>

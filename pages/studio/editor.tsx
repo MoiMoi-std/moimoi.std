@@ -306,7 +306,7 @@ const Editor = () => {
                   </div>
                 </div>
 
-                <div className='grid gap-4 md:grid-cols-2'>
+                {/* <div className='grid gap-4 md:grid-cols-2'>
                   <div className='bg-white border border-gray-100 rounded-2xl p-5 shadow-sm'>
                     <h4 className='font-bold text-gray-900 mb-3'>Thêm field tùy chỉnh</h4>
                     <div className='space-y-3'>
@@ -345,7 +345,7 @@ const Editor = () => {
                       )}
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
             )}
           </div>

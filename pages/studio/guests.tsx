@@ -27,6 +27,8 @@ interface LinkFormData {
   name: string
 }
 
+const getBaseUrl = () => (typeof window !== 'undefined' ? window.location.origin : 'https://www.moimoi.io.vn')
+
 const Guests = () => {
   const [rsvps, setRsvps] = useState<RSVP[]>([])
   const [filteredRsvps, setFilteredRsvps] = useState<RSVP[]>([])
@@ -244,7 +246,7 @@ const Guests = () => {
   const handleShowQR = (rsvp: RSVP) => {
     if (!wedding) return
     const encoded = encodeGuestName(rsvp.guest_name)
-    const link = `http://localhost:3000/${wedding.slug}/${encoded}`
+    const link = `${getBaseUrl()}/${wedding.slug}/${encoded}`
     setQrGuest({ name: rsvp.guest_name, link })
   }
 
@@ -261,7 +263,7 @@ const Guests = () => {
   const getGuestLink = (rsvp: RSVP) => {
     if (!wedding) return ''
     const encoded = encodeGuestName(rsvp.guest_name)
-    return `http://localhost:3000/${wedding.slug}/${encoded}`
+    return `${getBaseUrl()}/${wedding.slug}/${encoded}`
   }
 
   useEffect(() => {
