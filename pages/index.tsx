@@ -1,12 +1,26 @@
 import Features from '@/components/landing/Features'
-import Footer from '@/components/landing/Footer' // Mới
+import Footer from '@/components/landing/Footer'
 import Header from '@/components/landing/Header'
 import Hero from '@/components/landing/Hero'
-import Pricing from '@/components/landing/Pricing' // Mới
-import TemplateGallery from '@/components/landing/TemplateGallery' // Mới
+import Pricing from '@/components/landing/Pricing'
+import TemplateGallery from '@/components/landing/TemplateGallery'
 import Head from 'next/head'
+import { GetStaticProps } from 'next'
 
-export default function Home() {
+interface Template {
+  id: number
+  name: string
+  repo_branch: string
+  thumbnail_url?: string
+  is_active: boolean
+  packages?: any[]
+}
+
+interface HomeProps {
+  initialTemplates: Template[]
+}
+
+export default function Home({ initialTemplates }: HomeProps) {
   return (
     <>
       <Head>
@@ -73,10 +87,32 @@ export default function Home() {
         <Header />
         <Hero />
         <Features />
-        <TemplateGallery />
+        <TemplateGallery initialTemplates={initialTemplates} />
         <Pricing />
         <Footer />
       </main>
     </>
   )
+}
+
+// ISR: fetch templates lúc build, tự động refresh mỗi 5 phút
+export const getStaticProps: GetStaticProps = async () => {
+  try {
+    // Dùng absolute URL khi chạy server-side
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.moimoi.io.vn'
+    const res = await fetch(`${baseUrl}/api/templates`)
+    if (res.ok) {
+      const result = await res.json()
+      return {
+        props: { initialTemplates: result.data || [] },
+        revalidate: 300 // 5 phút
+      }
+    }
+  } catch (e) {
+    // Nếu fetch lỗi (vd: lúc build offline), fallback về array rỗng
+  }
+  return {
+    props: { initialTemplates: [] },
+    revalidate: 60
+  }
 }

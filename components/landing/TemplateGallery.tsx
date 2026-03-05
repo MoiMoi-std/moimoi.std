@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { useEffect, useMemo, useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 
@@ -10,6 +11,10 @@ interface Template {
   packages?: any[]
 }
 
+interface Props {
+  initialTemplates?: Template[]
+}
+
 const CATEGORIES = ['Tất cả', 'Vintage', 'Modern', 'Minimal', 'Luxury', 'Traditional']
 const CARD_COLORS = ['bg-amber-100', 'bg-gray-100', 'bg-yellow-50', 'bg-pink-50', 'bg-blue-50', 'bg-red-50']
 
@@ -19,15 +24,19 @@ const matchCategory = (template: Template, category: string) => {
   return template.name.toLowerCase().includes(keyword) || template.repo_branch.toLowerCase().includes(keyword)
 }
 
-export default function TemplateGallery() {
+export default function TemplateGallery({ initialTemplates }: Props) {
   const [activeCategory, setActiveCategory] = useState('Tất cả')
-  const [templates, setTemplates] = useState<Template[]>([])
-  const [loading, setLoading] = useState(true)
+  // Nếu có initialTemplates từ server thì dùng ngay (không cần loading state)
+  const [templates, setTemplates] = useState<Template[]>(initialTemplates || [])
+  const [loading, setLoading] = useState(!initialTemplates)
   const [showAll, setShowAll] = useState(false)
 
   const INITIAL_VISIBLE_COUNT = 6
 
   useEffect(() => {
+    // Chỉ fetch nếu không có server-side data
+    if (initialTemplates && initialTemplates.length > 0) return
+
     const loadTemplates = async () => {
       setLoading(true)
       try {
@@ -45,7 +54,7 @@ export default function TemplateGallery() {
       }
     }
     loadTemplates()
-  }, [])
+  }, [initialTemplates])
 
   const filteredTemplates = useMemo(() => {
     return templates.filter((template) => matchCategory(template, activeCategory))
@@ -99,8 +108,14 @@ export default function TemplateGallery() {
                   }`}
                 >
                   {template.thumbnail_url ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={template.thumbnail_url} alt={template.name} className='w-full h-full object-cover' />
+                    <Image
+                      src={template.thumbnail_url}
+                      alt={`Mẫu thiệp ${template.name}`}
+                      fill
+                      sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'
+                      className='object-cover'
+                      loading='lazy'
+                    />
                   ) : (
                     <div className='absolute inset-0 flex items-center justify-center font-medium text-gray-400'>
                       Ảnh Mẫu: {template.name}
