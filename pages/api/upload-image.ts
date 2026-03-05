@@ -30,6 +30,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const [fields, files] = await form.parse(req)
 
+    const slug = Array.isArray(fields.slug) ? fields.slug[0] : fields.slug
+    const folder = slug ? `image/${slug}` : 'image'
+
     const uploadedFiles = files.file
     if (!uploadedFiles || uploadedFiles.length === 0) {
       return res.status(400).json({ error: 'No file uploaded' })
@@ -40,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for (const file of uploadedFiles) {
       try {
         const result = await cloudinary.uploader.upload(file.filepath, {
-          folder: 'moimoi',
+          folder: folder,
           resource_type: 'auto',
           transformation: [{ width: 1920, height: 1080, crop: 'limit' }, { quality: 'auto:good' }]
         })

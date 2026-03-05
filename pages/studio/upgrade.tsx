@@ -55,7 +55,8 @@ const mapApiPackageToPlan = (pkg: ApiPackage): Plan => {
     features: featuresArray,
     notIncluded: notIncludedArray,
     highlight: highlight,
-    isActive: pkg.is_active
+    isActive: pkg.is_active,
+    maxRsvps: pkg.max_rsvps
   }
 }
 

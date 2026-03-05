@@ -10,6 +10,7 @@ export type Plan = {
   isActive?: boolean
   discountPrice?: number
   discountEndsAt?: string
+  maxRsvps?: number
 }
 
 const STORAGE_KEY = 'moimoi_plans_v1'
@@ -126,7 +127,8 @@ export const formatVnd = (price: number) => {
 }
 
 export const isDiscountActive = (plan: Plan) => {
-  if (!plan.discountPrice || !plan.discountEndsAt) return false
+  if (!plan.discountPrice) return false
+  if (!plan.discountEndsAt) return true // không có hạn = khuyến mãi vĩnh viễn
   return new Date(plan.discountEndsAt).getTime() > Date.now()
 }
 

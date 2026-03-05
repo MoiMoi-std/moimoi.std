@@ -1,4 +1,3 @@
-import RSVPForm from '@/components/guest/RSVPForm'
 import { Calendar, Clock, Heart, MapPin } from 'lucide-react'
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
@@ -293,20 +292,6 @@ export default function DefaultGeneralView({ wedding }: TemplateProps) {
             </div>
           </section>
         )}
-
-        {/* RSVP Section */}
-        <section className='py-20 px-4 bg-white'>
-          <div className='max-w-3xl mx-auto'>
-            <div className='text-center mb-12'>
-              <h2 className='text-4xl md:text-5xl font-bold mb-4' style={{ color: primaryColor }}>
-                Xác Nhận Tham Dự
-              </h2>
-              <p className='text-gray-600 text-lg'>Vui lòng cho chúng tôi biết bạn có thể tham dự hay không</p>
-            </div>
-
-            <RSVPForm weddingId={wedding.id} />
-          </div>
-        </section>
 
         {/* Footer */}
         <footer
