@@ -54,11 +54,12 @@ export default function Pricing() {
               ]
             }
 
+            const hasDiscount = pkg.original_price != null && pkg.original_price > pkg.price
             return {
               id: pkg.id.toString(),
               name: pkg.name,
-              price: pkg.price,
-              discountPrice: pkg.original_price > pkg.price ? pkg.price : undefined,
+              price: hasDiscount ? pkg.original_price : pkg.price,
+              discountPrice: hasDiscount ? pkg.price : undefined,
               duration: `${pkg.duration_months} tháng`,
               description: pkg.description || 'Gói dịch vụ thiệp cưới trực tuyến',
               features: features,
@@ -129,12 +130,14 @@ export default function Pricing() {
                 )}
 
                 <h3 className='mb-2 text-xl font-bold text-gray-900'>{plan.name}</h3>
-                <div className='mb-2 text-4xl font-bold text-pink-600'>{formatVnd(displayPrice || 0)}</div>
+                <div className='flex items-baseline gap-2 mb-2'>
+                  <span className='text-4xl font-bold text-pink-600'>{formatVnd(displayPrice || 0)}</span>
+                  {hasDiscount && originalPrice && (
+                    <span className='text-sm text-gray-400 line-through opacity-70'>{formatVnd(originalPrice)}</span>
+                  )}
+                </div>
                 {plan.duration && (
                   <div className='mb-2 text-sm font-semibold text-gray-500'>Thời gian: {plan.duration}</div>
-                )}
-                {hasDiscount && originalPrice && (
-                  <div className='text-xs text-gray-400 line-through mb-1 opacity-70'>{formatVnd(originalPrice)}</div>
                 )}
                 <p className='mb-6 text-sm text-gray-500'>{plan.description}</p>
 
