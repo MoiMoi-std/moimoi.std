@@ -1,6 +1,7 @@
 import { getTemplate } from '@/templates/TemplateRegistry'
 import { createClient } from '@supabase/supabase-js'
 import { GetServerSideProps } from 'next'
+import Head from 'next/head'
 
 interface Props {
   wedding: any
@@ -23,7 +24,56 @@ export default function GeneralWeddingPage({ wedding, slug }: Props) {
   const branch = wedding.template?.repo_branch || 'default'
   const SelectedTemplate = getTemplate(branch).GeneralView
 
-  return <SelectedTemplate wedding={wedding} />
+  // Thông tin cho SEO động
+  const groomName: string = wedding.content?.groom_name || ''
+  const brideName: string = wedding.content?.bride_name || ''
+  const coupleNames = groomName && brideName ? `${groomName} & ${brideName}` : 'Thiệp Cưới'
+  const weddingDate: string = wedding.content?.wedding_date || ''
+  const pageTitle = `Thiệp Cưới ${coupleNames} | MoiMoi`
+  const pageDescription = `Trân trọng kính mời bạn tham dự lễ cưới của ${coupleNames}${weddingDate ? ` vào ngày ${weddingDate}` : ''}. Xem thiệp online trên MoiMoi.`
+  const canonicalUrl = `https://www.moimoi.io.vn/${slug}`
+  const coverImage = wedding.content?.cover_image || 'https://www.moimoi.io.vn/og-cover.png'
+
+  return (
+    <>
+      <Head>
+        <title>{pageTitle}</title>
+        <meta name='description' content={pageDescription} />
+        <meta name='robots' content='index, follow' />
+        <link rel='canonical' href={canonicalUrl} />
+
+        {/* Open Graph */}
+        <meta property='og:type' content='website' />
+        <meta property='og:site_name' content='MoiMoi' />
+        <meta property='og:title' content={pageTitle} />
+        <meta property='og:description' content={pageDescription} />
+        <meta property='og:image' content={coverImage} />
+        <meta property='og:url' content={canonicalUrl} />
+        <meta property='og:locale' content='vi_VN' />
+
+        {/* JSON-LD Schema - Event */}
+        <script
+          type='application/ld+json'
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Event',
+              name: `Lễ Cưới ${coupleNames}`,
+              description: pageDescription,
+              url: canonicalUrl,
+              ...(weddingDate && { startDate: weddingDate }),
+              organizer: {
+                '@type': 'Organization',
+                name: 'MoiMoi',
+                url: 'https://www.moimoi.io.vn'
+              }
+            })
+          }}
+        />
+      </Head>
+      <SelectedTemplate wedding={wedding} />
+    </>
+  )
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {
