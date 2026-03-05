@@ -208,13 +208,11 @@ export const dataService = {
     return data
   },
 
-  updateRSVP: async (rsvpId: number, updates: Database['public']['Tables']['rsvps']['Update']): Promise<RSVP | null> => {
-    const { data, error } = await supabase
-      .from('rsvps')
-      .update(updates)
-      .eq('id', rsvpId)
-      .select()
-      .single()
+  updateRSVP: async (
+    rsvpId: number,
+    updates: Database['public']['Tables']['rsvps']['Update']
+  ): Promise<RSVP | null> => {
+    const { data, error } = await supabase.from('rsvps').update(updates).eq('id', rsvpId).select().single()
 
     if (error) {
       console.error('Error updating RSVP:', error)
@@ -343,8 +341,8 @@ const createMockGuests = (count: number, weddingId: string): RSVP[] => {
       guest_name: fullName,
       phone: hasPhone
         ? `09${Math.floor(Math.random() * 100000000)
-          .toString()
-          .padStart(8, '0')}`
+            .toString()
+            .padStart(8, '0')}`
         : null,
       link: null,
       party_size: Math.floor(Math.random() * 3) + 1, // 1-4 people

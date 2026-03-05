@@ -8,6 +8,15 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
+// Mock data album ảnh cưới
+const mockAlbum = [
+  'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=500&fit=crop'
+]
+
 export default function VintageGuestView({ wedding, guestName = '', rsvpId }: TemplateProps) {
   const [wish, setWish] = useState('')
   const [phone, setPhone] = useState('')
@@ -33,12 +42,11 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
       })
   }, [rsvpId])
 
-  const primaryColor = '#8B6914'
-  const accentColor = '#D4A853'
-  const creamBg = '#FFF8E7'
-  const parchment = '#F5E6C8'
+  const red = '#9a2a2a'
+  const cream = '#f2e8de'
+  const creamLight = '#f8f1e9'
+  const textDark = '#4a4a4a'
 
-  // 404
   if (!wedding) {
     return (
       <div
@@ -47,16 +55,14 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: creamBg,
-          fontFamily: "'Lora', Georgia, serif"
+          background: cream,
+          fontFamily: "'Playfair Display', serif"
         }}
       >
         <div style={{ textAlign: 'center', padding: 40 }}>
-          <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>📜</div>
-          <h1 style={{ color: primaryColor, marginBottom: 8, fontFamily: "'Playfair Display', serif" }}>
-            Không tìm thấy thiệp cưới
-          </h1>
-          <p style={{ color: '#8B7355' }}>Link mời có thể đã hết hạn hoặc không hợp lệ.</p>
+          <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>💔</div>
+          <h1 style={{ color: red, marginBottom: 8 }}>Không tìm thấy thông tin</h1>
+          <p style={{ color: '#888' }}>Thiệp mời có thể đã bị xóa hoặc không hợp lệ.</p>
         </div>
       </div>
     )
@@ -65,14 +71,51 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
   const { content, template } = wedding
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
-  const primary = mergedContent.primary_color || primaryColor
+
   const formattedName = guestName
+  const groomName = mergedContent.groom_name || 'Hoàng Nam'
+  const brideName = mergedContent.bride_name || 'Thanh Tú'
+  const groomImage =
+    mergedContent.groom_image ||
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face'
+  const brideImage =
+    mergedContent.bride_image ||
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face'
+  const groomParents = mergedContent.groom_parents || 'Nguyễn Văn Tuấn\nTrần Thị Mai'
+  const brideParents = mergedContent.bride_parents || 'Lê Văn Hùng\nHồ Thị Lan'
+  const groomAddress =
+    mergedContent.groom_address || '23 Đường Nguyễn Trãi, Phường Bến Thành, Quận 1, Thành phố\nHồ Chí Minh'
+  const brideAddress = mergedContent.bride_address || '68 Đường Sư Vạn Hạnh, Phường 12, Quận 10, Thành phố Hồ\nChí Minh'
+  const weddingTime = mergedContent.wedding_time || '09:00'
+  const partyTime = mergedContent.party_time || '10:30'
+  const eventDate = mergedContent.event_date || '01/02/2026'
+  const lunarDate = mergedContent.lunar_date || '14/12 Ất Tỵ'
+  const address = mergedContent.address || 'Queen Plaza Kỳ Hòa, 16A Lê Hồng Phong, Phường 12, Quận 10, TP. Hồ Chí Minh'
+  const albumImages = mergedContent.album_images?.length > 0 ? mergedContent.album_images : mockAlbum
+
+  const formatParents = (text: string) => {
+    const lines = text.split('\n')
+    if (lines.length === 2) {
+      return (
+        <>
+          <div>{lines[0]}</div>
+          <div>{lines[1]}</div>
+        </>
+      )
+    }
+    return text
+  }
+
+  const dateParts = eventDate.split('/')
+  const day = dateParts[0] || '01'
+  const month = dateParts[1] || '02'
+  const year = dateParts[2] || '2026'
+  const dayName = 'CHỦ NHẬT'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setSubmitError('')
-
     try {
       if (rsvpId) {
         const { error } = await supabase
@@ -89,637 +132,621 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
       setSubmitted(true)
     } catch (err: any) {
       console.error('RSVP error:', err)
-      setSubmitError('Có lỗi xảy ra, vui lòng thử lại!')
+      setSubmitError('Có lỗi xảy ra. Vui lòng thử lại!')
     } finally {
       setLoading(false)
     }
   }
 
+  const redPatternStyle = {
+    backgroundColor: red,
+    backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px)`
+  }
+
+  const creamPatternStyle = {
+    backgroundColor: creamLight,
+    backgroundImage: `repeating-radial-gradient(circle at 0 0, transparent 0, ${creamLight} 10px), repeating-linear-gradient(rgba(200,100,100,0.03), rgba(200,100,100,0.03))`
+  }
+
   const inputStyle: React.CSSProperties = {
     width: '100%',
-    padding: '14px 16px',
-    border: `1.5px solid ${accentColor}50`,
-    borderRadius: 10,
+    padding: '12px 14px',
+    border: `1px solid ${red}30`,
+    borderRadius: 8,
     fontSize: 15,
     outline: 'none',
-    background: `${creamBg}`,
+    background: '#fff',
     boxSizing: 'border-box',
-    fontFamily: "'Lora', Georgia, serif",
-    color: '#4A3728',
-    transition: 'border-color 0.2s, box-shadow 0.2s'
+    fontFamily: "'Lora', serif",
+    color: '#333'
   }
 
   const labelStyle: React.CSSProperties = {
     display: 'block',
     marginBottom: 6,
-    fontWeight: 600,
-    fontSize: 13,
-    color: '#5C4A35',
-    letterSpacing: '0.04em',
-    fontFamily: "'Playfair Display', serif"
+    fontWeight: 700,
+    fontSize: 12,
+    color: textDark,
+    letterSpacing: '0.05em'
   }
 
   return (
     <>
       <Head>
-        <title>Thiệp mời — {formattedName}</title>
+        <title>Thiệp cưới - {formattedName}</title>
         <meta name='viewport' content='width=device-width, initial-scale=1' />
         <link rel='preconnect' href='https://fonts.googleapis.com' />
         <link rel='preconnect' href='https://fonts.gstatic.com' crossOrigin='anonymous' />
         <link
-          href='https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Great+Vibes&display=swap'
+          href='https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Great+Vibes&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap'
           rel='stylesheet'
         />
         <style>{`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-          body { background: ${creamBg}; -webkit-font-smoothing: antialiased; }
-
-          input:focus, textarea:focus, select:focus {
-            border-color: ${primary} !important;
-            background: #fff !important;
-            box-shadow: 0 0 0 3px ${accentColor}25 !important;
-            outline: none;
-          }
-
-          @keyframes vintageFadeUp {
-            from { opacity: 0; transform: translateY(28px); }
-            to   { opacity: 1; transform: translateY(0); }
-          }
-          @keyframes gentlePulse {
-            0%, 100% { transform: scale(1); }
-            50%      { transform: scale(1.06); }
-          }
-          @keyframes floatSoft {
-            0%, 100% { transform: translateY(0); }
-            50%      { transform: translateY(-8px); }
-          }
-          @keyframes shimmerGold {
-            0%   { background-position: -200% center; }
-            100% { background-position: 200% center; }
-          }
-          @keyframes waxSeal {
-            0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
-            60%  { transform: scale(1.15) rotate(10deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
-          }
-
-          .vg-fade { animation: vintageFadeUp 0.7s cubic-bezier(.22,.68,0,1.15) both; }
-          .vg-fade:nth-child(2) { animation-delay: .1s; }
-          .vg-fade:nth-child(3) { animation-delay: .2s; }
-          .vg-fade:nth-child(4) { animation-delay: .3s; }
-          .vg-pulse { animation: gentlePulse 3s ease-in-out infinite; }
-          .vg-float { animation: floatSoft 3.5s ease-in-out infinite; display: inline-block; }
-          .vg-seal  { animation: waxSeal 0.8s cubic-bezier(.175,.885,.32,1.275) both; }
-
-          .vg-card {
-            background: linear-gradient(145deg, #FFFDF7, ${parchment}70);
-            border: 1.5px solid ${accentColor}50;
-            border-radius: 16px;
-            box-shadow: 0 4px 24px rgba(139,105,20,.06), inset 0 1px 0 rgba(255,255,255,.6);
-          }
-
-          .gold-text {
-            background: linear-gradient(90deg, ${primary}, ${accentColor}, ${primary});
-            background-size: 200% 100%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: shimmerGold 4s linear infinite;
-          }
-
-          .btn-vintage-attend:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(34,139,20,.15);
-          }
-          .btn-vintage-decline:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(180,80,40,.15);
-          }
-          .btn-vintage-submit:not(:disabled):hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 28px ${accentColor}50;
-          }
+          body { background: #fff; -webkit-font-smoothing: antialiased; }
+          .btn-calendar:hover { opacity: 0.9; transform: scale(1.02); }
+          .btn-attend:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(34,197,94,.2); }
+          .btn-decline:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(239,68,68,.12); }
         `}</style>
       </Head>
 
-      <div
-        style={{
-          minHeight: '100vh',
-          background: `linear-gradient(170deg, ${creamBg} 0%, #FDF5E6 40%, ${parchment}40 100%)`,
-          fontFamily: "'Lora', Georgia, serif",
-          color: '#4A3728'
-        }}
-      >
-        {/* ═══ Hero ═══ */}
-        <div style={{ position: 'relative', overflow: 'hidden', padding: '64px 20px 56px', textAlign: 'center' }}>
-          {/* Corner ornaments */}
-          {['top-left', 'top-right', 'bottom-left', 'bottom-right'].map((pos) => {
-            const isTop = pos.includes('top')
-            const isLeft = pos.includes('left')
-            return (
-              <div
-                key={pos}
-                style={{
-                  position: 'absolute',
-                  [isTop ? 'top' : 'bottom']: 16,
-                  [isLeft ? 'left' : 'right']: 16,
-                  width: 40,
-                  height: 40,
-                  borderTop: isTop ? `2px solid ${accentColor}50` : 'none',
-                  borderBottom: !isTop ? `2px solid ${accentColor}50` : 'none',
-                  borderLeft: isLeft ? `2px solid ${accentColor}50` : 'none',
-                  borderRight: !isLeft ? `2px solid ${accentColor}50` : 'none'
-                }}
-              />
-            )
-          })}
-
-          {/* Decorative blobs */}
-          <div
-            style={{
-              position: 'absolute',
-              top: -60,
-              right: -60,
-              width: 200,
-              height: 200,
-              borderRadius: '50%',
-              border: `1px solid ${accentColor}15`,
-              pointerEvents: 'none'
-            }}
-          />
-
-          <div
-            className='vg-float'
-            style={{
-              fontSize: '2.8rem',
-              marginBottom: 18,
-              filter: 'drop-shadow(0 4px 12px rgba(139,105,20,.15))'
-            }}
-          >
-            📜
-          </div>
-
-          <p
-            style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: '#8B7355',
-              letterSpacing: '0.25em',
-              textTransform: 'uppercase',
-              marginBottom: 16,
-              fontFamily: "'Playfair Display', serif"
-            }}
-          >
-            TRÂN TRỌNG KÍNH MỜI
-          </p>
-
-          <h1
-            className='gold-text'
-            style={{
-              fontFamily: "'Great Vibes', cursive",
-              fontSize: 'clamp(2.2rem, 8vw, 3.8rem)',
-              fontWeight: 400,
-              lineHeight: 1.2,
-              marginBottom: 14
-            }}
-          >
-            {formattedName}
-          </h1>
-
-          <p style={{ fontSize: 15, color: '#8B7355', fontStyle: 'italic', marginBottom: 10 }}>
-            tới tham dự lễ thành hôn của
-          </p>
-
-          <h2
-            style={{
-              fontFamily: "'Playfair Display', serif",
-              fontSize: 'clamp(1.2rem, 4vw, 1.65rem)',
-              fontWeight: 700,
-              color: '#4A3728',
-              letterSpacing: '0.02em'
-            }}
-          >
-            {mergedContent.groom_name} &amp; {mergedContent.bride_name}
-          </h2>
-
-          {/* Ornate divider */}
-          <div
-            style={{
-              margin: '22px auto 0',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 12
-            }}
-          >
-            <div
-              style={{
-                height: 1,
-                width: 50,
-                background: `linear-gradient(to right, transparent, ${accentColor})`
-              }}
-            />
-            <span style={{ color: accentColor, fontSize: 14, opacity: 0.6 }}>❦</span>
-            <div
-              style={{
-                height: 1,
-                width: 50,
-                background: `linear-gradient(to left, transparent, ${accentColor})`
-              }}
-            />
-          </div>
-        </div>
-
-        {/* ═══ Cards ═══ */}
+      <div style={{ minHeight: '100vh', background: '#fff' }}>
         <div
           style={{
-            maxWidth: 540,
+            maxWidth: 600,
             margin: '0 auto',
-            padding: '0 16px 70px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16
+            background: cream,
+            minHeight: '100vh',
+            fontFamily: "'Lora', serif",
+            color: textDark,
+            paddingBottom: 60,
+            boxShadow: '0 0 20px rgba(0,0,0,0.05)'
           }}
         >
-          {/* Cover image */}
-          {mergedContent.cover_image && (
-            <div
-              className='vg-fade'
-              style={{
-                borderRadius: 16,
-                overflow: 'hidden',
-                boxShadow: '0 10px 40px rgba(139,105,20,.12)',
-                border: `1.5px solid ${accentColor}40`
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={mergedContent.cover_image}
-                alt='Wedding Cover'
-                style={{
-                  width: '100%',
-                  display: 'block',
-                  maxHeight: 300,
-                  objectFit: 'cover',
-                  filter: 'sepia(12%) saturate(90%)'
-                }}
-              />
-            </div>
-          )}
+          {/* ═════════ HERO SECTION ═════════ */}
+          <div style={{ width: '100%', height: 60, ...redPatternStyle }} />
 
-          {/* Event info */}
-          <div className='vg-fade vg-card' style={{ padding: '26px 24px' }}>
-            <p
+          <div
+            style={{
+              width: '100%',
+              padding: '24px 0',
+              textAlign: 'center',
+              ...creamPatternStyle
+            }}
+          >
+            <h1
               style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: primary,
-                letterSpacing: '0.16em',
-                textTransform: 'uppercase',
-                textAlign: 'center',
-                marginBottom: 18,
-                fontFamily: "'Playfair Display', serif"
+                fontFamily: "'Great Vibes', cursive",
+                fontSize: '3rem',
+                color: red,
+                fontWeight: 400
               }}
             >
-              ✦ Thông tin sự kiện
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {[
-                { icon: '📅', label: 'Ngày cưới', value: mergedContent.event_date },
-                { icon: '⏰', label: 'Giờ', value: mergedContent.wedding_time },
-                { icon: '📍', label: 'Địa điểm', value: mergedContent.address }
-              ].map(({ icon, label, value }) => (
-                <div
-                  key={label}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 12,
-                    padding: '12px 14px',
-                    background: `${accentColor}0a`,
-                    borderRadius: 10,
-                    border: `1px solid ${accentColor}18`
-                  }}
-                >
-                  <span style={{ fontSize: 20, flexShrink: 0, lineHeight: 1 }}>{icon}</span>
-                  <div>
-                    <span
-                      style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: primary,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em',
-                        display: 'block',
-                        marginBottom: 2,
-                        fontFamily: "'Playfair Display', serif"
-                      }}
-                    >
-                      {label}
-                    </span>
-                    <span style={{ fontSize: 15, color: '#4A3728', fontWeight: 500, lineHeight: 1.4 }}>
-                      {value || '—'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
+              Happy Wedding
+            </h1>
           </div>
 
-          {/* RSVP Form / Success */}
-          {!submitted ? (
-            <div className='vg-fade vg-card' style={{ padding: '28px 24px' }}>
-              <p
+          <div style={{ width: '100%', height: 100, ...redPatternStyle }} />
+
+          {/* avatars overlapping */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: '8%', marginTop: -80, padding: '0 20px' }}>
+            {/* Groom */}
+            <div style={{ textAlign: 'center', width: '40%' }}>
+              <div
                 style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: primary,
-                  letterSpacing: '0.16em',
-                  textTransform: 'uppercase',
-                  textAlign: 'center',
-                  marginBottom: 4,
-                  fontFamily: "'Playfair Display', serif"
+                  width: '100%',
+                  aspectRatio: '1/1',
+                  borderRadius: '50%',
+                  border: '4px solid #fff',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  margin: '0 auto 16px'
                 }}
               >
-                ✉ Xác nhận tham dự
-              </p>
-              <p style={{ textAlign: 'center', color: '#8B7355', fontSize: 13, marginBottom: 24, fontStyle: 'italic' }}>
-                Vui lòng điền thông tin để chúng tôi chuẩn bị tốt hơn
-              </p>
-
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                {/* Tham dự? */}
-                <div>
-                  <label style={labelStyle}>Bạn có tham dự không? *</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    <button
-                      type='button'
-                      className='btn-vintage-attend'
-                      onClick={() => setIsAttending(true)}
-                      style={{
-                        padding: '13px 8px',
-                        borderRadius: 10,
-                        border: isAttending === true ? '2px solid #6B8E23' : `1.5px solid ${accentColor}50`,
-                        background: isAttending === true ? '#F5F9E8' : `${creamBg}`,
-                        cursor: 'pointer',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: isAttending === true ? '#4A6B0A' : '#8B7355',
-                        transition: 'all .2s',
-                        fontFamily: "'Lora', serif"
-                      }}
-                    >
-                      ✅ Có, tôi sẽ đến
-                    </button>
-                    <button
-                      type='button'
-                      className='btn-vintage-decline'
-                      onClick={() => setIsAttending(false)}
-                      style={{
-                        padding: '13px 8px',
-                        borderRadius: 10,
-                        border: isAttending === false ? '2px solid #B45028' : `1.5px solid ${accentColor}50`,
-                        background: isAttending === false ? '#FDF0EC' : `${creamBg}`,
-                        cursor: 'pointer',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: isAttending === false ? '#8B3A1C' : '#8B7355',
-                        transition: 'all .2s',
-                        fontFamily: "'Lora', serif"
-                      }}
-                    >
-                      ❌ Xin lỗi, tôi bận
-                    </button>
-                  </div>
-                </div>
-
-                {/* Số điện thoại */}
-                <div>
-                  <label style={labelStyle}>
-                    Số điện thoại&nbsp;
-                    <span
-                      style={{
-                        color: '#B8A88A',
-                        fontSize: 12,
-                        fontWeight: 400,
-                        textTransform: 'none',
-                        letterSpacing: 0,
-                        fontFamily: "'Lora', serif"
-                      }}
-                    >
-                      (tùy chọn)
-                    </span>
-                  </label>
-                  <input
-                    type='tel'
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder='0901 234 567'
-                    style={inputStyle}
-                  />
-                </div>
-
-                {/* Số người tham dự */}
-                <div>
-                  <label style={labelStyle}>Số người tham dự</label>
-                  <div style={{ display: 'flex' }}>
-                    {[1, 2, 3, 4, 5].map((n, i) => (
-                      <button
-                        key={n}
-                        type='button'
-                        onClick={() => setPartySize(n)}
-                        style={{
-                          flex: 1,
-                          padding: '12px 4px',
-                          border: `1.5px solid`,
-                          borderColor: partySize === n ? primary : `${accentColor}50`,
-                          borderRight: i < 4 ? 'none' : '1.5px solid',
-                          borderRightColor: partySize === n ? primary : `${accentColor}50`,
-                          borderRadius: i === 0 ? '10px 0 0 10px' : i === 4 ? '0 10px 10px 0' : '0',
-                          background: partySize === n ? `linear-gradient(135deg, ${primary}, ${accentColor})` : creamBg,
-                          color: partySize === n ? '#fff' : '#8B7355',
-                          fontWeight: 700,
-                          fontSize: 15,
-                          cursor: 'pointer',
-                          transition: 'all .18s',
-                          fontFamily: "'Lora', serif"
-                        }}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                  <p style={{ fontSize: 12, color: '#B8A88A', marginTop: 5, fontStyle: 'italic' }}>người tham dự</p>
-                </div>
-
-                {/* Lời chúc */}
-                <div>
-                  <label style={labelStyle}>
-                    Lời chúc&nbsp;
-                    <span
-                      style={{
-                        color: '#B8A88A',
-                        fontSize: 12,
-                        fontWeight: 400,
-                        textTransform: 'none',
-                        letterSpacing: 0,
-                        fontFamily: "'Lora', serif"
-                      }}
-                    >
-                      (tùy chọn)
-                    </span>
-                  </label>
-                  <textarea
-                    value={wish}
-                    onChange={(e) => setWish(e.target.value)}
-                    placeholder='Chúc hai bạn trăm năm hạnh phúc, vạn sự như ý...'
-                    rows={4}
-                    style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.65 }}
-                  />
-                </div>
-
-                {/* Submit */}
-                <button
-                  type='submit'
-                  className='btn-vintage-submit'
-                  disabled={loading || isAttending === null}
-                  style={{
-                    width: '100%',
-                    padding: 16,
-                    background:
-                      isAttending === null || loading
-                        ? `${accentColor}40`
-                        : `linear-gradient(135deg, ${primary} 0%, ${accentColor} 100%)`,
-                    color: isAttending === null || loading ? '#B8A88A' : '#fff',
-                    border: 'none',
-                    borderRadius: 12,
-                    fontSize: 16,
-                    fontWeight: 700,
-                    cursor: loading || isAttending === null ? 'not-allowed' : 'pointer',
-                    letterSpacing: '0.04em',
-                    transition: 'all .25s',
-                    boxShadow: isAttending !== null && !loading ? `0 6px 22px ${accentColor}40` : 'none',
-                    fontFamily: "'Playfair Display', serif"
-                  }}
-                >
-                  {loading ? '⏳ Đang gửi...' : '✉ Gửi xác nhận'}
-                </button>
-
-                {/* Error */}
-                {submitError && (
-                  <div
-                    style={{
-                      padding: '12px 16px',
-                      background: '#FDF0EC',
-                      border: '1px solid #E8C4B4',
-                      borderRadius: 10,
-                      color: '#8B3A1C',
-                      fontSize: 14,
-                      textAlign: 'center',
-                      fontWeight: 500
-                    }}
-                  >
-                    ❌ {submitError}
-                  </div>
-                )}
-              </form>
-            </div>
-          ) : (
-            /* ═══ Success Screen — Wax Seal ═══ */
-            <div
-              className='vg-fade vg-card'
-              style={{
-                padding: '52px 28px',
-                textAlign: 'center'
-              }}
-            >
-              <div className='vg-seal' style={{ fontSize: '4rem', marginBottom: 22 }}>
-                {isAttending ? '🎊' : '💌'}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={groomImage} alt={groomName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               </div>
               <h3
                 style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: '1.5rem',
-                  fontWeight: 700,
-                  color: isAttending ? '#4A6B0A' : primary,
-                  marginBottom: 12,
-                  lineHeight: 1.3
+                  fontFamily: "'Great Vibes', cursive",
+                  fontSize: '2.2rem',
+                  color: red,
+                  fontWeight: 400
                 }}
               >
-                {isAttending ? 'Hẹn gặp bạn tại đám cưới!' : 'Cảm ơn bạn đã phản hồi!'}
+                {groomName}
               </h3>
-              <p
+            </div>
+
+            {/* Bride */}
+            <div style={{ textAlign: 'center', width: '40%' }}>
+              <div
                 style={{
-                  color: '#8B7355',
-                  fontSize: 15,
-                  lineHeight: 1.75,
-                  maxWidth: 300,
-                  margin: '0 auto',
-                  fontStyle: 'italic'
+                  width: '100%',
+                  aspectRatio: '1/1',
+                  borderRadius: '50%',
+                  border: '4px solid #fff',
+                  boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                  overflow: 'hidden',
+                  margin: '0 auto 16px'
                 }}
               >
-                {isAttending
-                  ? `Chúng tôi rất vui được đón tiếp ${formattedName}. Hẹn gặp trong ngày vui! 🥂`
-                  : 'Rất tiếc khi bạn không thể tham dự. Mong có dịp gặp nhau trong tương lai! 💕'}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={brideImage} alt={brideName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              </div>
+              <h3
+                style={{
+                  fontFamily: "'Great Vibes', cursive",
+                  fontSize: '2.2rem',
+                  color: red,
+                  fontWeight: 400
+                }}
+              >
+                {brideName}
+              </h3>
+            </div>
+          </div>
+
+          {/* ═════════ PARENTS INFO ═════════ */}
+          <div
+            style={{ display: 'flex', justifyContent: 'space-between', padding: '30px 40px 40px', textAlign: 'center' }}
+          >
+            {/* Groom Parents */}
+            <div style={{ flex: 1, padding: '0 10px' }}>
+              <div style={{ width: '100%', height: 1, backgroundColor: '#c8b6a6', marginBottom: 16 }} />
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  fontStyle: 'italic',
+                  color: textDark,
+                  lineHeight: 1.5,
+                  marginBottom: 10
+                }}
+              >
+                {formatParents(groomParents)}
+              </div>
+              <p style={{ fontSize: '0.75rem', color: '#666', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
+                {groomAddress}
               </p>
-              {wish && (
-                <div
+            </div>
+            {/* Bride Parents */}
+            <div style={{ flex: 1, padding: '0 10px' }}>
+              <div style={{ width: '100%', height: 1, backgroundColor: '#c8b6a6', marginBottom: 16 }} />
+              <div
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '1rem',
+                  fontWeight: 700,
+                  fontStyle: 'italic',
+                  color: textDark,
+                  lineHeight: 1.5,
+                  marginBottom: 10
+                }}
+              >
+                {formatParents(brideParents)}
+              </div>
+              <p style={{ fontSize: '0.75rem', color: '#666', lineHeight: 1.4, whiteSpace: 'pre-line' }}>
+                {brideAddress}
+              </p>
+            </div>
+          </div>
+
+          {/* ═════════ WEDDING EVENT ═════════ */}
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <p style={{ fontSize: '0.85rem', color: textDark, fontWeight: 500, marginBottom: 4 }}>
+              LỄ THÀNH HÔN ĐƯỢC CỬ HÀNH TẠI
+            </p>
+            <p style={{ fontSize: '1rem', color: textDark, fontWeight: 600, marginBottom: 4 }}>TƯ GIA</p>
+            <p style={{ fontSize: '0.85rem', color: textDark, fontWeight: 500, marginBottom: 8 }}>VÀO LÚC</p>
+            <p
+              style={{
+                fontSize: '1.6rem',
+                color: red,
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                marginBottom: 16
+              }}
+            >
+              {weddingTime}
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: textDark }}>{dayName}</span>
+              <div style={{ width: 1, height: 24, backgroundColor: '#c8b6a6' }} />
+              <span
+                style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 700,
+                  color: red,
+                  fontFamily: "'Playfair Display', serif",
+                  lineHeight: 1
+                }}
+              >
+                {day}
+              </span>
+              <div style={{ width: 1, height: 24, backgroundColor: '#c8b6a6' }} />
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: textDark }}>THÁNG {month}</span>
+            </div>
+
+            <p
+              style={{
+                fontSize: '1.1rem',
+                color: red,
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                marginBottom: 6
+              }}
+            >
+              {year}
+            </p>
+            <p style={{ fontSize: '0.9rem', color: '#666', fontStyle: 'italic' }}>(Tức ngày {lunarDate})</p>
+          </div>
+
+          {/* ═════════ ALBUM ═════════ */}
+          <div style={{ padding: '0 20px', marginBottom: 40 }}>
+            <h2
+              style={{
+                fontFamily: "'Great Vibes', cursive",
+                fontSize: '2.5rem',
+                color: red,
+                fontWeight: 400,
+                textAlign: 'center',
+                marginBottom: 20
+              }}
+            >
+              Album Ảnh Cưới
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+              {albumImages.slice(0, 4).map((img: string, i: number) => {
+                const isLast = i === 3
+                const extraCount = albumImages.length - 4
+
+                return (
+                  <div
+                    key={i}
+                    style={{ borderRadius: 8, overflow: 'hidden', aspectRatio: '3/4', position: 'relative' }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={img}
+                      alt={`Album ${i + 1}`}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                    {isLast && extraCount > 0 && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundColor: 'rgba(0,0,0,0.5)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontSize: '1.2rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        +{extraCount}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* ═════════ PARTY EVENT ═════════ */}
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <h2
+              style={{
+                fontFamily: "'Great Vibes', cursive",
+                fontSize: '2.2rem',
+                color: red,
+                fontWeight: 400,
+                marginBottom: 16
+              }}
+            >
+              Tiệc cưới sẽ diễn ra vào lúc:
+            </h2>
+            <p
+              style={{
+                fontSize: '1.6rem',
+                color: red,
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                marginBottom: 16
+              }}
+            >
+              {partyTime}
+            </p>
+
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: textDark }}>{dayName}</span>
+              <div style={{ width: 1, height: 24, backgroundColor: '#c8b6a6' }} />
+              <span
+                style={{
+                  fontSize: '2.5rem',
+                  fontWeight: 700,
+                  color: red,
+                  fontFamily: "'Playfair Display', serif",
+                  lineHeight: 1
+                }}
+              >
+                {day}
+              </span>
+              <div style={{ width: 1, height: 24, backgroundColor: '#c8b6a6' }} />
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: textDark }}>THÁNG {month}</span>
+            </div>
+
+            <p
+              style={{
+                fontSize: '1.1rem',
+                color: red,
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                marginBottom: 6
+              }}
+            >
+              {year}
+            </p>
+            <p style={{ fontSize: '0.9rem', color: '#666', fontStyle: 'italic', marginBottom: 16 }}>
+              (Tức ngày {lunarDate})
+            </p>
+
+            <p style={{ fontSize: '0.8rem', color: textDark, textTransform: 'uppercase', marginBottom: 4 }}>
+              KHAI TIỆC
+            </p>
+            <p
+              style={{
+                fontSize: '1.2rem',
+                color: red,
+                fontWeight: 700,
+                fontFamily: "'Playfair Display', serif",
+                marginBottom: 20
+              }}
+            >
+              {partyTime}
+            </p>
+
+            <button
+              className='btn-calendar'
+              style={{
+                backgroundColor: '#7e2b2b',
+                color: '#fff',
+                border: 'none',
+                padding: '10px 24px',
+                borderRadius: 20,
+                fontSize: '0.9rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'all 0.3s'
+              }}
+            >
+              Thêm vào lịch
+            </button>
+          </div>
+
+          {/* ═════════ VENUE ═════════ */}
+          <div style={{ textAlign: 'center', padding: '0 20px', marginBottom: 40 }}>
+            <h2
+              style={{
+                fontFamily: "'Great Vibes', cursive",
+                fontSize: '2.2rem',
+                color: red,
+                fontWeight: 400,
+                marginBottom: 16
+              }}
+            >
+              Tiệc cưới sẽ tổ chức tại
+            </h2>
+            <div
+              style={{
+                backgroundColor: '#e6dacb',
+                padding: '16px 20px',
+                borderRadius: 8,
+                fontSize: '0.9rem',
+                color: textDark,
+                fontWeight: 600,
+                lineHeight: 1.5,
+                border: '1px solid #d4c4b4'
+              }}
+            >
+              {address}
+            </div>
+          </div>
+
+          {/* ═════════ RSVP FORM ═════════ */}
+          <div style={{ padding: '0 20px' }}>
+            <div
+              style={{
+                backgroundColor: '#fff',
+                border: `1px solid ${red}30`,
+                borderRadius: 16,
+                padding: '24px',
+                boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
+              }}
+            >
+              {/* Lời chào */}
+              <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                <p style={{ fontSize: '0.9rem', color: '#666', fontStyle: 'italic', marginBottom: 4 }}>Kính mời</p>
+                <h3
                   style={{
-                    marginTop: 28,
-                    padding: '16px 20px',
-                    background: `${accentColor}0c`,
-                    borderRadius: 12,
-                    borderLeft: `3px solid ${accentColor}`,
-                    textAlign: 'left'
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '1.4rem',
+                    fontWeight: 700,
+                    color: red,
+                    marginBottom: 6
                   }}
                 >
+                  {formattedName}
+                </h3>
+                <p style={{ fontSize: '0.9rem', color: '#666', fontStyle: 'italic' }}>
+                  tới tham dự lễ thành hôn cùng chúng tôi
+                </p>
+              </div>
+
+              {!submitted ? (
+                <>
                   <p
                     style={{
-                      fontSize: 10,
+                      fontSize: '0.9rem',
                       fontWeight: 700,
-                      color: primary,
+                      color: red,
                       textTransform: 'uppercase',
-                      letterSpacing: '0.1em',
+                      textAlign: 'center',
                       marginBottom: 8,
-                      fontFamily: "'Playfair Display', serif"
+                      letterSpacing: '0.1em'
                     }}
                   >
-                    Lời chúc của bạn
+                    Xác nhận tham dự
                   </p>
-                  <p style={{ color: '#5C4A35', fontStyle: 'italic', fontSize: 14, lineHeight: 1.7 }}>
-                    &ldquo;{wish}&rdquo;
+
+                  <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div>
+                      <label style={labelStyle}>Bạn có tham dự không? *</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <button
+                          type='button'
+                          className='btn-attend'
+                          onClick={() => setIsAttending(true)}
+                          style={{
+                            padding: '12px 6px',
+                            borderRadius: 8,
+                            border: isAttending === true ? '2px solid #22c55e' : `1px solid ${red}30`,
+                            background: isAttending === true ? 'rgba(34,197,94,.06)' : '#fff',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: 600,
+                            color: isAttending === true ? '#22c55e' : '#666',
+                            transition: 'all .2s',
+                            fontFamily: "'Lora', serif"
+                          }}
+                        >
+                          ✅ Tôi sẽ đến
+                        </button>
+                        <button
+                          type='button'
+                          className='btn-decline'
+                          onClick={() => setIsAttending(false)}
+                          style={{
+                            padding: '12px 6px',
+                            borderRadius: 8,
+                            border: isAttending === false ? '2px solid #dc2626' : `1px solid ${red}30`,
+                            background: isAttending === false ? 'rgba(220,38,38,.04)' : '#fff',
+                            cursor: 'pointer',
+                            fontSize: '0.9rem',
+                            fontWeight: 600,
+                            color: isAttending === false ? '#dc2626' : '#666',
+                            transition: 'all .2s',
+                            fontFamily: "'Lora', serif"
+                          }}
+                        >
+                          ❌ Xin lỗi, bận
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Điện thoại (tùy chọn)</label>
+                      <input
+                        type='tel'
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder='0901 234 567'
+                        style={inputStyle}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Số người</label>
+                      <div style={{ display: 'flex' }}>
+                        {[1, 2, 3, 4, 5].map((n, i) => (
+                          <button
+                            key={n}
+                            type='button'
+                            onClick={() => setPartySize(n)}
+                            style={{
+                              flex: 1,
+                              padding: '10px 4px',
+                              border: `1px solid ${partySize === n ? red : red + '30'}`,
+                              borderRight: i < 4 ? 'none' : `1px solid ${partySize === n ? red : red + '30'}`,
+                              borderRadius: i === 0 ? '8px 0 0 8px' : i === 4 ? '0 8px 8px 0' : '0',
+                              background: partySize === n ? red : '#fff',
+                              color: partySize === n ? '#fff' : '#666',
+                              fontWeight: 700,
+                              fontSize: 14,
+                              cursor: 'pointer',
+                              fontFamily: "'Lora', serif"
+                            }}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={labelStyle}>Lời chúc (tùy chọn)</label>
+                      <textarea
+                        value={wish}
+                        onChange={(e) => setWish(e.target.value)}
+                        placeholder='Chúc hai bạn trăm năm hạnh phúc...'
+                        rows={3}
+                        style={{ ...inputStyle, resize: 'vertical' }}
+                      />
+                    </div>
+
+                    <button
+                      type='submit'
+                      disabled={loading || isAttending === null}
+                      style={{
+                        width: '100%',
+                        padding: 14,
+                        backgroundColor: isAttending === null || loading ? '#ccc' : red,
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        fontSize: '1rem',
+                        fontWeight: 700,
+                        cursor: loading || isAttending === null ? 'not-allowed' : 'pointer',
+                        fontFamily: "'Playfair Display', serif"
+                      }}
+                    >
+                      {loading ? 'Đang gửi...' : 'Gửi xác nhận'}
+                    </button>
+
+                    {submitError && (
+                      <p style={{ color: '#dc2626', fontSize: '0.9rem', textAlign: 'center', marginTop: 8 }}>
+                        {submitError}
+                      </p>
+                    )}
+                  </form>
+                </>
+              ) : (
+                <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                  <div style={{ fontSize: '3rem', marginBottom: 12 }}>{isAttending ? '🎊' : '💝'}</div>
+                  <h3
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: '1.2rem',
+                      fontWeight: 700,
+                      color: isAttending ? '#15803d' : red,
+                      marginBottom: 8
+                    }}
+                  >
+                    {isAttending ? 'Hẹn gặp bạn tại đám cưới!' : 'Cảm ơn bạn đã phản hồi!'}
+                  </h3>
+                  <p style={{ color: '#666', fontSize: '0.9rem' }}>
+                    {isAttending
+                      ? `Chúng tôi rất vui được đón tiếp ${formattedName}.`
+                      : 'Rất tiếc khi bạn không thể tham dự.'}
                   </p>
                 </div>
               )}
-
-              {/* Wax seal decoration */}
-              <div
-                style={{
-                  marginTop: 32,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 12
-                }}
-              >
-                <div
-                  style={{
-                    height: 1,
-                    width: 40,
-                    background: `linear-gradient(to right, transparent, ${accentColor}60)`
-                  }}
-                />
-                <span style={{ color: accentColor, fontSize: 12, opacity: 0.5 }}>❦</span>
-                <div
-                  style={{
-                    height: 1,
-                    width: 40,
-                    background: `linear-gradient(to left, transparent, ${accentColor}60)`
-                  }}
-                />
-              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </>
