@@ -26,6 +26,7 @@ const Editor = () => {
   const [adminLogs, setAdminLogs] = useState<string[]>([])
   const [originalImages, setOriginalImages] = useState<string[]>([])
   const [originalCoverImage, setOriginalCoverImage] = useState<string | null>(null)
+  const [isDirty, setIsDirty] = useState(false)
   const { success, error } = useToast()
 
   // Store original images when wedding loads
@@ -39,50 +40,43 @@ const Editor = () => {
 
   const handleInfoChange = (key: string, value: string) => {
     if (!wedding) return
-    setWedding({
-      ...wedding,
-      content: { ...wedding.content, [key]: value }
-    })
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, [key]: value } } : prev))
   }
 
   const handleBatchChange = (changes: Record<string, string>) => {
     if (!wedding) return
-    setWedding({
-      ...wedding,
-      content: { ...wedding.content, ...changes }
-    })
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, ...changes } } : prev))
   }
 
   const handleImagesChange = (images: string[]) => {
     if (!wedding) return
-    setWedding({
-      ...wedding,
-      content: { ...wedding.content, images }
-    })
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, images } } : prev))
   }
 
   const handleCoverImageChange = (coverImage: string | null) => {
     if (!wedding) return
-    setWedding({
-      ...wedding,
-      content: { ...wedding.content, cover_image: coverImage }
-    })
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, cover_image: coverImage } } : prev))
   }
 
   const handleImagePositionsChange = (positions: (ImagePosition | null)[]) => {
     if (!wedding) return
-    setWedding({
-      ...wedding,
-      content: { ...wedding.content, image_positions: positions }
-    })
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, image_positions: positions } } : prev))
   }
 
   const handleCoverImagePositionChange = (position: ImagePosition) => {
     if (!wedding) return
-    setWedding({
-      ...wedding,
-      content: { ...wedding.content, cover_image_position: position }
-    })
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, cover_image_position: position } } : prev))
+  }
+
+  const handleImageDeleted = (url: string) => {
+    setOriginalImages((prev) => prev.filter((img) => img !== url))
+    setOriginalCoverImage((prev) => (prev === url ? null : prev))
   }
 
   const handleSave = async () => {
@@ -91,8 +85,9 @@ const Editor = () => {
     try {
       const previousImages = originalImages
       const currentImages = wedding.content.images || []
+      const coverIsBase64 = Boolean(wedding.content.cover_image?.startsWith('data:'))
 
-      const { newImages, uploadedCount, deletedCount } = await processImages(
+      const { newImages, uploadedCount, deletedCount, failedCount } = await processImages(
         currentImages,
         previousImages,
         wedding.slug ?? undefined
@@ -103,6 +98,12 @@ const Editor = () => {
         originalCoverImage,
         wedding.slug ?? undefined
       )
+
+      const coverUploadFailed = coverIsBase64 && !newCoverImage
+      if (failedCount > 0 || coverUploadFailed) {
+        error('Tải ảnh lên Cloudinary thất bại. Vui lòng kiểm tra kết nối và thử lại.')
+        return
+      }
 
       if (uploadedCount > 0 || deletedCount > 0) {
         console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
@@ -115,6 +116,7 @@ const Editor = () => {
       setWedding({ ...wedding, content: updatedContent })
       setOriginalImages(newImages)
       setOriginalCoverImage(newCoverImage)
+      setIsDirty(false)
 
       success('Lưu thay đổi thành công!')
     } catch (e) {
@@ -346,6 +348,7 @@ const Editor = () => {
                 onImagePositionsChange={handleImagePositionsChange}
                 coverImagePosition={wedding?.content?.cover_image_position || undefined}
                 onCoverImagePositionChange={handleCoverImagePositionChange}
+                onImageDeleted={handleImageDeleted}
               />
             </div>
             <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
@@ -426,7 +429,11 @@ const Editor = () => {
           </div>
         </div>
 
-        <LivePreview wedding={wedding} />
+        <LivePreview
+          wedding={wedding}
+          isDirty={isDirty}
+          onUnsavedWarning={() => error('Vui lòng lưu thay đổi trước khi xem thiệp.')}
+        />
       </div>
     </StudioLayout>
   )

@@ -6,6 +6,8 @@ import React, { useState } from 'react'
 
 interface LivePreviewProps {
   wedding?: Wedding | null
+  isDirty?: boolean
+  onUnsavedWarning?: () => void
 }
 
 // Phone constants
@@ -21,7 +23,7 @@ const LAPTOP_DISPLAY_WIDTH = 320
 const LAPTOP_SCALE = LAPTOP_DISPLAY_WIDTH / LAPTOP_TEMPLATE_WIDTH
 const LAPTOP_DISPLAY_HEIGHT = 210
 
-const LivePreview: React.FC<LivePreviewProps> = ({ wedding }) => {
+const LivePreview: React.FC<LivePreviewProps> = ({ wedding, isDirty, onUnsavedWarning }) => {
   const [mode, setMode] = useState<'phone' | 'laptop'>('phone')
 
   if (!wedding) {
@@ -42,7 +44,13 @@ const LivePreview: React.FC<LivePreviewProps> = ({ wedding }) => {
   const branch = wedding.template?.repo_branch || 'default'
   const { GeneralView } = getTemplate(branch)
 
-  const handleOpen = () => window.open(`/${wedding.slug}`, '_blank')
+  const handleOpen = () => {
+    if (isDirty) {
+      onUnsavedWarning?.()
+      return
+    }
+    window.open(`/${wedding.slug}`, '_blank')
+  }
 
   return (
     <div>
