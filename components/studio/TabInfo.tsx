@@ -13,7 +13,13 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
     wedding_date: content?.wedding_date || '',
     wedding_time: content?.wedding_time || '',
     address: content?.address || '',
-    map_url: content?.map_url || ''
+    map_url: content?.map_url || '',
+    groom_father_name: content?.groom_father_name || '',
+    groom_mother_name: content?.groom_mother_name || '',
+    groom_city: content?.groom_city || '',
+    bride_father_name: content?.bride_father_name || '',
+    bride_mother_name: content?.bride_mother_name || '',
+    bride_city: content?.bride_city || ''
   })
 
   useEffect(() => {
@@ -23,7 +29,13 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
       wedding_date: content?.wedding_date || '',
       wedding_time: content?.wedding_time || '',
       address: content?.address || '',
-      map_url: content?.map_url || ''
+      map_url: content?.map_url || '',
+      groom_father_name: content?.groom_father_name || '',
+      groom_mother_name: content?.groom_mother_name || '',
+      groom_city: content?.groom_city || '',
+      bride_father_name: content?.bride_father_name || '',
+      bride_mother_name: content?.bride_mother_name || '',
+      bride_city: content?.bride_city || ''
     })
   }, [content])
 
@@ -59,6 +71,85 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
             className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
             placeholder='Lê Thị B'
           />
+        </div>
+      </div>
+
+      {/* Family Info */}
+      <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+        {/* Nhà Trai */}
+        <div className='space-y-4'>
+          <h4 className='text-sm font-semibold text-gray-800 border-b pb-1'>Nhà Trai</h4>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>Tên Cha</label>
+            <input
+              type='text'
+              name='groom_father_name'
+              value={formData.groom_father_name}
+              onChange={handleChange}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+              placeholder='Nguyễn Văn X'
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>Tên Mẹ</label>
+            <input
+              type='text'
+              name='groom_mother_name'
+              value={formData.groom_mother_name}
+              onChange={handleChange}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+              placeholder='Trần Thị Y'
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>Thành Phố</label>
+            <input
+              type='text'
+              name='groom_city'
+              value={formData.groom_city}
+              onChange={handleChange}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+              placeholder='TP. Hồ Chí Minh'
+            />
+          </div>
+        </div>
+
+        {/* Nhà Gái */}
+        <div className='space-y-4'>
+          <h4 className='text-sm font-semibold text-gray-800 border-b pb-1'>Nhà Gái</h4>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>Tên Cha</label>
+            <input
+              type='text'
+              name='bride_father_name'
+              value={formData.bride_father_name}
+              onChange={handleChange}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+              placeholder='Lê Văn X'
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>Tên Mẹ</label>
+            <input
+              type='text'
+              name='bride_mother_name'
+              value={formData.bride_mother_name}
+              onChange={handleChange}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+              placeholder='Phạm Thị Y'
+            />
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>Thành Phố</label>
+            <input
+              type='text'
+              name='bride_city'
+              value={formData.bride_city}
+              onChange={handleChange}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+              placeholder='Hà Nội'
+            />
+          </div>
         </div>
       </div>
 

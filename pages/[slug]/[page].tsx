@@ -31,6 +31,29 @@ export default function GuestWeddingPage({ wedding, guestName, slug, rsvpId }: P
     )
   }
 
+  if (wedding.deployment_status === 'draft') {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'linear-gradient(135deg, #fff1f5 0%, #f5f0ff 100%)',
+          fontFamily: 'Inter, sans-serif'
+        }}
+      >
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <div style={{ fontSize: '4rem', marginBottom: '16px' }}>🔒</div>
+          <h1 style={{ color: '#1f2937', marginBottom: '8px', fontSize: '1.5rem' }}>Thiệp mời đang riêng tư</h1>
+          <p style={{ color: '#6b7280', maxWidth: 360, margin: '0 auto' }}>
+            Thiệp cưới này chưa được công khai. Vui lòng liên hệ chủ nhân để được chia sẻ đường dẫn.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   // Lấy repo_branch từ template host đã chọn, fallback về 'default'
   const branch = wedding.template?.repo_branch || 'default'
   const SelectedTemplate = getTemplate(branch).GuestView
