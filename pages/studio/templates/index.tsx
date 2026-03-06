@@ -146,7 +146,14 @@ export default function TemplatesPage() {
     try {
       if (wedding) {
         await dataService.updateWeddingTemplate(wedding.id, templateId)
-        setWedding({ ...wedding, template_id: templateId })
+        const tpl = templates.find((t) => t.id === templateId) as any
+        setWedding({
+          ...wedding,
+          template_id: templateId,
+          template: tpl
+            ? { id: tpl.id, name: tpl.name, repo_branch: tpl.repo_branch, thumbnail_url: tpl.thumbnail_url }
+            : wedding.template
+        })
         success('Đã áp dụng mẫu thiệp!')
       }
     } catch (e) {
