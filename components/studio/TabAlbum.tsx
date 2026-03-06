@@ -26,6 +26,7 @@ interface TabAlbumProps {
   onImagePositionsChange?: (positions: (ImagePosition | null)[]) => void
   coverImagePosition?: ImagePosition
   onCoverImagePositionChange?: (position: ImagePosition) => void
+  onImageDeleted?: (url: string) => void
 }
 
 // ── Image position editor modal ───────────────────────────────────────────────
@@ -187,7 +188,8 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
   imagePositions,
   onImagePositionsChange,
   coverImagePosition,
-  onCoverImagePositionChange
+  onCoverImagePositionChange,
+  onImageDeleted
 }) => {
   const [albumImages, setAlbumImages] = useState<string[]>(images || [])
   const [currentCoverImage, setCurrentCoverImage] = useState<string | null>(coverImage || null)
@@ -212,11 +214,11 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
       reader.readAsDataURL(file)
     })
 
-  // Compress images > 3MB to JPEG max 2048px before upload
-  const compressImageFile = (file: File): Promise<File> =>
+  // Only compress if file > 8MB — keeps quality for typical phone photos (3-6MB) untouched
+  const compressIfNeeded = (file: File): Promise<File> =>
     new Promise((resolve) => {
       const SKIP_TYPES = ['image/svg+xml', 'image/gif', 'image/heic', 'image/heif']
-      if (SKIP_TYPES.includes(file.type) || file.size <= 3 * 1024 * 1024) {
+      if (SKIP_TYPES.includes(file.type) || file.size <= 8 * 1024 * 1024) {
         resolve(file)
         return
       }
@@ -224,7 +226,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
       const url = URL.createObjectURL(file)
       img.onload = () => {
         URL.revokeObjectURL(url)
-        const MAX_DIM = 2048
+        const MAX_DIM = 4096
         let { width, height } = img
         if (width > MAX_DIM || height > MAX_DIM) {
           const ratio = Math.min(MAX_DIM / width, MAX_DIM / height)
@@ -244,7 +246,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
           (blob) =>
             resolve(blob ? new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }) : file),
           'image/jpeg',
-          0.85
+          0.93
         )
       }
       img.onerror = () => {
@@ -262,14 +264,21 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
       if (coverFileInputRef.current) coverFileInputRef.current.value = ''
       return
     }
-    const compressed = await compressImageFile(file)
-    const dataUrl = await readFileAsDataURL(compressed)
+    const dataUrl = await readFileAsDataURL(await compressIfNeeded(file))
     setCurrentCoverImage(dataUrl)
     onCoverImageChange(dataUrl)
     if (coverFileInputRef.current) coverFileInputRef.current.value = ''
   }
 
   const handleRemoveCover = () => {
+    if (currentCoverImage && (currentCoverImage.startsWith('https://') || currentCoverImage.startsWith('http://'))) {
+      fetch('/api/delete-image', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: currentCoverImage })
+      }).catch((err) => console.error('Error deleting cover image from Cloudinary:', err))
+      onImageDeleted?.(currentCoverImage)
+    }
     setCurrentCoverImage(null)
     onCoverImageChange(null)
   }
@@ -282,8 +291,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
       if (replaceAlbumFileInputRef.current) replaceAlbumFileInputRef.current.value = ''
       return
     }
-    const compressed = await compressImageFile(file)
-    const dataUrl = await readFileAsDataURL(compressed)
+    const dataUrl = await readFileAsDataURL(await compressIfNeeded(file))
     const newImages = [...albumImages]
     newImages[replacingAlbumIndex] = dataUrl
     setAlbumImages(newImages)
@@ -325,8 +333,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
     }
     const newImageUrls: string[] = []
     for (const file of filesToUpload) {
-      const compressed = await compressImageFile(file)
-      newImageUrls.push(await readFileAsDataURL(compressed))
+      newImageUrls.push(await readFileAsDataURL(await compressIfNeeded(file)))
     }
     const updatedImages = [...albumImages, ...newImageUrls]
     setAlbumImages(updatedImages)
@@ -335,6 +342,15 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
   }
 
   const removeImage = (indexToRemove: number) => {
+    const imageToRemove = albumImages[indexToRemove]
+    if (imageToRemove && (imageToRemove.startsWith('https://') || imageToRemove.startsWith('http://'))) {
+      fetch('/api/delete-image', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: imageToRemove })
+      }).catch((err) => console.error('Error deleting image from Cloudinary:', err))
+      onImageDeleted?.(imageToRemove)
+    }
     const newImages = albumImages.filter((_, index) => index !== indexToRemove)
     setAlbumImages(newImages)
     onChange(newImages)
