@@ -40,10 +40,30 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
 
   if (!wedding) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff' }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#fff'
+        }}
+      >
         <div style={{ textAlign: 'center', padding: 40 }}>
-          <p style={{ fontSize: 11, letterSpacing: '0.4em', color: inkLight, textTransform: 'uppercase', marginBottom: 16 }}>NOT FOUND</p>
-          <h1 style={{ color: ink, fontFamily: "'Cormorant Garamond', serif", fontSize: '2.5rem', fontWeight: 300 }}>Không tìm thấy thiệp mời</h1>
+          <p
+            style={{
+              fontSize: 11,
+              letterSpacing: '0.4em',
+              color: inkLight,
+              textTransform: 'uppercase',
+              marginBottom: 16
+            }}
+          >
+            NOT FOUND
+          </p>
+          <h1 style={{ color: ink, fontFamily: "'Cormorant Garamond', serif", fontSize: '2.5rem', fontWeight: 300 }}>
+            Không tìm thấy thiệp mời
+          </h1>
         </div>
       </div>
     )
@@ -144,53 +164,116 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
         `}</style>
       </Head>
 
-      <div style={{
-        minHeight: '100vh',
-        background: '#ffffff',
-        fontFamily: "'Cormorant Garamond', Georgia, serif",
-        color: ink
-      }}>
-
+      <div
+        style={{
+          minHeight: '100vh',
+          background: '#ffffff',
+          fontFamily: "'Cormorant Garamond', Georgia, serif",
+          color: ink
+        }}
+      >
         {/* ══ Hero ══ */}
         <div style={{ position: 'relative', overflow: 'hidden', height: 380, borderBottom: `1px solid ${ink}0d` }}>
           {mergedContent.cover_image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={mergedContent.cover_image} alt='' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0, filter: 'brightness(0.7) saturate(0.85)' }} />
+            <img
+              src={mergedContent.cover_image}
+              alt=''
+              style={{
+                position: 'absolute',
+                inset: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                zIndex: 0,
+                filter: 'brightness(0.7) saturate(0.85)'
+              }}
+            />
           ) : (
             <div style={{ position: 'absolute', inset: 0, background: ink, zIndex: 0 }} />
           )}
           {/* Dark editorial overlay - heavier at bottom */}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.68) 100%)', zIndex: 1 }} />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(to bottom, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.68) 100%)',
+              zIndex: 1
+            }}
+          />
           {/* Corner marks */}
-          <div style={{ position: 'absolute', top: 20, left: 20, width: 24, height: 24, borderTop: '1px solid rgba(255,255,255,0.3)', borderLeft: '1px solid rgba(255,255,255,0.3)', zIndex: 2 }} />
-          <div style={{ position: 'absolute', top: 20, right: 20, width: 24, height: 24, borderTop: '1px solid rgba(255,255,255,0.3)', borderRight: '1px solid rgba(255,255,255,0.3)', zIndex: 2 }} />
+          <div
+            style={{
+              position: 'absolute',
+              top: 20,
+              left: 20,
+              width: 24,
+              height: 24,
+              borderTop: '1px solid rgba(255,255,255,0.3)',
+              borderLeft: '1px solid rgba(255,255,255,0.3)',
+              zIndex: 2
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: 20,
+              right: 20,
+              width: 24,
+              height: 24,
+              borderTop: '1px solid rgba(255,255,255,0.3)',
+              borderRight: '1px solid rgba(255,255,255,0.3)',
+              zIndex: 2
+            }}
+          />
           {/* Text at bottom */}
           <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 32px 36px', zIndex: 2 }}>
-            <p style={{ fontSize: 9, fontWeight: 400, color: 'rgba(255,255,255,0.55)', letterSpacing: '0.5em', textTransform: 'uppercase', marginBottom: 16 }}>
+            <p
+              style={{
+                fontSize: 9,
+                fontWeight: 400,
+                color: 'rgba(255,255,255,0.55)',
+                letterSpacing: '0.5em',
+                textTransform: 'uppercase',
+                marginBottom: 16
+              }}
+            >
               WEDDING INVITATION
             </p>
-            <h1 style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 'clamp(2.4rem, 8vw, 3.8rem)',
-              fontWeight: 300,
-              color: '#fff',
-              lineHeight: 1.05,
-              fontStyle: 'italic',
-              marginBottom: 10,
-              textShadow: '0 2px 20px rgba(0,0,0,0.4)'
-            }}>
+            <h1
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 'clamp(2.4rem, 8vw, 3.8rem)',
+                fontWeight: 300,
+                color: '#fff',
+                lineHeight: 1.05,
+                fontStyle: 'italic',
+                marginBottom: 10,
+                textShadow: '0 2px 20px rgba(0,0,0,0.4)'
+              }}
+            >
               {guestName}
             </h1>
-            <p style={{ fontSize: 12, fontWeight: 300, color: 'rgba(255,255,255,0.65)', letterSpacing: '0.06em', marginBottom: 6 }}>
+            <p
+              style={{
+                fontSize: 12,
+                fontWeight: 300,
+                color: 'rgba(255,255,255,0.65)',
+                letterSpacing: '0.06em',
+                marginBottom: 6
+              }}
+            >
               tới tham dự lễ thành hôn của
             </p>
-            <p style={{
-              fontFamily: "'Cormorant Garamond', serif",
-              fontSize: 'clamp(1rem, 3vw, 1.25rem)',
-              fontWeight: 400,
-              color: 'rgba(255,255,255,0.88)',
-              letterSpacing: '0.06em'
-            }}>
+            <p
+              style={{
+                fontFamily: "'Cormorant Garamond', serif",
+                fontSize: 'clamp(1rem, 3vw, 1.25rem)',
+                fontWeight: 400,
+                color: 'rgba(255,255,255,0.88)',
+                letterSpacing: '0.06em'
+              }}
+            >
               {mergedContent.groom_name} &amp; {mergedContent.bride_name}
             </p>
             <div style={{ width: 32, height: 2, background: accent, marginTop: 18 }} />
@@ -199,12 +282,17 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
 
         {/* ══ Cards ══ */}
         <div style={{ maxWidth: 520, margin: '0 auto', padding: '0 32px 80px' }}>
-
-
-
           {/* Event info */}
           <div className='mi-fade' style={{ padding: '40px 0', borderBottom: `1px solid ${ink}0d` }}>
-            <p style={{ fontSize: 9, letterSpacing: '0.45em', color: accent, textTransform: 'uppercase', marginBottom: 28 }}>
+            <p
+              style={{
+                fontSize: 9,
+                letterSpacing: '0.45em',
+                color: accent,
+                textTransform: 'uppercase',
+                marginBottom: 28
+              }}
+            >
               EVENT DETAILS
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
@@ -214,12 +302,19 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
                 { label: 'VENUE', value: mergedContent.address }
               ].map(({ label, value }) => (
                 <div key={label} style={{ display: 'flex', gap: 24, alignItems: 'baseline' }}>
-                  <span style={{ fontSize: 9, letterSpacing: '0.35em', color: inkLight, textTransform: 'uppercase', flexShrink: 0, minWidth: 48 }}>
+                  <span
+                    style={{
+                      fontSize: 9,
+                      letterSpacing: '0.35em',
+                      color: inkLight,
+                      textTransform: 'uppercase',
+                      flexShrink: 0,
+                      minWidth: 48
+                    }}
+                  >
                     {label}
                   </span>
-                  <span style={{ fontSize: 17, fontWeight: 400, color: ink, lineHeight: 1.5 }}>
-                    {value || '—'}
-                  </span>
+                  <span style={{ fontSize: 17, fontWeight: 400, color: ink, lineHeight: 1.5 }}>{value || '—'}</span>
                 </div>
               ))}
             </div>
@@ -228,10 +323,27 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
           {/* RSVP Form */}
           {!submitted ? (
             <div className='mi-fade' style={{ paddingTop: 40 }}>
-              <p style={{ fontSize: 9, letterSpacing: '0.45em', color: accent, textTransform: 'uppercase', marginBottom: 8 }}>
+              <p
+                style={{
+                  fontSize: 9,
+                  letterSpacing: '0.45em',
+                  color: accent,
+                  textTransform: 'uppercase',
+                  marginBottom: 8
+                }}
+              >
                 RSVP
               </p>
-              <p style={{ fontSize: 15, fontWeight: 300, color: inkMid, marginBottom: 36, fontStyle: 'italic', lineHeight: 1.6 }}>
+              <p
+                style={{
+                  fontSize: 15,
+                  fontWeight: 300,
+                  color: inkMid,
+                  marginBottom: 36,
+                  fontStyle: 'italic',
+                  lineHeight: 1.6
+                }}
+              >
                 Vui lòng xác nhận sự tham dự để chúng tôi chuẩn bị đón tiếp
               </p>
 
@@ -285,9 +397,17 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
                 <div>
                   <label style={labelStyle}>
                     Điện thoại{' '}
-                    <span style={{ letterSpacing: 0, textTransform: 'none', color: inkLight, opacity: 0.7 }}>(tùy chọn)</span>
+                    <span style={{ letterSpacing: 0, textTransform: 'none', color: inkLight, opacity: 0.7 }}>
+                      (tùy chọn)
+                    </span>
                   </label>
-                  <input type='tel' value={phone} onChange={e => setPhone(e.target.value)} placeholder='0901 234 567' style={inputStyle} />
+                  <input
+                    type='tel'
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder='0901 234 567'
+                    style={inputStyle}
+                  />
                 </div>
 
                 {/* Số người */}
@@ -324,11 +444,13 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
                 <div>
                   <label style={labelStyle}>
                     Lời chúc{' '}
-                    <span style={{ letterSpacing: 0, textTransform: 'none', color: inkLight, opacity: 0.7 }}>(tùy chọn)</span>
+                    <span style={{ letterSpacing: 0, textTransform: 'none', color: inkLight, opacity: 0.7 }}>
+                      (tùy chọn)
+                    </span>
                   </label>
                   <textarea
                     value={wish}
-                    onChange={e => setWish(e.target.value)}
+                    onChange={(e) => setWish(e.target.value)}
                     placeholder='Chúc hai bạn trăm năm hạnh phúc...'
                     rows={4}
                     style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7, borderBottom: `1px solid ${ink}22` }}
@@ -369,25 +491,45 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
             /* ══ Success ══ */
             <div className='mi-fade' style={{ paddingTop: 60, textAlign: 'center' }}>
               <div style={{ width: 40, height: 2, background: accent, margin: '0 auto 40px' }} />
-              <h3 style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: 'clamp(1.6rem, 5vw, 2.4rem)',
-                fontWeight: 300,
-                color: ink,
-                fontStyle: 'italic',
-                marginBottom: 16,
-                lineHeight: 1.3
-              }}>
+              <h3
+                style={{
+                  fontFamily: "'Cormorant Garamond', serif",
+                  fontSize: 'clamp(1.6rem, 5vw, 2.4rem)',
+                  fontWeight: 300,
+                  color: ink,
+                  fontStyle: 'italic',
+                  marginBottom: 16,
+                  lineHeight: 1.3
+                }}
+              >
                 {isAttending ? 'Hẹn gặp bạn tại đám cưới' : 'Cảm ơn bạn đã phản hồi'}
               </h3>
-              <p style={{ fontSize: 15, fontWeight: 300, color: inkMid, lineHeight: 1.8, maxWidth: 320, margin: '0 auto', fontStyle: 'italic' }}>
+              <p
+                style={{
+                  fontSize: 15,
+                  fontWeight: 300,
+                  color: inkMid,
+                  lineHeight: 1.8,
+                  maxWidth: 320,
+                  margin: '0 auto',
+                  fontStyle: 'italic'
+                }}
+              >
                 {isAttending
                   ? `Chúng tôi rất hân hạnh được đón tiếp ${guestName}`
                   : 'Rất tiếc khi bạn không thể tham dự. Mong có dịp gặp nhau trong tương lai'}
               </p>
               {wish && (
                 <div style={{ marginTop: 40, paddingTop: 32, borderTop: `1px solid ${ink}0d`, textAlign: 'left' }}>
-                  <p style={{ fontSize: 9, letterSpacing: '0.4em', color: accent, textTransform: 'uppercase', marginBottom: 16 }}>
+                  <p
+                    style={{
+                      fontSize: 9,
+                      letterSpacing: '0.4em',
+                      color: accent,
+                      textTransform: 'uppercase',
+                      marginBottom: 16
+                    }}
+                  >
                     YOUR WISHES
                   </p>
                   <p style={{ fontSize: 17, fontWeight: 300, color: inkMid, fontStyle: 'italic', lineHeight: 1.75 }}>

@@ -41,9 +41,19 @@ export default function NatureGuestView({ wedding, guestName = '', rsvpId }: Tem
 
   if (!wedding) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: cream }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: cream
+        }}
+      >
         <div style={{ textAlign: 'center', padding: 40 }}>
-          <svg width='48' height='48' viewBox='0 0 48 48' fill='none' style={{ marginBottom: 12, opacity: 0.55 }}><path d='M8 40 Q12 16 40 8 Q24 24 8 40Z' fill='#4a7c59' /></svg>
+          <svg width='48' height='48' viewBox='0 0 48 48' fill='none' style={{ marginBottom: 12, opacity: 0.55 }}>
+            <path d='M8 40 Q12 16 40 8 Q24 24 8 40Z' fill='#4a7c59' />
+          </svg>
           <h1 style={{ color: sage, fontFamily: "'Lora', serif" }}>Không tìm thấy thiệp mời</h1>
           <p style={{ color: textMid, marginTop: 8 }}>Link mời có thể đã hết hạn hoặc không hợp lệ.</p>
         </div>
@@ -162,56 +172,105 @@ export default function NatureGuestView({ wedding, guestName = '', rsvpId }: Tem
         `}</style>
       </Head>
 
-      <div style={{
-        minHeight: '100vh',
-        background: `linear-gradient(160deg, #f5f0e8 0%, #ede8dc 60%, #f5f0e8 100%)`,
-        fontFamily: "'DM Sans', sans-serif",
-        color: textDark
-      }}>
-
+      <div
+        style={{
+          minHeight: '100vh',
+          background: `linear-gradient(160deg, #f5f0e8 0%, #ede8dc 60%, #f5f0e8 100%)`,
+          fontFamily: "'DM Sans', sans-serif",
+          color: textDark
+        }}
+      >
         {/* ══ Hero ══ */}
         <div style={{ position: 'relative', overflow: 'hidden', height: 380 }}>
           {mergedContent.cover_image ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={mergedContent.cover_image} alt='' style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} />
+            <img
+              src={mergedContent.cover_image}
+              alt=''
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
+            />
           ) : (
             <div style={{ position: 'absolute', inset: 0, background: sageDark, zIndex: 0 }} />
           )}
           {/* Forest gradient overlay */}
-          <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(20,38,22,0.18) 0%, rgba(8,20,10,0.75) 100%)', zIndex: 1 }} />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(to bottom, rgba(20,38,22,0.18) 0%, rgba(8,20,10,0.75) 100%)',
+              zIndex: 1
+            }}
+          />
           {/* SVG leaf corners */}
-          <svg style={{ position: 'absolute', top: 18, left: 18, opacity: 0.25, zIndex: 2 }} width="44" height="44" viewBox="0 0 48 48" fill="none">
-            <path d="M4 4 C4 24,24 44,44 44 C44 24,24 4,4 4Z" fill="#fff" />
+          <svg
+            style={{ position: 'absolute', top: 18, left: 18, opacity: 0.25, zIndex: 2 }}
+            width='44'
+            height='44'
+            viewBox='0 0 48 48'
+            fill='none'
+          >
+            <path d='M4 4 C4 24,24 44,44 44 C44 24,24 4,4 4Z' fill='#fff' />
           </svg>
-          <svg style={{ position: 'absolute', top: 18, right: 18, opacity: 0.25, zIndex: 2, transform: 'scaleX(-1)' }} width="44" height="44" viewBox="0 0 48 48" fill="none">
-            <path d="M4 4 C4 24,24 44,44 44 C44 24,24 4,4 4Z" fill="#fff" />
+          <svg
+            style={{ position: 'absolute', top: 18, right: 18, opacity: 0.25, zIndex: 2, transform: 'scaleX(-1)' }}
+            width='44'
+            height='44'
+            viewBox='0 0 48 48'
+            fill='none'
+          >
+            <path d='M4 4 C4 24,24 44,44 44 C44 24,24 4,4 4Z' fill='#fff' />
           </svg>
           {/* Text content */}
-          <div style={{ position: 'relative', zIndex: 2, height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px', textAlign: 'center' }}>
-            <p style={{ fontSize: 9, fontWeight: 600, color: 'rgba(255,255,255,0.68)', letterSpacing: '0.38em', textTransform: 'uppercase', marginBottom: 20 }}>
+          <div
+            style={{
+              position: 'relative',
+              zIndex: 2,
+              height: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 24px',
+              textAlign: 'center'
+            }}
+          >
+            <p
+              style={{
+                fontSize: 9,
+                fontWeight: 600,
+                color: 'rgba(255,255,255,0.68)',
+                letterSpacing: '0.38em',
+                textTransform: 'uppercase',
+                marginBottom: 20
+              }}
+            >
               TRÂN TRỌNG KÍNH MỜI
             </p>
-            <h1 style={{
-              fontFamily: "'Lora', Georgia, serif",
-              fontSize: 'clamp(2rem, 7vw, 3.2rem)',
-              fontWeight: 700,
-              color: '#fff',
-              lineHeight: 1.15,
-              marginBottom: 14,
-              textShadow: '0 3px 28px rgba(0,0,0,0.5)'
-            }}>
+            <h1
+              style={{
+                fontFamily: "'Lora', Georgia, serif",
+                fontSize: 'clamp(2rem, 7vw, 3.2rem)',
+                fontWeight: 700,
+                color: '#fff',
+                lineHeight: 1.15,
+                marginBottom: 14,
+                textShadow: '0 3px 28px rgba(0,0,0,0.5)'
+              }}
+            >
               {guestName}
             </h1>
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', fontStyle: 'italic', marginBottom: 10 }}>
               tới tham dự lễ thành hôn của
             </p>
-            <p style={{
-              fontFamily: "'Lora', Georgia, serif",
-              fontSize: 'clamp(1rem, 3vw, 1.3rem)',
-              fontWeight: 500,
-              color: 'rgba(255,255,255,0.92)',
-              letterSpacing: '0.04em'
-            }}>
+            <p
+              style={{
+                fontFamily: "'Lora', Georgia, serif",
+                fontSize: 'clamp(1rem, 3vw, 1.3rem)',
+                fontWeight: 500,
+                color: 'rgba(255,255,255,0.92)',
+                letterSpacing: '0.04em'
+              }}
+            >
               {mergedContent.groom_name} &amp; {mergedContent.bride_name}
             </p>
             <div style={{ margin: '20px auto 0', width: 56, height: 1, background: 'rgba(255,255,255,0.3)' }} />
@@ -219,33 +278,120 @@ export default function NatureGuestView({ wedding, guestName = '', rsvpId }: Tem
         </div>
 
         {/* ══ Cards ══ */}
-        <div style={{ maxWidth: 540, margin: '0 auto', padding: '0 16px 72px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-
-
+        <div
+          style={{
+            maxWidth: 540,
+            margin: '0 auto',
+            padding: '0 16px 72px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 16
+          }}
+        >
           {/* Event info */}
           <div className='n-fade n-card' style={{ padding: '26px 22px' }}>
-            <p style={{ fontSize: 10, fontWeight: 600, color: sage, letterSpacing: '0.2em', textTransform: 'uppercase', textAlign: 'center', marginBottom: 18 }}>
+            <p
+              style={{
+                fontSize: 10,
+                fontWeight: 600,
+                color: sage,
+                letterSpacing: '0.2em',
+                textTransform: 'uppercase',
+                textAlign: 'center',
+                marginBottom: 18
+              }}
+            >
               Thông tin sự kiện
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {([
-                { icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>), label: 'Ngày cưới', value: mergedContent.event_date },
-                { icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>), label: 'Giờ', value: mergedContent.wedding_time },
-                { icon: (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>), label: 'Địa điểm', value: mergedContent.address }
-              ] as { icon: React.ReactNode, label: string, value: string }[]).map(({ icon, label, value }) => (
-                <div key={label} style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 12,
-                  padding: '12px 14px',
-                  background: `${sage}0f`,
-                  borderRadius: 14,
-                  border: `1px solid ${sage}20`
-                }}>
+              {(
+                [
+                  {
+                    icon: (
+                      <svg
+                        width='18'
+                        height='18'
+                        viewBox='0 0 24 24'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth='1.5'
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                      >
+                        <rect x='3' y='4' width='18' height='18' rx='2' />
+                        <line x1='16' y1='2' x2='16' y2='6' />
+                        <line x1='8' y1='2' x2='8' y2='6' />
+                        <line x1='3' y1='10' x2='21' y2='10' />
+                      </svg>
+                    ),
+                    label: 'Ngày cưới',
+                    value: mergedContent.event_date
+                  },
+                  {
+                    icon: (
+                      <svg
+                        width='18'
+                        height='18'
+                        viewBox='0 0 24 24'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth='1.5'
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                      >
+                        <circle cx='12' cy='12' r='10' />
+                        <polyline points='12 6 12 12 16 14' />
+                      </svg>
+                    ),
+                    label: 'Giờ',
+                    value: mergedContent.wedding_time
+                  },
+                  {
+                    icon: (
+                      <svg
+                        width='18'
+                        height='18'
+                        viewBox='0 0 24 24'
+                        fill='none'
+                        stroke='currentColor'
+                        strokeWidth='1.5'
+                        strokeLinecap='round'
+                        strokeLinejoin='round'
+                      >
+                        <path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z' />
+                        <circle cx='12' cy='10' r='3' />
+                      </svg>
+                    ),
+                    label: 'Địa điểm',
+                    value: mergedContent.address
+                  }
+                ] as { icon: React.ReactNode; label: string; value: string }[]
+              ).map(({ icon, label, value }) => (
+                <div
+                  key={label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 12,
+                    padding: '12px 14px',
+                    background: `${sage}0f`,
+                    borderRadius: 14,
+                    border: `1px solid ${sage}20`
+                  }}
+                >
                   <span style={{ flexShrink: 0, lineHeight: 1, color: sage, marginTop: 1 }}>{icon}</span>
                   <div>
-                    <span style={{ fontSize: 9, fontWeight: 600, color: sage, textTransform: 'uppercase', letterSpacing: '0.14em', display: 'block', marginBottom: 3 }}>
+                    <span
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 600,
+                        color: sage,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.14em',
+                        display: 'block',
+                        marginBottom: 3
+                      }}
+                    >
                       {label}
                     </span>
                     <span style={{ fontSize: 15, color: textDark, fontWeight: 500, lineHeight: 1.4 }}>
@@ -260,7 +406,17 @@ export default function NatureGuestView({ wedding, guestName = '', rsvpId }: Tem
           {/* RSVP Form */}
           {!submitted ? (
             <div className='n-fade n-card' style={{ padding: '28px 22px' }}>
-              <p style={{ fontSize: 10, fontWeight: 600, color: sage, letterSpacing: '0.2em', textTransform: 'uppercase', textAlign: 'center', marginBottom: 4 }}>
+              <p
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: sage,
+                  letterSpacing: '0.2em',
+                  textTransform: 'uppercase',
+                  textAlign: 'center',
+                  marginBottom: 4
+                }}
+              >
                 Xác nhận tham dự
               </p>
               <p style={{ textAlign: 'center', color: textMid, fontSize: 13, marginBottom: 24, fontStyle: 'italic' }}>
@@ -317,9 +473,25 @@ export default function NatureGuestView({ wedding, guestName = '', rsvpId }: Tem
                 <div>
                   <label style={labelStyle}>
                     Số điện thoại{' '}
-                    <span style={{ color: '#b0a090', fontSize: 11, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(tùy chọn)</span>
+                    <span
+                      style={{
+                        color: '#b0a090',
+                        fontSize: 11,
+                        fontWeight: 400,
+                        textTransform: 'none',
+                        letterSpacing: 0
+                      }}
+                    >
+                      (tùy chọn)
+                    </span>
                   </label>
-                  <input type='tel' value={phone} onChange={e => setPhone(e.target.value)} placeholder='0901 234 567' style={inputStyle} />
+                  <input
+                    type='tel'
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder='0901 234 567'
+                    style={inputStyle}
+                  />
                 </div>
 
                 {/* Số người */}
@@ -359,11 +531,21 @@ export default function NatureGuestView({ wedding, guestName = '', rsvpId }: Tem
                 <div>
                   <label style={labelStyle}>
                     Lời chúc{' '}
-                    <span style={{ color: '#b0a090', fontSize: 11, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(tùy chọn)</span>
+                    <span
+                      style={{
+                        color: '#b0a090',
+                        fontSize: 11,
+                        fontWeight: 400,
+                        textTransform: 'none',
+                        letterSpacing: 0
+                      }}
+                    >
+                      (tùy chọn)
+                    </span>
                   </label>
                   <textarea
                     value={wish}
-                    onChange={e => setWish(e.target.value)}
+                    onChange={(e) => setWish(e.target.value)}
                     placeholder='Chúc hai bạn trăm năm hạnh phúc, vạn sự như ý...'
                     rows={4}
                     style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.65 }}
@@ -378,9 +560,8 @@ export default function NatureGuestView({ wedding, guestName = '', rsvpId }: Tem
                   style={{
                     width: '100%',
                     padding: 16,
-                    background: isAttending === null || loading
-                      ? '#e8dfd0'
-                      : `linear-gradient(135deg, ${sageDark}, ${sage})`,
+                    background:
+                      isAttending === null || loading ? '#e8dfd0' : `linear-gradient(135deg, ${sageDark}, ${sage})`,
                     color: isAttending === null || loading ? '#b0a090' : '#fff',
                     border: 'none',
                     borderRadius: 16,
@@ -397,7 +578,17 @@ export default function NatureGuestView({ wedding, guestName = '', rsvpId }: Tem
                 </button>
 
                 {submitError && (
-                  <div style={{ padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, color: '#dc2626', fontSize: 14, textAlign: 'center' }}>
+                  <div
+                    style={{
+                      padding: '12px 16px',
+                      background: '#fef2f2',
+                      border: '1px solid #fecaca',
+                      borderRadius: 12,
+                      color: '#dc2626',
+                      fontSize: 14,
+                      textAlign: 'center'
+                    }}
+                  >
                     {submitError}
                   </div>
                 )}
@@ -406,17 +597,25 @@ export default function NatureGuestView({ wedding, guestName = '', rsvpId }: Tem
           ) : (
             /* ══ Success ══ */
             <div className='n-fade n-card' style={{ padding: '52px 28px', textAlign: 'center' }}>
-              <svg style={{ color: sage, marginBottom: 20, opacity: 0.85 }} width="48" height="48" viewBox="0 0 48 48" fill="currentColor">
-                <path d="M4 4 C4 24,24 44,44 44 C44 24,24 4,4 4Z" />
+              <svg
+                style={{ color: sage, marginBottom: 20, opacity: 0.85 }}
+                width='48'
+                height='48'
+                viewBox='0 0 48 48'
+                fill='currentColor'
+              >
+                <path d='M4 4 C4 24,24 44,44 44 C44 24,24 4,4 4Z' />
               </svg>
-              <h3 style={{
-                fontFamily: "'Lora', serif",
-                fontSize: '1.5rem',
-                fontWeight: 600,
-                color: sageDark,
-                marginBottom: 12,
-                lineHeight: 1.3
-              }}>
+              <h3
+                style={{
+                  fontFamily: "'Lora', serif",
+                  fontSize: '1.5rem',
+                  fontWeight: 600,
+                  color: sageDark,
+                  marginBottom: 12,
+                  lineHeight: 1.3
+                }}
+              >
                 {isAttending ? 'Hẹn gặp bạn tại đám cưới!' : 'Cảm ơn bạn đã phản hồi!'}
               </h3>
               <p style={{ color: textMid, fontSize: 15, lineHeight: 1.75, maxWidth: 300, margin: '0 auto' }}>
@@ -425,8 +624,26 @@ export default function NatureGuestView({ wedding, guestName = '', rsvpId }: Tem
                   : 'Rất tiếc khi bạn không thể tham dự. Mong có dịp gặp nhau trong tương lai!'}
               </p>
               {wish && (
-                <div style={{ marginTop: 28, padding: '16px 20px', background: `${sage}0f`, borderRadius: 14, borderLeft: `3px solid ${sage}`, textAlign: 'left' }}>
-                  <p style={{ fontSize: 9, fontWeight: 600, color: sage, textTransform: 'uppercase', letterSpacing: '0.14em', marginBottom: 8 }}>
+                <div
+                  style={{
+                    marginTop: 28,
+                    padding: '16px 20px',
+                    background: `${sage}0f`,
+                    borderRadius: 14,
+                    borderLeft: `3px solid ${sage}`,
+                    textAlign: 'left'
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: 9,
+                      fontWeight: 600,
+                      color: sage,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.14em',
+                      marginBottom: 8
+                    }}
+                  >
                     Lời chúc của bạn
                   </p>
                   <p style={{ color: textMid, fontStyle: 'italic', fontSize: 14, lineHeight: 1.7 }}>

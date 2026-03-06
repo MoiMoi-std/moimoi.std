@@ -151,7 +151,13 @@ export default function TemplatesPage() {
           ...wedding,
           template_id: templateId,
           template: tpl
-            ? { id: tpl.id, name: tpl.name, repo_branch: tpl.repo_branch, thumbnail_url: tpl.thumbnail_url }
+            ? {
+                id: tpl.id,
+                name: tpl.name,
+                repo_branch: tpl.repo_branch,
+                thumbnail_url: tpl.thumbnail_url,
+                created_at: tpl.created_at ?? ''
+              }
             : wedding.template
         })
         success('Đã áp dụng mẫu thiệp!')
