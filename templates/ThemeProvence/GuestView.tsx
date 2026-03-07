@@ -77,7 +77,7 @@ export default function ProvenceGuestView({ wedding, guestName, rsvpId }: Templa
                 fontSize: 'clamp(2.2rem,10vw,4.5rem)',
                 fontFamily: "'Great Vibes', cursive",
                 color: '#fff',
-                lineHeight: 1,
+                lineHeight: 1.15,
                 marginBottom: 10
               }}
             >

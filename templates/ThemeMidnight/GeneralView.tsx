@@ -186,7 +186,7 @@ export default function MidnightGeneralView({ wedding }: TemplateProps) {
                 fontStyle: 'italic',
                 fontWeight: 400,
                 color: candleLight,
-                lineHeight: 0.95,
+                lineHeight: 1.15,
                 marginBottom: 10
               }}
             >
@@ -211,7 +211,7 @@ export default function MidnightGeneralView({ wedding }: TemplateProps) {
                 fontStyle: 'italic',
                 fontWeight: 400,
                 color: candleLight,
-                lineHeight: 0.95,
+                lineHeight: 1.15,
                 marginBottom: 30
               }}
             >

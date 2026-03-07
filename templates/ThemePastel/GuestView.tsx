@@ -134,7 +134,7 @@ export default function PastelGuestView({ wedding, rsvpId, guestName }: Template
                 fontFamily: "'Dancing Script', cursive",
                 fontWeight: 600,
                 color: textDark,
-                lineHeight: 1,
+                lineHeight: 1.15,
                 marginBottom: 12
               }}
             >

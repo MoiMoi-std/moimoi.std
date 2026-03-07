@@ -185,6 +185,8 @@ export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
                 fontWeight: 400,
                 lineHeight: 1.1,
                 letterSpacing: '0.05em',
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em',
                 marginBottom: 14
               }}
             >
@@ -208,6 +210,8 @@ export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
                 fontWeight: 400,
                 lineHeight: 1.1,
                 letterSpacing: '0.05em',
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em',
                 marginBottom: 26
               }}
             >

@@ -8,6 +8,7 @@ interface LivePreviewProps {
   wedding?: Wedding | null
   isDirty?: boolean
   onUnsavedWarning?: () => void
+  onOpen?: () => void
 }
 
 // Phone constants
@@ -23,7 +24,7 @@ const LAPTOP_DISPLAY_WIDTH = 320
 const LAPTOP_SCALE = LAPTOP_DISPLAY_WIDTH / LAPTOP_TEMPLATE_WIDTH
 const LAPTOP_DISPLAY_HEIGHT = 210
 
-const LivePreview: React.FC<LivePreviewProps> = ({ wedding, isDirty, onUnsavedWarning }) => {
+const LivePreview: React.FC<LivePreviewProps> = ({ wedding, isDirty, onUnsavedWarning, onOpen }) => {
   const [mode, setMode] = useState<'phone' | 'laptop'>('phone')
 
   if (!wedding) {
@@ -49,6 +50,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ wedding, isDirty, onUnsavedWa
       onUnsavedWarning?.()
       return
     }
+    onOpen?.()
     window.open(`/${wedding.slug}`, '_blank')
   }
 

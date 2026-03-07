@@ -206,7 +206,7 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
                 fontStyle: 'italic',
                 fontWeight: 400,
                 color: kraft,
-                lineHeight: 0.95,
+                lineHeight: 1.15,
                 marginBottom: 10
               }}
             >
@@ -251,7 +251,7 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
                 fontStyle: 'italic',
                 fontWeight: 400,
                 color: kraft,
-                lineHeight: 0.95,
+                lineHeight: 1.15,
                 marginBottom: 28
               }}
             >

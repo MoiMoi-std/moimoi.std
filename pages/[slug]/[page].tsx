@@ -1,6 +1,9 @@
 import { getTemplate } from '@/templates/TemplateRegistry'
 import { createClient } from '@supabase/supabase-js'
 import { GetServerSideProps } from 'next'
+import { useEffect, useState } from 'react'
+import MusicPlayer from '@/components/MusicPlayer'
+import InvitationSplash from '@/components/InvitationSplash'
 
 interface Props {
   wedding: any
@@ -10,6 +13,17 @@ interface Props {
 }
 
 export default function GuestWeddingPage({ wedding, guestName, slug, rsvpId }: Props) {
+  const [splashMounted, setSplashMounted] = useState(false)
+  const [templateReady, setTemplateReady] = useState(false)
+
+  const handleSplashOpen = () => {
+    setTemplateReady(true)
+    setTimeout(() => setSplashMounted(false), 820)
+  }
+
+  useEffect(() => {
+    setSplashMounted(true)
+  }, [])
   if (!wedding) {
     return (
       <div
@@ -58,7 +72,26 @@ export default function GuestWeddingPage({ wedding, guestName, slug, rsvpId }: P
   const branch = wedding.template?.repo_branch || 'default'
   const SelectedTemplate = getTemplate(branch).GuestView
 
-  return <SelectedTemplate wedding={wedding} guestName={guestName} rsvpId={rsvpId} />
+  const groomName: string = wedding.content?.groom_name || ''
+  const brideName: string = wedding.content?.bride_name || ''
+  const coupleNames = groomName && brideName ? `${groomName} & ${brideName}` : 'Thiệp Cưới'
+
+  return (
+    <>
+      <div
+        style={{
+          opacity: templateReady ? 1 : 0,
+          transition: templateReady ? 'opacity 0.9s ease 0.1s' : 'none',
+          pointerEvents: templateReady ? 'auto' : 'none'
+        }}
+      >
+        <SelectedTemplate wedding={wedding} guestName={guestName} rsvpId={rsvpId} />
+      </div>
+      <MusicPlayer musicUrl={wedding.content?.music_url} />
+
+      {splashMounted && <InvitationSplash guestName={guestName} coupleNames={coupleNames} onOpen={handleSplashOpen} />}
+    </>
+  )
 }
 
 export const getServerSideProps: GetServerSideProps = async (context) => {

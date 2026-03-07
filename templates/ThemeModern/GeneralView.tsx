@@ -552,6 +552,8 @@ export default function ModernGeneralView({ wedding, guestName = '', rsvpId }: T
                 fontSize: 'clamp(2rem, 8vw, 3.2rem)',
                 fontWeight: 800,
                 lineHeight: 1.1,
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em',
                 marginBottom: 8
               }}
             >
@@ -569,6 +571,8 @@ export default function ModernGeneralView({ wedding, guestName = '', rsvpId }: T
                 fontSize: 'clamp(2rem, 8vw, 3.2rem)',
                 fontWeight: 800,
                 lineHeight: 1.1,
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em',
                 marginBottom: 12
               }}
             >

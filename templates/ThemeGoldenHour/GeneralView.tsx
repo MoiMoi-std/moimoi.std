@@ -187,7 +187,7 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
                 fontStyle: 'italic',
                 fontWeight: 400,
                 color: '#fff',
-                lineHeight: 1,
+                lineHeight: 1.15,
                 marginBottom: 10
               }}
             >
@@ -233,7 +233,7 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
                 fontStyle: 'italic',
                 fontWeight: 400,
                 color: '#fff',
-                lineHeight: 1,
+                lineHeight: 1.15,
                 marginBottom: 30
               }}
             >

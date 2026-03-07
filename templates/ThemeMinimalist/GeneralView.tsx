@@ -243,7 +243,7 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
                 fontWeight: 300,
                 fontStyle: 'italic',
                 color: '#ffffff',
-                lineHeight: 0.92,
+                lineHeight: 1.15,
                 letterSpacing: '-0.01em',
                 textShadow: '0 2px 40px rgba(0,0,0,0.3)'
               }}
@@ -274,7 +274,7 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
                 fontWeight: 300,
                 fontStyle: 'italic',
                 color: '#ffffff',
-                lineHeight: 0.92,
+                lineHeight: 1.15,
                 letterSpacing: '-0.01em',
                 textShadow: '0 2px 40px rgba(0,0,0,0.3)',
                 marginBottom: 32

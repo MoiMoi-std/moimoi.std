@@ -205,8 +205,10 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
                 fontSize: 'clamp(3rem,12vw,7rem)',
                 fontWeight: 300,
                 fontStyle: 'italic',
-                lineHeight: 0.95,
+                lineHeight: 1.2,
                 letterSpacing: '0.02em',
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em',
                 marginBottom: 10
               }}
             >
@@ -233,8 +235,10 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
                 fontSize: 'clamp(3rem,12vw,7rem)',
                 fontWeight: 300,
                 fontStyle: 'italic',
-                lineHeight: 0.95,
+                lineHeight: 1.2,
                 letterSpacing: '0.02em',
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em',
                 marginBottom: 28
               }}
             >

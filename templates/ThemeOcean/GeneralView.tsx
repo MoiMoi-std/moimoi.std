@@ -177,7 +177,7 @@ export default function OceanGeneralView({ wedding }: TemplateProps) {
                 fontWeight: 400,
                 fontStyle: 'italic',
                 color: white,
-                lineHeight: 1,
+                lineHeight: 1.15,
                 textShadow: '0 2px 30px rgba(10,123,150,0.5)',
                 marginBottom: 6
               }}
@@ -208,7 +208,7 @@ export default function OceanGeneralView({ wedding }: TemplateProps) {
                 fontWeight: 400,
                 fontStyle: 'italic',
                 color: white,
-                lineHeight: 1,
+                lineHeight: 1.15,
                 textShadow: '0 2px 30px rgba(10,123,150,0.5)',
                 marginBottom: 28
               }}
