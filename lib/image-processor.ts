@@ -1,18 +1,60 @@
 // Helper functions to process images before saving to Supabase
 
-const UPLOAD_TIMEOUT_MS = 60_000
-
-function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = UPLOAD_TIMEOUT_MS): Promise<Response> {
-  const controller = new AbortController()
-  const id = setTimeout(() => controller.abort(), timeoutMs)
-  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id))
-}
-
 export interface ProcessImagesResult {
   newImages: string[]
   uploadedCount: number
   deletedCount: number
   failedCount: number
+}
+
+/**
+ * Upload a single base64 image directly to Cloudinary from the client.
+ * The API route only generates a signature (lightweight, like delete-image),
+ * so the actual binary never passes through Vercel's serverless function.
+ */
+async function uploadImageDirectly(base64: string, slug?: string): Promise<string | null> {
+  const folder = slug ? `image/${slug}` : 'image'
+
+  // Step 1: Get a signed upload token from our API (small request, no payload limit issue)
+  const signRes = await fetch('/api/sign-upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folder })
+  })
+  if (!signRes.ok) {
+    console.error('Failed to get upload signature')
+    return null
+  }
+  const { signature, timestamp, api_key, cloud_name } = await signRes.json()
+
+  // Step 2: Convert base64 data URL to Blob
+  const [header, data] = base64.split(',')
+  const mimeType = header.match(/:(.*?);/)?.[1] || 'image/jpeg'
+  const byteChars = atob(data)
+  const byteArray = new Uint8Array(byteChars.length)
+  for (let i = 0; i < byteChars.length; i++) {
+    byteArray[i] = byteChars.charCodeAt(i)
+  }
+  const blob = new Blob([byteArray], { type: mimeType })
+
+  // Step 3: Upload directly to Cloudinary's REST API (bypasses Vercel completely)
+  const formData = new FormData()
+  formData.append('file', blob)
+  formData.append('api_key', api_key)
+  formData.append('timestamp', String(timestamp))
+  formData.append('signature', signature)
+  formData.append('folder', folder)
+
+  const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/auto/upload`, {
+    method: 'POST',
+    body: formData
+  })
+  if (!uploadRes.ok) {
+    console.error('Direct Cloudinary upload failed', await uploadRes.text())
+    return null
+  }
+  const result = await uploadRes.json()
+  return result.secure_url || null
 }
 
 /**
@@ -34,18 +76,11 @@ export async function processImages(
   for (const img of currentImages) {
     if (img.startsWith('data:')) {
       try {
-        const response = await fetchWithTimeout('/api/upload-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ files: [img], slug })
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          newImages.push(data.urls[0])
+        const url = await uploadImageDirectly(img, slug)
+        if (url) {
+          newImages.push(url)
           uploadedCount++
         } else {
-          console.error('Failed to upload image')
           failedCount++
         }
       } catch (error) {
@@ -100,14 +135,9 @@ export async function processSingleImage(
   if (current) {
     if (current.startsWith('data:')) {
       try {
-        const response = await fetchWithTimeout('/api/upload-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ files: [current], slug })
-        })
-        if (response.ok) {
-          const data = await response.json()
-          result = data.urls[0]
+        const url = await uploadImageDirectly(current, slug)
+        if (url) {
+          result = url
         } else {
           console.error('Failed to upload cover image')
         }
