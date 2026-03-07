@@ -1,12 +1,11 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import formidable from 'formidable'
 import { v2 as cloudinary } from 'cloudinary'
-import fs from 'fs'
 
-// Disable bodyParser to use formidable
 export const config = {
   api: {
-    bodyParser: false
+    bodyParser: {
+      sizeLimit: '20mb'
+    }
   }
 }
 
@@ -23,33 +22,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const form = formidable({
-      multiples: true,
-      maxFileSize: 10 * 1024 * 1024
-    })
+    const { files, slug } = req.body
 
-    const [fields, files] = await form.parse(req)
-
-    const slug = Array.isArray(fields.slug) ? fields.slug[0] : fields.slug
-    const folder = slug ? `image/${slug}` : 'image'
-
-    const uploadedFiles = files.file
-    if (!uploadedFiles || uploadedFiles.length === 0) {
-      return res.status(400).json({ error: 'No file uploaded' })
+    if (!files || !Array.isArray(files) || files.length === 0) {
+      return res.status(400).json({ error: 'No files provided' })
     }
 
+    const folder = slug ? `image/${slug}` : 'image'
     const uploadedUrls: string[] = []
 
-    for (const file of uploadedFiles) {
+    for (const base64 of files) {
       try {
-        const result = await cloudinary.uploader.upload(file.filepath, {
-          folder: folder,
-          resource_type: 'auto',
-          transformation: [{ width: 1920, height: 1080, crop: 'limit' }, { quality: 'auto:good' }]
+        const result = await cloudinary.uploader.upload(base64, {
+          folder,
+          resource_type: 'auto'
         })
-
         uploadedUrls.push(result.secure_url)
-        fs.unlinkSync(file.filepath)
       } catch (uploadError) {
         console.error('Error uploading to Cloudinary:', uploadError)
       }
@@ -58,10 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (uploadedUrls.length === 0) {
       return res.status(500).json({ error: 'Failed to upload images to Cloudinary' })
     }
-    return res.status(200).json({
-      success: true,
-      urls: uploadedUrls
-    })
+    return res.status(200).json({ success: true, urls: uploadedUrls })
   } catch (error) {
     console.error('Upload error:', error)
     return res.status(500).json({ error: 'Internal server error' })

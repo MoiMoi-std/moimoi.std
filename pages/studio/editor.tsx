@@ -1,4 +1,4 @@
-import { CreditCard, Image as ImageIcon, Info, Save, Shield } from 'lucide-react'
+import { CreditCard, Image as ImageIcon, Info, Palette, Save, Shield } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import StudioEmptyState from '../../components/studio/StudioEmptyState'
 import LivePreview from '../../components/studio/LivePreview'
@@ -7,14 +7,16 @@ import StudioLoading from '../../components/studio/StudioLoading'
 import TabAlbum from '../../components/studio/TabAlbum'
 import TabBank from '../../components/studio/TabBank'
 import TabInfo from '../../components/studio/TabInfo'
+import TabStyle from '../../components/studio/TabStyle'
 import { useToast } from '../../components/ui/ToastProvider'
 import { dataService } from '../../lib/data-service'
 import { processImages, processSingleImage } from '../../lib/image-processor'
+import type { ImagePosition } from '../../lib/imageUtils'
 import { useWedding } from '../../lib/useWedding'
 
 const Editor = () => {
   const { wedding, setWedding, loading } = useWedding()
-  const [activeTab, setActiveTab] = useState<'info' | 'album' | 'bank' | 'admin'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'album' | 'bank' | 'style' | 'admin'>('info')
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [isAdminMode, setIsAdminMode] = useState(false)
@@ -24,6 +26,7 @@ const Editor = () => {
   const [adminLogs, setAdminLogs] = useState<string[]>([])
   const [originalImages, setOriginalImages] = useState<string[]>([])
   const [originalCoverImage, setOriginalCoverImage] = useState<string | null>(null)
+  const [isDirty, setIsDirty] = useState(false)
   const { success, error } = useToast()
 
   // Store original images when wedding loads
@@ -37,26 +40,43 @@ const Editor = () => {
 
   const handleInfoChange = (key: string, value: string) => {
     if (!wedding) return
-    setWedding({
-      ...wedding,
-      content: { ...wedding.content, [key]: value }
-    })
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, [key]: value } } : prev))
+  }
+
+  const handleBatchChange = (changes: Record<string, string>) => {
+    if (!wedding) return
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, ...changes } } : prev))
   }
 
   const handleImagesChange = (images: string[]) => {
     if (!wedding) return
-    setWedding({
-      ...wedding,
-      content: { ...wedding.content, images }
-    })
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, images } } : prev))
   }
 
   const handleCoverImageChange = (coverImage: string | null) => {
     if (!wedding) return
-    setWedding({
-      ...wedding,
-      content: { ...wedding.content, cover_image: coverImage }
-    })
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, cover_image: coverImage } } : prev))
+  }
+
+  const handleImagePositionsChange = (positions: (ImagePosition | null)[]) => {
+    if (!wedding) return
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, image_positions: positions } } : prev))
+  }
+
+  const handleCoverImagePositionChange = (position: ImagePosition) => {
+    if (!wedding) return
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, cover_image_position: position } } : prev))
+  }
+
+  const handleImageDeleted = (url: string) => {
+    setOriginalImages((prev) => prev.filter((img) => img !== url))
+    setOriginalCoverImage((prev) => (prev === url ? null : prev))
   }
 
   const handleSave = async () => {
@@ -65,8 +85,9 @@ const Editor = () => {
     try {
       const previousImages = originalImages
       const currentImages = wedding.content.images || []
+      const coverIsBase64 = Boolean(wedding.content.cover_image?.startsWith('data:'))
 
-      const { newImages, uploadedCount, deletedCount } = await processImages(
+      const { newImages, uploadedCount, deletedCount, failedCount } = await processImages(
         currentImages,
         previousImages,
         wedding.slug ?? undefined
@@ -77,6 +98,12 @@ const Editor = () => {
         originalCoverImage,
         wedding.slug ?? undefined
       )
+
+      const coverUploadFailed = coverIsBase64 && !newCoverImage
+      if (failedCount > 0 || coverUploadFailed) {
+        error('Tải ảnh lên Cloudinary thất bại. Vui lòng kiểm tra kết nối và thử lại.')
+        return
+      }
 
       if (uploadedCount > 0 || deletedCount > 0) {
         console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
@@ -89,6 +116,7 @@ const Editor = () => {
       setWedding({ ...wedding, content: updatedContent })
       setOriginalImages(newImages)
       setOriginalCoverImage(newCoverImage)
+      setIsDirty(false)
 
       success('Lưu thay đổi thành công!')
     } catch (e) {
@@ -99,48 +127,30 @@ const Editor = () => {
     }
   }
 
-  const handlePublish = async () => {
+  const handleTogglePublish = async () => {
     if (!wedding) return
     setPublishing(true)
+    const isPublished = wedding.deployment_status === 'published'
     try {
-      const previousImages = originalImages
-      const currentImages = wedding.content.images || []
-
-      const { newImages, uploadedCount, deletedCount } = await processImages(
-        currentImages,
-        previousImages,
-        wedding.slug ?? undefined
-      )
-
-      const newCoverImage = await processSingleImage(
-        wedding.content.cover_image,
-        originalCoverImage,
-        wedding.slug ?? undefined
-      )
-
-      if (uploadedCount > 0 || deletedCount > 0) {
-        console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
-      }
-
-      const updatedContent = { ...wedding.content, images: newImages, cover_image: newCoverImage }
-      await dataService.updateWedding(wedding.id, updatedContent)
-
       const supabase = (await import('../../lib/initSupabase')).supabase
+      const newStatus = isPublished ? 'draft' : 'published'
       const { error: publishError } = await supabase
         .from('weddings')
-        .update({ deployment_status: 'published' })
+        .update({ deployment_status: newStatus })
         .eq('id', wedding.id)
 
       if (publishError) throw publishError
 
-      setWedding({ ...wedding, content: updatedContent, deployment_status: 'published' })
-      setOriginalImages(newImages)
-      setOriginalCoverImage(newCoverImage)
+      setWedding({ ...wedding, deployment_status: newStatus })
 
-      success('Xuất bản thành công! Thiệp của bạn đã được công khai.')
+      if (isPublished) {
+        success('Đã tắt công khai. Thiệp của bạn chỉ bạn mới xem được.')
+      } else {
+        success('Đã công khai! Thiệp của bạn có thể được xem bởi mọi người.')
+      }
     } catch (e) {
-      console.error('Publish error:', e)
-      error('Xuất bản thất bại. Vui lòng thử lại.')
+      console.error('Toggle publish error:', e)
+      error('Thao tác thất bại. Vui lòng thử lại.')
     } finally {
       setPublishing(false)
     }
@@ -216,28 +226,37 @@ const Editor = () => {
             </button>
           </label>
           <button
+            onClick={handleTogglePublish}
+            disabled={saving || publishing}
+            className={`flex items-center justify-center px-6 py-3 text-white rounded-xl transition-all shadow-lg disabled:opacity-50 font-medium ${
+              wedding?.deployment_status === 'published'
+                ? 'bg-gray-500 hover:bg-gray-600 shadow-gray-200'
+                : 'bg-pink-600 hover:bg-pink-700 shadow-pink-200'
+            }`}
+          >
+            {publishing ? (
+              wedding?.deployment_status === 'published' ? (
+                'Đang tắt...'
+              ) : (
+                'Đang bật...'
+              )
+            ) : (
+              <>
+                <Save size={18} className='mr-2' />
+                {wedding?.deployment_status === 'published' ? 'Tắt công khai' : 'Công khai'}
+              </>
+            )}
+          </button>
+          <button
             onClick={handleSave}
             disabled={saving || publishing}
-            className='flex items-center justify-center px-6 py-3 bg-gray-600 text-white rounded-xl hover:bg-gray-700 transition-all shadow-lg shadow-gray-200 disabled:opacity-50 font-medium'
+            className='flex items-center justify-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-xl hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 font-medium'
           >
             {saving ? (
               'Đang lưu...'
             ) : (
               <>
-                <Save size={18} className='mr-2' /> Lưu bản nháp
-              </>
-            )}
-          </button>
-          <button
-            onClick={handlePublish}
-            disabled={saving || publishing}
-            className='flex items-center justify-center px-6 py-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-all shadow-lg shadow-pink-200 disabled:opacity-50 font-medium'
-          >
-            {publishing ? (
-              'Đang xuất bản...'
-            ) : (
-              <>
-                <Save size={18} className='mr-2' /> Xuất Bản
+                <Save size={18} className='mr-2' /> Lưu
               </>
             )}
           </button>
@@ -284,6 +303,18 @@ const Editor = () => {
                 <CreditCard size={18} /> Tiền mừng
               </div>
             </button>
+            <button
+              onClick={() => setActiveTab('style')}
+              className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
+                activeTab === 'style'
+                  ? 'border-pink-500 text-pink-600 bg-pink-50/30'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              <div className='flex items-center justify-center gap-2'>
+                <Palette size={18} /> Kiểu Dáng
+              </div>
+            </button>
             {isAdminMode && (
               <button
                 onClick={() => setActiveTab('admin')}
@@ -311,10 +342,20 @@ const Editor = () => {
                 onChange={handleImagesChange}
                 coverImage={wedding?.content?.cover_image || undefined}
                 onCoverImageChange={handleCoverImageChange}
+                groomName={wedding?.content?.groom_name || ''}
+                brideName={wedding?.content?.bride_name || ''}
+                imagePositions={wedding?.content?.image_positions || []}
+                onImagePositionsChange={handleImagePositionsChange}
+                coverImagePosition={wedding?.content?.cover_image_position || undefined}
+                onCoverImagePositionChange={handleCoverImagePositionChange}
+                onImageDeleted={handleImageDeleted}
               />
             </div>
             <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
               <TabBank content={wedding?.content} onChange={handleInfoChange} />
+            </div>
+            <div className={activeTab === 'style' ? 'block' : 'hidden'}>
+              <TabStyle content={wedding?.content} onChange={handleInfoChange} onBatchChange={handleBatchChange} />
             </div>
             {activeTab === 'admin' && (
               <div className='space-y-6'>
@@ -388,7 +429,11 @@ const Editor = () => {
           </div>
         </div>
 
-        <LivePreview wedding={wedding} />
+        <LivePreview
+          wedding={wedding}
+          isDirty={isDirty}
+          onUnsavedWarning={() => error('Vui lòng lưu thay đổi trước khi xem thiệp.')}
+        />
       </div>
     </StudioLayout>
   )

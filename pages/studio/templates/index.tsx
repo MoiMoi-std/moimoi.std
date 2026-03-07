@@ -240,12 +240,12 @@ export default function TemplatesPage() {
             )}
           </button>
         </div>
-        <button
+        {/* <button
           onClick={() => toast('Bộ lọc demo dựa theo tên mẫu', 'info')}
           className='px-4 py-2 bg-pink-50 text-pink-600 rounded-xl text-sm font-bold'
         >
           Mẹo chọn mẫu
-        </button>
+        </button> */}
       </div>
 
       <div className='mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
@@ -319,25 +319,35 @@ export default function TemplatesPage() {
                     </p>
                   </div>
                 ) : (
-                  <button
-                    disabled={isActive}
-                    onClick={() => !isActive && applyTemplate(template.id)}
-                    className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
-                      isActive
-                        ? 'bg-green-50 text-green-600 border-2 border-green-200 cursor-default'
-                        : 'bg-gradient-to-r from-pink-600 to-rose-500 text-white hover:shadow-lg shadow-pink-200 hover:scale-[1.01] active:scale-[0.99]'
-                    }`}
-                  >
-                    {isActive ? (
-                      <>
-                        <Check size={16} /> Đang áp dụng
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles size={16} /> Áp Dụng Mẫu
-                      </>
-                    )}
-                  </button>
+                  <div className='flex items-center gap-2'>
+                    <button
+                      disabled={isActive}
+                      onClick={() => !isActive && applyTemplate(template.id)}
+                      className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
+                        isActive
+                          ? 'bg-green-50 text-green-600 border-2 border-green-200 cursor-default'
+                          : 'bg-gradient-to-r from-pink-600 to-rose-500 text-white hover:shadow-lg shadow-pink-200 hover:scale-[1.01] active:scale-[0.99]'
+                      }`}
+                    >
+                      {isActive ? (
+                        <>
+                          <Check size={16} /> Đang áp dụng
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={16} /> Áp Dụng Mẫu
+                        </>
+                      )}
+                    </button>
+
+                    {/* Button push to https://www.moimoi.io.vn/studio/editor để chỉnh sửa template nếu cần*/}
+                    <button
+                      onClick={() => router.push('/studio/editor')}
+                      className='w-12 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all bg-gradient-to-r from-pink-600 to-rose-500 text-white hover:shadow-lg shadow-pink-200 hover:scale-[1.01] active:scale-[0.99]'
+                    >
+                      <Sparkles size={16} />
+                    </button>
+                  </div>
                 )}
                 {hasPlanLimit && (
                   <div className='text-sm text-gray-500 bg-pink-50/60 border border-pink-100 rounded-lg p-3'>

@@ -1,9 +1,18 @@
 // Helper functions to process images before saving to Supabase
 
+const UPLOAD_TIMEOUT_MS = 60_000
+
+function fetchWithTimeout(url: string, options: RequestInit, timeoutMs = UPLOAD_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController()
+  const id = setTimeout(() => controller.abort(), timeoutMs)
+  return fetch(url, { ...options, signal: controller.signal }).finally(() => clearTimeout(id))
+}
+
 export interface ProcessImagesResult {
   newImages: string[]
   uploadedCount: number
   deletedCount: number
+  failedCount: number
 }
 
 /**
@@ -20,20 +29,15 @@ export async function processImages(
   const newImages: string[] = []
   let uploadedCount = 0
   let deletedCount = 0
+  let failedCount = 0
 
   for (const img of currentImages) {
     if (img.startsWith('data:')) {
       try {
-        const blob = await fetch(img).then((r) => r.blob())
-        const file = new File([blob], 'image.jpg', { type: blob.type })
-
-        const formData = new FormData()
-        formData.append('file', file)
-        if (slug) formData.append('slug', slug)
-
-        const response = await fetch('/api/upload-image', {
+        const response = await fetchWithTimeout('/api/upload-image', {
           method: 'POST',
-          body: formData
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: [img], slug })
         })
 
         if (response.ok) {
@@ -42,9 +46,11 @@ export async function processImages(
           uploadedCount++
         } else {
           console.error('Failed to upload image')
+          failedCount++
         }
       } catch (error) {
         console.error('Error uploading base64 image:', error)
+        failedCount++
       }
     } else {
       newImages.push(img)
@@ -76,7 +82,8 @@ export async function processImages(
   return {
     newImages,
     uploadedCount,
-    deletedCount
+    deletedCount,
+    failedCount
   }
 }
 
@@ -93,14 +100,10 @@ export async function processSingleImage(
   if (current) {
     if (current.startsWith('data:')) {
       try {
-        const blob = await fetch(current).then((r) => r.blob())
-        const file = new File([blob], 'image.jpg', { type: blob.type })
-        const formData = new FormData()
-        formData.append('file', file)
-        if (slug) formData.append('slug', slug)
-        const response = await fetch('/api/upload-image', {
+        const response = await fetchWithTimeout('/api/upload-image', {
           method: 'POST',
-          body: formData
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ files: [current], slug })
         })
         if (response.ok) {
           const data = await response.json()
