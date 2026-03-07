@@ -118,7 +118,7 @@ export default function RusticGuestView({ wedding, rsvpId, guestName }: Template
                 fontFamily: "'Playfair Display', serif",
                 fontStyle: 'italic',
                 color: kraft,
-                lineHeight: 1,
+                lineHeight: 1.15,
                 marginBottom: 12
               }}
             >

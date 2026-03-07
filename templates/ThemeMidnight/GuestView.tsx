@@ -100,7 +100,7 @@ export default function MidnightGuestView({ wedding, rsvpId, guestName }: Templa
                 fontFamily: "'Playfair Display', serif",
                 fontStyle: 'italic',
                 color: candleLight,
-                lineHeight: 1,
+                lineHeight: 1.15,
                 marginBottom: 12
               }}
             >

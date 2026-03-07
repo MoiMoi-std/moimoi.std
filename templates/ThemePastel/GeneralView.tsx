@@ -187,7 +187,7 @@ export default function PastelGeneralView({ wedding }: TemplateProps) {
                 fontFamily: "'Dancing Script', cursive",
                 fontWeight: 600,
                 color: textDark,
-                lineHeight: 0.95,
+                lineHeight: 1.15,
                 marginBottom: 8
               }}
             >
@@ -227,7 +227,7 @@ export default function PastelGeneralView({ wedding }: TemplateProps) {
                 fontFamily: "'Dancing Script', cursive",
                 fontWeight: 600,
                 color: textDark,
-                lineHeight: 0.95,
+                lineHeight: 1.15,
                 marginBottom: 24
               }}
             >

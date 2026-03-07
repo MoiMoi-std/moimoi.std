@@ -85,7 +85,7 @@ export default function BohoGuestView({ wedding, guestName, rsvpId }: TemplatePr
                 fontSize: 'clamp(2.2rem,10vw,4.5rem)',
                 fontFamily: "'Sacramento', cursive",
                 color: '#fff',
-                lineHeight: 1.05,
+                lineHeight: 1.15,
                 marginBottom: 10
               }}
             >

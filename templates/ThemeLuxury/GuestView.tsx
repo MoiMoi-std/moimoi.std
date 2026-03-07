@@ -518,6 +518,8 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
                 fontSize: 'clamp(1.8rem, 7vw, 3rem)',
                 fontWeight: 800,
                 lineHeight: 1.1,
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em',
                 marginBottom: 10
               }}
             >
@@ -538,6 +540,8 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
                 fontSize: 'clamp(1.8rem, 7vw, 3rem)',
                 fontWeight: 800,
                 lineHeight: 1.1,
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em',
                 marginBottom: 14
               }}
             >

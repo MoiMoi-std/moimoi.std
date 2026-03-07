@@ -173,7 +173,7 @@ export default function ProvenceGeneralView({ wedding }: TemplateProps) {
                 fontSize: 'clamp(3rem,13vw,7.5rem)',
                 fontFamily: "'Great Vibes', cursive",
                 color: '#fff',
-                lineHeight: 0.95,
+                lineHeight: 1.15,
                 textShadow: '0 2px 30px rgba(124,110,168,0.5)',
                 marginBottom: 4
               }}
@@ -198,7 +198,7 @@ export default function ProvenceGeneralView({ wedding }: TemplateProps) {
                 fontSize: 'clamp(3rem,13vw,7.5rem)',
                 fontFamily: "'Great Vibes', cursive",
                 color: '#fff',
-                lineHeight: 0.95,
+                lineHeight: 1.15,
                 textShadow: '0 2px 30px rgba(124,110,168,0.5)',
                 marginBottom: 28
               }}

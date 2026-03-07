@@ -319,7 +319,9 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
                 fontFamily: "'Noto Serif JP', serif",
                 fontSize: 'clamp(3rem, 10vw, 6.5rem)',
                 fontWeight: 700,
-                lineHeight: 1.05
+                lineHeight: 1.05,
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em'
               }}
             >
               {mergedContent.groom_name}
@@ -367,6 +369,8 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
                 fontSize: 'clamp(3rem, 10vw, 6.5rem)',
                 fontWeight: 700,
                 lineHeight: 1.05,
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em',
                 marginBottom: 36
               }}
             >

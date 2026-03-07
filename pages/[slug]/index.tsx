@@ -4,6 +4,8 @@ import { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateViewportContext } from '@/lib/TemplateViewportContext'
+import MusicPlayer from '@/components/MusicPlayer'
+import InvitationSplash from '@/components/InvitationSplash'
 
 interface Props {
   wedding: any
@@ -13,12 +15,23 @@ interface Props {
 export default function GeneralWeddingPage({ wedding, slug }: Props) {
   const [phoneMode, setPhoneMode] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
+  const [splashMounted, setSplashMounted] = useState(false)
+  const [templateReady, setTemplateReady] = useState(false)
+
+  const handleSplashOpen = () => {
+    setTemplateReady(true)
+    setTimeout(() => setSplashMounted(false), 820)
+  }
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 768)
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
+  }, [])
+
+  useEffect(() => {
+    setSplashMounted(true)
   }, [])
 
   if (!wedding) {
@@ -174,37 +187,49 @@ export default function GeneralWeddingPage({ wedding, slug }: Props) {
       )}
 
       {/* Nội dung template */}
-      {phoneMode && isDesktop ? (
-        <TemplateViewportContext.Provider value='phone'>
-          <div
-            style={{
-              minHeight: '100vh',
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'center',
-              background: 'linear-gradient(160deg, #fdf4f8 0%, #faf5ff 50%, #f0f9ff 100%)',
-              padding: '32px 0 80px'
-            }}
-          >
+      <div
+        style={{
+          opacity: templateReady ? 1 : 0,
+          transition: templateReady ? 'opacity 0.9s ease 0.1s' : 'none',
+          pointerEvents: templateReady ? 'auto' : 'none'
+        }}
+      >
+        {phoneMode && isDesktop ? (
+          <TemplateViewportContext.Provider value='phone'>
             <div
               style={{
-                width: 390,
-                minHeight: '85vh',
-                borderRadius: 40,
-                overflow: 'hidden',
-                boxShadow: '0 32px 80px rgba(0,0,0,0.25), 0 0 0 10px #1a1a1a, 0 0 0 11px #333',
-                position: 'relative'
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'center',
+                background: 'linear-gradient(160deg, #fdf4f8 0%, #faf5ff 50%, #f0f9ff 100%)',
+                padding: '32px 0 80px'
               }}
             >
-              <SelectedTemplate wedding={wedding} />
+              <div
+                style={{
+                  width: 390,
+                  minHeight: '85vh',
+                  borderRadius: 40,
+                  overflow: 'hidden',
+                  boxShadow: '0 32px 80px rgba(0,0,0,0.25), 0 0 0 10px #1a1a1a, 0 0 0 11px #333',
+                  position: 'relative'
+                }}
+              >
+                <SelectedTemplate wedding={wedding} />
+              </div>
             </div>
-          </div>
-        </TemplateViewportContext.Provider>
-      ) : (
-        <TemplateViewportContext.Provider value={isDesktop ? 'laptop' : 'phone'}>
-          <SelectedTemplate wedding={wedding} />
-        </TemplateViewportContext.Provider>
-      )}
+          </TemplateViewportContext.Provider>
+        ) : (
+          <TemplateViewportContext.Provider value={isDesktop ? 'laptop' : 'phone'}>
+            <SelectedTemplate wedding={wedding} />
+          </TemplateViewportContext.Provider>
+        )}
+      </div>
+
+      <MusicPlayer musicUrl={wedding.content?.music_url} />
+
+      {splashMounted && <InvitationSplash coupleNames={coupleNames} onOpen={handleSplashOpen} />}
     </>
   )
 }

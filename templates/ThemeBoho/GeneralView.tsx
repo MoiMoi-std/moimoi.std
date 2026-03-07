@@ -169,7 +169,7 @@ export default function BohoGeneralView({ wedding }: TemplateProps) {
                 fontSize: 'clamp(3.5rem,14vw,8rem)',
                 fontFamily: "'Sacramento', cursive",
                 color: '#fff',
-                lineHeight: 1,
+                lineHeight: 1.15,
                 marginBottom: 4,
                 textShadow: `0 2px 30px rgba(0,0,0,0.4)`
               }}
@@ -194,7 +194,7 @@ export default function BohoGeneralView({ wedding }: TemplateProps) {
                 fontSize: 'clamp(3.5rem,14vw,8rem)',
                 fontFamily: "'Sacramento', cursive",
                 color: '#fff',
-                lineHeight: 1,
+                lineHeight: 1.15,
                 marginBottom: 28,
                 textShadow: `0 2px 30px rgba(0,0,0,0.4)`
               }}

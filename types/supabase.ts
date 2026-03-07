@@ -8,6 +8,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      musics: {
+        Row: {
+          id: number
+          created_at: string
+          title: string
+          artist: string | null
+          url: string
+          is_active: boolean | null
+        }
+        Insert: {
+          id?: number
+          created_at?: string
+          title: string
+          artist?: string | null
+          url: string
+          is_active?: boolean | null
+        }
+        Update: {
+          id?: number
+          created_at?: string
+          title?: string
+          artist?: string | null
+          url?: string
+          is_active?: boolean | null
+        }
+        Relationships: []
+      }
       rsvps: {
         Row: {
           created_at: string
@@ -83,6 +110,7 @@ export type Database = {
           deployment_status: string | null
           host_id: string
           id: string
+          music_id: number | null
           slug: string
           template_id: number | null
         }
@@ -92,6 +120,7 @@ export type Database = {
           deployment_status?: string | null
           host_id: string
           id?: string
+          music_id?: number | null
           slug: string
           template_id?: number | null
         }
@@ -101,6 +130,7 @@ export type Database = {
           deployment_status?: string | null
           host_id?: string
           id?: string
+          music_id?: number | null
           slug?: string
           template_id?: number | null
         }
@@ -110,6 +140,13 @@ export type Database = {
             columns: ['template_id']
             isOneToOne: false
             referencedRelation: 'templates'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'weddings_music_id_fkey'
+            columns: ['music_id']
+            isOneToOne: false
+            referencedRelation: 'musics'
             referencedColumns: ['id']
           }
         ]

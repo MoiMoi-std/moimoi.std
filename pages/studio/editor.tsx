@@ -1,5 +1,18 @@
-import { CreditCard, Image as ImageIcon, Info, Palette, Save, Shield } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import {
+  CreditCard,
+  Image as ImageIcon,
+  Info,
+  LayoutList,
+  Music,
+  Palette,
+  Pencil,
+  Plus,
+  Save,
+  Trash2,
+  X
+} from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { supabase } from '../../lib/initSupabase'
 import StudioEmptyState from '../../components/studio/StudioEmptyState'
 import LivePreview from '../../components/studio/LivePreview'
 import StudioLayout from '../../components/studio/StudioLayout'
@@ -16,14 +29,50 @@ import { useWedding } from '../../lib/useWedding'
 
 const Editor = () => {
   const { wedding, setWedding, loading } = useWedding()
-  const [activeTab, setActiveTab] = useState<'info' | 'album' | 'bank' | 'style' | 'admin'>('info')
+  const [activeTab, setActiveTab] = useState<'info' | 'album' | 'bank' | 'style' | 'music' | 'admin'>('info')
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
   const [isAdminMode, setIsAdminMode] = useState(false)
-  const [adminJsonDraft, setAdminJsonDraft] = useState('')
-  const [customFieldKey, setCustomFieldKey] = useState('')
-  const [customFieldValue, setCustomFieldValue] = useState('')
-  const [adminLogs, setAdminLogs] = useState<string[]>([])
+  const [adminSection, setAdminSection] = useState<'cards' | 'music'>('cards')
+  const [allWeddings, setAllWeddings] = useState<
+    Array<{
+      id: string
+      slug: string
+      host_id: string
+      deployment_status: string | null
+      created_at: string
+      content: any
+    }>
+  >([])
+  const [loadingWeddings, setLoadingWeddings] = useState(false)
+  const [allMusics, setAllMusics] = useState<Array<{ id: number; title: string; artist: string | null; url: string }>>(
+    []
+  )
+  const [loadingMusics, setLoadingMusics] = useState(false)
+  const [musicList, setMusicList] = useState<
+    Array<{ id: number; title: string; artist: string | null; url: string; is_active: boolean | null }>
+  >([])
+  const [showAddMusic, setShowAddMusic] = useState(false)
+  const [newMusicTitle, setNewMusicTitle] = useState('')
+  const [newMusicArtist, setNewMusicArtist] = useState('')
+  const [newMusicFile, setNewMusicFile] = useState<File | null>(null)
+  const [uploadingMusic, setUploadingMusic] = useState(false)
+  const [editingMusicId, setEditingMusicId] = useState<number | null>(null)
+  const [editMusicTitle, setEditMusicTitle] = useState('')
+  const [editMusicArtist, setEditMusicArtist] = useState('')
+  const [savingEdit, setSavingEdit] = useState(false)
+  const previewAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [playingMusicId, setPlayingMusicId] = useState<number | null>(null)
+  const [adminSelectedWedding, setAdminSelectedWedding] = useState<{
+    id: string
+    slug: string
+    host_id: string
+    deployment_status: string | null
+    created_at: string
+    content: any
+  } | null>(null)
+  const [adminSaving, setAdminSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [originalImages, setOriginalImages] = useState<string[]>([])
   const [originalCoverImage, setOriginalCoverImage] = useState<string | null>(null)
   const [isDirty, setIsDirty] = useState(false)
@@ -37,6 +86,25 @@ const Editor = () => {
     setOriginalCoverImage(wedding?.content?.cover_image || null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding?.id])
+
+  // Stop preview audio when leaving music tab
+  useEffect(() => {
+    if (activeTab !== 'music' && previewAudioRef.current) {
+      previewAudioRef.current.pause()
+      previewAudioRef.current = null
+      setPlayingMusicId(null)
+    }
+  }, [activeTab])
+
+  // Cleanup preview audio on unmount
+  useEffect(() => {
+    return () => {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause()
+        previewAudioRef.current = null
+      }
+    }
+  }, [])
 
   const handleInfoChange = (key: string, value: string) => {
     if (!wedding) return
@@ -110,13 +178,19 @@ const Editor = () => {
       }
 
       const updatedContent = { ...wedding.content, images: newImages, cover_image: newCoverImage }
-      await dataService.updateWedding(wedding.id, updatedContent)
+      await dataService.updateWedding(wedding.id, updatedContent, wedding.music_id ?? null)
 
       // Update local state and original images
       setWedding({ ...wedding, content: updatedContent })
       setOriginalImages(newImages)
       setOriginalCoverImage(newCoverImage)
       setIsDirty(false)
+
+      // Dừng nhạc preview sau khi lưu
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause()
+      }
+      setPlayingMusicId(null)
 
       success('Lưu thay đổi thành công!')
     } catch (e) {
@@ -132,7 +206,6 @@ const Editor = () => {
     setPublishing(true)
     const isPublished = wedding.deployment_status === 'published'
     try {
-      const supabase = (await import('../../lib/initSupabase')).supabase
       const newStatus = isPublished ? 'draft' : 'published'
       const { error: publishError } = await supabase
         .from('weddings')
@@ -157,42 +230,199 @@ const Editor = () => {
   }
 
   useEffect(() => {
-    if (isAdminMode && wedding) {
-      setAdminJsonDraft(JSON.stringify(wedding.content || {}, null, 2))
-    }
-  }, [isAdminMode, wedding])
-
-  useEffect(() => {
-    if (!isAdminMode && activeTab === 'admin') {
+    if (isAdminMode) {
+      setActiveTab('admin')
+    } else if (activeTab === 'admin') {
       setActiveTab('info')
     }
-  }, [isAdminMode, activeTab])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdminMode])
 
-  const applyAdminJson = () => {
-    if (!wedding) return
+  const fetchAllWeddings = async () => {
+    setLoadingWeddings(true)
     try {
-      const parsed = JSON.parse(adminJsonDraft || '{}')
-      setWedding({ ...wedding, content: parsed })
-      setAdminLogs((prev) => [`Cập nhật JSON lúc ${new Date().toLocaleTimeString()}`, ...prev])
-      success('Đã áp dụng JSON nâng cao!')
-    } catch (err) {
-      error('JSON không hợp lệ. Vui lòng kiểm tra lại.')
+      const { data } = await supabase
+        .from('weddings')
+        .select('id, slug, host_id, deployment_status, created_at, content')
+        .order('created_at', { ascending: false })
+      setAllWeddings(data || [])
+    } catch {
+      error('Không thể tải danh sách thiệp.')
+    } finally {
+      setLoadingWeddings(false)
     }
   }
 
-  const addCustomField = () => {
-    if (!wedding || !customFieldKey.trim()) return
-    const updated = {
-      ...wedding.content,
-      [customFieldKey]: customFieldValue
+  const fetchAllMusics = async () => {
+    setLoadingMusics(true)
+    try {
+      const res = await fetch('/api/admin/musics')
+      if (!res.ok) throw new Error('Fetch failed')
+      setAllMusics(await res.json())
+    } catch {
+      error('Không thể tải danh sách nhạc.')
+    } finally {
+      setLoadingMusics(false)
     }
-    setWedding({ ...wedding, content: updated })
-    setAdminJsonDraft(JSON.stringify(updated || {}, null, 2))
-    setAdminLogs((prev) => [`Thêm field "${customFieldKey}"`, ...prev])
-    setCustomFieldKey('')
-    setCustomFieldValue('')
-    success('Đã thêm field tùy chỉnh.')
   }
+
+  const fetchMusicList = async () => {
+    try {
+      const res = await fetch('/api/admin/musics')
+      if (!res.ok) throw new Error('Fetch failed')
+      setMusicList(await res.json())
+    } catch {
+      error('Không thể tải danh sách nhạc.')
+    }
+  }
+
+  const handleAddMusic = async () => {
+    if (!newMusicTitle.trim() || !newMusicFile) return
+    setUploadingMusic(true)
+    try {
+      const signRes = await fetch('/api/sign-upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folder: 'music' })
+      })
+      if (!signRes.ok) throw new Error('Failed to get upload signature')
+      const { signature, timestamp, api_key, cloud_name } = await signRes.json()
+
+      const formData = new FormData()
+      formData.append('file', newMusicFile)
+      formData.append('api_key', api_key)
+      formData.append('timestamp', String(timestamp))
+      formData.append('signature', signature)
+      formData.append('folder', 'music')
+
+      const uploadRes = await fetch(`https://api.cloudinary.com/v1_1/${cloud_name}/auto/upload`, {
+        method: 'POST',
+        body: formData
+      })
+      if (!uploadRes.ok) throw new Error('Cloudinary upload failed')
+      const { secure_url } = await uploadRes.json()
+
+      const saveRes = await fetch('/api/admin/musics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: newMusicTitle.trim(), artist: newMusicArtist.trim() || null, url: secure_url })
+      })
+      if (!saveRes.ok) {
+        const body = await saveRes.json().catch(() => ({}))
+        throw new Error(body.error || `HTTP ${saveRes.status}`)
+      }
+      const saved = await saveRes.json()
+
+      setMusicList((prev) => [saved, ...prev])
+      setNewMusicTitle('')
+      setNewMusicArtist('')
+      setNewMusicFile(null)
+      setShowAddMusic(false)
+      success('Đã thêm nhạc.')
+    } catch (e: any) {
+      console.error('Add music error:', e)
+      error(`Thêm nhạc thất bại: ${e?.message || 'Vui lòng thử lại.'}`)
+    } finally {
+      setUploadingMusic(false)
+    }
+  }
+
+  const handleRemoveMusic = async (id: number, url: string) => {
+    if (!window.confirm('Bạn có chắc muốn xóa bài nhạc này? File sẽ bị xóa khỏi Cloudinary.')) return
+    try {
+      const res = await fetch('/api/admin/musics', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, url })
+      })
+      if (!res.ok) throw new Error('Delete failed')
+      setMusicList((prev) => prev.filter((m) => m.id !== id))
+    } catch {
+      error('Xóa nhạc thất bại.')
+    }
+  }
+
+  const handleUpdateMusic = async () => {
+    if (!editingMusicId || !editMusicTitle.trim()) return
+    setSavingEdit(true)
+    try {
+      const res = await fetch('/api/admin/musics', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingMusicId,
+          title: editMusicTitle.trim(),
+          artist: editMusicArtist.trim() || null
+        })
+      })
+      if (!res.ok) throw new Error('Update failed')
+      const updated = await res.json()
+      setMusicList((prev) =>
+        prev.map((m) => (m.id === updated.id ? { ...m, title: updated.title, artist: updated.artist } : m))
+      )
+      setEditingMusicId(null)
+    } catch {
+      error('Cập nhật nhạc thất bại.')
+    } finally {
+      setSavingEdit(false)
+    }
+  }
+
+  const handleOpenEdit = (w: (typeof allWeddings)[0]) => {
+    setAdminSelectedWedding(w)
+    setActiveTab('info')
+  }
+
+  const handleAdminContentChange = (key: string, value: string) => {
+    if (!adminSelectedWedding) return
+    setAdminSelectedWedding((prev) => (prev ? { ...prev, content: { ...prev.content, [key]: value } } : prev))
+  }
+
+  const handleAdminSave = async () => {
+    if (!adminSelectedWedding) return
+    setAdminSaving(true)
+    try {
+      const { error: saveError } = await supabase
+        .from('weddings')
+        .update({ content: adminSelectedWedding.content })
+        .eq('id', adminSelectedWedding.id)
+      if (saveError) throw saveError
+      setAllWeddings((prev) => prev.map((w) => (w.id === adminSelectedWedding.id ? adminSelectedWedding : w)))
+      success('Đã lưu thay đổi thiệp.')
+    } catch {
+      error('Lưu thất bại. Vui lòng thử lại.')
+    } finally {
+      setAdminSaving(false)
+    }
+  }
+
+  const handleDeleteWedding = async (id: string) => {
+    if (!window.confirm('Bạn có chắc muốn xóa thiệp này? Hành động này không thể hoàn tác.')) return
+    setDeletingId(id)
+    try {
+      const { error: deleteError } = await supabase.from('weddings').delete().eq('id', id)
+      if (deleteError) throw deleteError
+      setAllWeddings((prev) => prev.filter((w) => w.id !== id))
+      success('Đã xóa thiệp.')
+    } catch {
+      error('Xóa thất bại. Vui lòng thử lại.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  useEffect(() => {
+    if (activeTab === 'admin' && adminSection === 'cards') {
+      fetchAllWeddings()
+    }
+    if (activeTab === 'admin' && adminSection === 'music') {
+      fetchMusicList()
+    }
+    if (activeTab === 'music' && !isAdminMode) {
+      fetchAllMusics()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, adminSection])
 
   if (loading)
     return (
@@ -263,177 +493,564 @@ const Editor = () => {
         </div>
       </div>
 
-      <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-8'>
+      <div
+        className={`grid gap-8 ${isAdminMode && !adminSelectedWedding ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]'}`}
+      >
         <div className='bg-white rounded-3xl shadow-sm border border-pink-100 overflow-hidden min-h-[600px]'>
-          {/* Modern Tabs */}
-          <div className='flex border-b border-gray-100'>
-            <button
-              onClick={() => setActiveTab('info')}
-              className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
-                activeTab === 'info'
-                  ? 'border-pink-500 text-pink-600 bg-pink-50/30'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className='flex items-center justify-center gap-2'>
-                <Info size={18} /> Thông Tin
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('album')}
-              className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
-                activeTab === 'album'
-                  ? 'border-pink-500 text-pink-600 bg-pink-50/30'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className='flex items-center justify-center gap-2'>
-                <ImageIcon size={18} /> Album Ảnh
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('bank')}
-              className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
-                activeTab === 'bank'
-                  ? 'border-pink-500 text-pink-600 bg-pink-50/30'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className='flex items-center justify-center gap-2'>
-                <CreditCard size={18} /> Tiền mừng
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('style')}
-              className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
-                activeTab === 'style'
-                  ? 'border-pink-500 text-pink-600 bg-pink-50/30'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              <div className='flex items-center justify-center gap-2'>
-                <Palette size={18} /> Kiểu Dáng
-              </div>
-            </button>
-            {isAdminMode && (
+          {/* Tab bar - ẩn khi ở chế độ admin thuần, hiện khi đang sửa thiệp cụ thể hoặc chế độ thường */}
+          {(!isAdminMode || adminSelectedWedding) && (
+            <div className='flex border-b border-gray-100'>
               <button
-                onClick={() => setActiveTab('admin')}
+                onClick={() => setActiveTab('info')}
                 className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
-                  activeTab === 'admin'
+                  activeTab === 'info'
                     ? 'border-pink-500 text-pink-600 bg-pink-50/30'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 }`}
               >
                 <div className='flex items-center justify-center gap-2'>
-                  <Shield size={18} /> Quản Trị
+                  <Info size={18} /> Thông Tin
                 </div>
               </button>
-            )}
-          </div>
+              <button
+                onClick={() => setActiveTab('album')}
+                className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
+                  activeTab === 'album'
+                    ? 'border-pink-500 text-pink-600 bg-pink-50/30'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className='flex items-center justify-center gap-2'>
+                  <ImageIcon size={18} /> Album Ảnh
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('bank')}
+                className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
+                  activeTab === 'bank'
+                    ? 'border-pink-500 text-pink-600 bg-pink-50/30'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className='flex items-center justify-center gap-2'>
+                  <CreditCard size={18} /> Tiền mừng
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('style')}
+                className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
+                  activeTab === 'style'
+                    ? 'border-pink-500 text-pink-600 bg-pink-50/30'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className='flex items-center justify-center gap-2'>
+                  <Palette size={18} /> Kiểu Dáng
+                </div>
+              </button>
+              <button
+                onClick={() => setActiveTab('music')}
+                className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
+                  activeTab === 'music'
+                    ? 'border-pink-500 text-pink-600 bg-pink-50/30'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                <div className='flex items-center justify-center gap-2'>
+                  <Music size={18} /> Nhạc
+                </div>
+              </button>
+            </div>
+          )}
 
           {/* Tab Content */}
           <div className='p-8'>
-            <div className={activeTab === 'info' ? 'block' : 'hidden'}>
-              <TabInfo content={wedding?.content} onChange={handleInfoChange} />
-            </div>
-            <div className={activeTab === 'album' ? 'block' : 'hidden'}>
-              <TabAlbum
-                images={wedding?.content?.images || []}
-                onChange={handleImagesChange}
-                coverImage={wedding?.content?.cover_image || undefined}
-                onCoverImageChange={handleCoverImageChange}
-                groomName={wedding?.content?.groom_name || ''}
-                brideName={wedding?.content?.bride_name || ''}
-                imagePositions={wedding?.content?.image_positions || []}
-                onImagePositionsChange={handleImagePositionsChange}
-                coverImagePosition={wedding?.content?.cover_image_position || undefined}
-                onCoverImagePositionChange={handleCoverImagePositionChange}
-                onImageDeleted={handleImageDeleted}
-              />
-            </div>
-            <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
-              <TabBank content={wedding?.content} onChange={handleInfoChange} />
-            </div>
-            <div className={activeTab === 'style' ? 'block' : 'hidden'}>
-              <TabStyle content={wedding?.content} onChange={handleInfoChange} onBatchChange={handleBatchChange} />
-            </div>
-            {activeTab === 'admin' && (
-              <div className='space-y-6'>
-                <div className='bg-pink-50/60 border border-pink-100 rounded-2xl p-5'>
-                  <h4 className='font-bold text-gray-900 mb-2'>JSON nội dung (nâng cao)</h4>
-                  <p className='text-sm text-gray-500 mb-4'>Dành cho dev chỉnh sửa trực tiếp cấu trúc dữ liệu thiệp.</p>
-                  <textarea
-                    value={adminJsonDraft}
-                    onChange={(e) => setAdminJsonDraft(e.target.value)}
-                    rows={12}
-                    className='w-full rounded-xl border border-gray-200 bg-white p-4 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
-                  />
-                  <div className='mt-4 flex flex-wrap gap-3'>
+            {isAdminMode && adminSelectedWedding ? (
+              /* Admin đang sửa thiệp của người dùng */
+              <div>
+                <div className='flex items-center justify-between mb-6 pb-4 border-b border-gray-100'>
+                  <button
+                    onClick={() => {
+                      setAdminSelectedWedding(null)
+                      setActiveTab('info')
+                    }}
+                    className='flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 font-medium transition-colors'
+                  >
+                    ← Quay lại quản trị
+                  </button>
+                  <div className='flex items-center gap-3'>
+                    <span className='text-xs text-gray-400'>
+                      Thiệp: <span className='font-mono font-semibold text-gray-600'>{adminSelectedWedding.slug}</span>
+                    </span>
                     <button
-                      onClick={applyAdminJson}
-                      className='px-5 py-2 rounded-xl bg-pink-600 text-white font-bold hover:bg-pink-700'
+                      onClick={handleAdminSave}
+                      disabled={adminSaving}
+                      className='flex items-center gap-2 px-4 py-2 bg-pink-600 text-white rounded-xl text-sm font-semibold hover:bg-pink-700 disabled:opacity-50 transition-colors'
                     >
-                      Áp dụng JSON
-                    </button>
-                    <button
-                      onClick={() => setAdminJsonDraft(JSON.stringify(wedding?.content || {}, null, 2))}
-                      className='px-5 py-2 rounded-xl bg-white border border-gray-200 text-gray-600 font-bold hover:bg-gray-50'
-                    >
-                      Reset JSON
+                      <Save size={15} /> {adminSaving ? 'Đang lưu...' : 'Lưu'}
                     </button>
                   </div>
                 </div>
+                <div className={activeTab === 'info' ? 'block' : 'hidden'}>
+                  <TabInfo content={adminSelectedWedding.content} onChange={handleAdminContentChange} />
+                </div>
+                <div className={activeTab === 'album' ? 'block' : 'hidden'}>
+                  <TabAlbum
+                    images={adminSelectedWedding.content?.images || []}
+                    onChange={(images) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, images } } : prev
+                      )
+                    }
+                    coverImage={adminSelectedWedding.content?.cover_image || undefined}
+                    onCoverImageChange={(ci) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, cover_image: ci } } : prev
+                      )
+                    }
+                    groomName={adminSelectedWedding.content?.groom_name || ''}
+                    brideName={adminSelectedWedding.content?.bride_name || ''}
+                    imagePositions={adminSelectedWedding.content?.image_positions || []}
+                    onImagePositionsChange={(ip) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, image_positions: ip } } : prev
+                      )
+                    }
+                    coverImagePosition={adminSelectedWedding.content?.cover_image_position || undefined}
+                    onCoverImagePositionChange={(cp) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, cover_image_position: cp } } : prev
+                      )
+                    }
+                    onImageDeleted={() => {}}
+                  />
+                </div>
+                <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
+                  <TabBank content={adminSelectedWedding.content} onChange={handleAdminContentChange} />
+                </div>
+                <div className={activeTab === 'style' ? 'block' : 'hidden'}>
+                  <TabStyle
+                    content={adminSelectedWedding.content}
+                    onChange={handleAdminContentChange}
+                    onBatchChange={(changes) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, ...changes } } : prev
+                      )
+                    }
+                  />
+                </div>
+              </div>
+            ) : isAdminMode ? (
+              /* Chế độ admin thuần: quản lý thiệp + nhạc */
+              <div className='space-y-6'>
+                {/* Sub-tab selector */}
+                <div className='flex gap-2 border-b border-gray-100 pb-4'>
+                  <button
+                    onClick={() => setAdminSection('cards')}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                      adminSection === 'cards'
+                        ? 'bg-pink-500 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <LayoutList size={16} /> Quản lý thiệp
+                  </button>
+                  <button
+                    onClick={() => setAdminSection('music')}
+                    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
+                      adminSection === 'music'
+                        ? 'bg-pink-500 text-white shadow-sm'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Music size={16} /> Nhạc
+                  </button>
+                </div>
 
-                {/* <div className='grid gap-4 md:grid-cols-2'>
-                  <div className='bg-white border border-gray-100 rounded-2xl p-5 shadow-sm'>
-                    <h4 className='font-bold text-gray-900 mb-3'>Thêm field tùy chỉnh</h4>
-                    <div className='space-y-3'>
-                      <input
-                        value={customFieldKey}
-                        onChange={(e) => setCustomFieldKey(e.target.value)}
-                        placeholder='Tên field (vd: theme_color)'
-                        className='w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
-                      />
-                      <input
-                        value={customFieldValue}
-                        onChange={(e) => setCustomFieldValue(e.target.value)}
-                        placeholder='Giá trị'
-                        className='w-full rounded-xl border border-gray-200 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
-                      />
+                {/* Quản lý thiệp */}
+                {adminSection === 'cards' && (
+                  <div>
+                    <div className='flex items-center justify-between mb-4'>
+                      <h4 className='font-bold text-gray-900 text-lg'>Tất cả thiệp mời</h4>
                       <button
-                        onClick={addCustomField}
-                        className='w-full px-4 py-2 rounded-xl bg-gray-900 text-white font-bold hover:bg-gray-800'
+                        onClick={fetchAllWeddings}
+                        className='text-sm text-pink-600 hover:text-pink-700 font-medium'
                       >
-                        Thêm field
+                        Làm mới
                       </button>
                     </div>
+                    {loadingWeddings ? (
+                      <div className='text-center py-12 text-gray-400 text-sm'>Đang tải...</div>
+                    ) : allWeddings.length === 0 ? (
+                      <div className='text-center py-12 text-gray-400 text-sm'>Không có thiệp nào.</div>
+                    ) : (
+                      <div className='overflow-x-auto rounded-2xl border border-gray-100'>
+                        <table className='w-full text-sm'>
+                          <thead>
+                            <tr className='bg-gray-50 text-gray-500 text-left'>
+                              <th className='px-4 py-3 font-semibold'>#</th>
+                              <th className='px-4 py-3 font-semibold'>Slug</th>
+                              <th className='px-4 py-3 font-semibold'>Cô dâu & Chú rể</th>
+                              <th className='px-4 py-3 font-semibold'>Trạng thái</th>
+                              <th className='px-4 py-3 font-semibold'>Ngày tạo</th>
+                              <th className='px-4 py-3 font-semibold text-center'>Hành động</th>
+                            </tr>
+                          </thead>
+                          <tbody className='divide-y divide-gray-100'>
+                            {allWeddings.map((w, idx) => (
+                              <tr key={w.id} className='hover:bg-pink-50/30 transition-colors'>
+                                <td className='px-4 py-3 text-gray-400'>{idx + 1}</td>
+                                <td className='px-4 py-3 font-mono text-xs text-gray-700'>{w.slug}</td>
+                                <td className='px-4 py-3 text-gray-800'>
+                                  {[w.content?.groom_name, w.content?.bride_name].filter(Boolean).join(' & ') || (
+                                    <span className='text-gray-400 italic'>Chưa có</span>
+                                  )}
+                                </td>
+                                <td className='px-4 py-3'>
+                                  <span
+                                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      w.deployment_status === 'published'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-gray-100 text-gray-500'
+                                    }`}
+                                  >
+                                    {w.deployment_status === 'published' ? 'Công khai' : 'Bản nháp'}
+                                  </span>
+                                </td>
+                                <td className='px-4 py-3 text-gray-500'>
+                                  {new Date(w.created_at).toLocaleDateString('vi-VN')}
+                                </td>
+                                <td className='px-4 py-3'>
+                                  <div className='flex items-center justify-center gap-2'>
+                                    <button
+                                      onClick={() => handleOpenEdit(w)}
+                                      className='flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 text-xs font-medium transition-colors'
+                                    >
+                                      <Pencil size={13} /> Sửa
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteWedding(w.id)}
+                                      disabled={deletingId === w.id}
+                                      className='flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-50 text-red-500 hover:bg-red-100 text-xs font-medium transition-colors disabled:opacity-50'
+                                    >
+                                      <Trash2 size={13} /> {deletingId === w.id ? '...' : 'Xóa'}
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
+                )}
 
-                  <div className='bg-white border border-gray-100 rounded-2xl p-5 shadow-sm'>
-                    <h4 className='font-bold text-gray-900 mb-3'>Log thay đổi (mock)</h4>
-                    <div className='space-y-2 text-sm text-gray-500 max-h-48 overflow-auto'>
-                      {adminLogs.length === 0 ? (
-                        <div className='text-gray-400'>Chưa có thay đổi nào.</div>
-                      ) : (
-                        adminLogs.map((log, index) => (
-                          <div key={index} className='border-b border-gray-100 pb-2'>
-                            {log}
-                          </div>
-                        ))
-                      )}
+                {/* Nhạc */}
+                {adminSection === 'music' && (
+                  <div>
+                    <div className='flex items-center justify-between mb-4'>
+                      <h4 className='font-bold text-gray-900 text-lg'>Danh sách nhạc</h4>
+                      <button
+                        onClick={() => setShowAddMusic(true)}
+                        className='flex items-center gap-2 px-4 py-2 bg-pink-500 text-white rounded-xl text-sm font-semibold hover:bg-pink-600 transition-colors'
+                      >
+                        <Plus size={16} /> Thêm nhạc
+                      </button>
                     </div>
+
+                    {showAddMusic && (
+                      <div className='bg-pink-50/60 border border-pink-100 rounded-2xl p-5 mb-4'>
+                        <div className='flex items-center justify-between mb-3'>
+                          <h5 className='font-semibold text-gray-800'>Thêm bài nhạc mới</h5>
+                          <button onClick={() => setShowAddMusic(false)} className='text-gray-400 hover:text-gray-600'>
+                            <X size={18} />
+                          </button>
+                        </div>
+                        <div className='space-y-3'>
+                          <input
+                            value={newMusicTitle}
+                            onChange={(e) => setNewMusicTitle(e.target.value)}
+                            placeholder='Tên bài nhạc'
+                            className='w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
+                          />
+                          <input
+                            value={newMusicArtist}
+                            onChange={(e) => setNewMusicArtist(e.target.value)}
+                            placeholder='Ca sĩ (không bắt buộc)'
+                            className='w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
+                          />
+                          <div>
+                            <label className='block text-xs font-medium text-gray-500 mb-1.5'>File MP3</label>
+                            <input
+                              type='file'
+                              accept='audio/mp3,audio/mpeg'
+                              onChange={(e) => setNewMusicFile(e.target.files?.[0] || null)}
+                              className='w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100'
+                            />
+                          </div>
+                          <button
+                            onClick={handleAddMusic}
+                            disabled={uploadingMusic || !newMusicTitle.trim() || !newMusicFile}
+                            className='px-5 py-2 rounded-xl bg-pink-600 text-white font-bold hover:bg-pink-700 text-sm disabled:opacity-50'
+                          >
+                            {uploadingMusic ? 'Đang tải lên...' : 'Lưu'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {musicList.length === 0 ? (
+                      <div className='text-center py-12 text-gray-400 text-sm'>Chưa có bài nhạc nào.</div>
+                    ) : (
+                      <div className='space-y-2'>
+                        {musicList.map((m) => (
+                          <div
+                            key={m.id}
+                            className='bg-white border border-gray-100 rounded-2xl px-5 py-3 hover:border-pink-200 transition-colors'
+                          >
+                            {editingMusicId === m.id ? (
+                              <div className='space-y-2'>
+                                <input
+                                  value={editMusicTitle}
+                                  onChange={(e) => setEditMusicTitle(e.target.value)}
+                                  placeholder='Tên bài nhạc'
+                                  className='w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
+                                />
+                                <input
+                                  value={editMusicArtist}
+                                  onChange={(e) => setEditMusicArtist(e.target.value)}
+                                  placeholder='Ca sĩ (không bắt buộc)'
+                                  className='w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-200'
+                                />
+                                <div className='flex gap-2 pt-1'>
+                                  <button
+                                    onClick={handleUpdateMusic}
+                                    disabled={savingEdit || !editMusicTitle.trim()}
+                                    className='px-4 py-1.5 rounded-lg bg-pink-600 text-white text-xs font-semibold hover:bg-pink-700 disabled:opacity-50 transition-colors'
+                                  >
+                                    {savingEdit ? 'Đang lưu...' : 'Lưu'}
+                                  </button>
+                                  <button
+                                    onClick={() => setEditingMusicId(null)}
+                                    className='px-4 py-1.5 rounded-lg bg-gray-100 text-gray-600 text-xs font-semibold hover:bg-gray-200 transition-colors'
+                                  >
+                                    Huỷ
+                                  </button>
+                                </div>
+                              </div>
+                            ) : (
+                              <div className='flex items-center justify-between'>
+                                <div className='flex items-center gap-3'>
+                                  <Music size={18} className='text-pink-400 shrink-0' />
+                                  <div>
+                                    <p className='font-medium text-gray-800 text-sm'>{m.title}</p>
+                                    {m.artist && <p className='text-xs text-gray-500'>{m.artist}</p>}
+                                    <p className='text-xs text-gray-400 truncate max-w-xs'>{m.url}</p>
+                                  </div>
+                                </div>
+                                <div className='flex items-center gap-2 ml-2 shrink-0'>
+                                  <button
+                                    onClick={() => {
+                                      setEditingMusicId(m.id)
+                                      setEditMusicTitle(m.title)
+                                      setEditMusicArtist(m.artist || '')
+                                    }}
+                                    className='text-gray-300 hover:text-blue-400 transition-colors'
+                                    title='Sửa'
+                                  >
+                                    <Pencil size={15} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleRemoveMusic(m.id, m.url)}
+                                    className='text-gray-300 hover:text-red-400 transition-colors'
+                                    title='Xóa'
+                                  >
+                                    <X size={16} />
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div> */}
+                )}
               </div>
+            ) : (
+              /* Chế độ thường: tabs của người dùng hiện tại */
+              <>
+                <div className={activeTab === 'info' ? 'block' : 'hidden'}>
+                  <TabInfo content={wedding?.content} onChange={handleInfoChange} />
+                </div>
+                <div className={activeTab === 'album' ? 'block' : 'hidden'}>
+                  <TabAlbum
+                    images={wedding?.content?.images || []}
+                    onChange={handleImagesChange}
+                    coverImage={wedding?.content?.cover_image || undefined}
+                    onCoverImageChange={handleCoverImageChange}
+                    groomName={wedding?.content?.groom_name || ''}
+                    brideName={wedding?.content?.bride_name || ''}
+                    imagePositions={wedding?.content?.image_positions || []}
+                    onImagePositionsChange={handleImagePositionsChange}
+                    coverImagePosition={wedding?.content?.cover_image_position || undefined}
+                    onCoverImagePositionChange={handleCoverImagePositionChange}
+                    onImageDeleted={handleImageDeleted}
+                  />
+                </div>
+                <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
+                  <TabBank content={wedding?.content} onChange={handleInfoChange} />
+                </div>
+                <div className={activeTab === 'style' ? 'block' : 'hidden'}>
+                  <TabStyle content={wedding?.content} onChange={handleInfoChange} onBatchChange={handleBatchChange} />
+                </div>
+                <div className={activeTab === 'music' ? 'block' : 'hidden'}>
+                  <div>
+                    <h3 className='font-bold text-gray-900 text-lg mb-1'>Chọn nhạc nền</h3>
+                    <p className='text-sm text-gray-400 mb-5'>Nhạc sẽ tự động phát khi khách mở thiệp của bạn.</p>
+                    {loadingMusics ? (
+                      <div className='text-center py-12 text-gray-400 text-sm'>Đang tải...</div>
+                    ) : (
+                      <div className='space-y-2'>
+                        {/* Không chọn */}
+                        <button
+                          type='button'
+                          onClick={() => {
+                            if (previewAudioRef.current) {
+                              previewAudioRef.current.pause()
+                              previewAudioRef.current = null
+                            }
+                            setPlayingMusicId(null)
+                            if (!wedding) return
+                            setWedding((prev) =>
+                              prev ? { ...prev, music_id: null, content: { ...prev.content, music_url: '' } } : prev
+                            )
+                            setIsDirty(true)
+                          }}
+                          className={`w-full flex items-center justify-between px-5 py-3 rounded-2xl border transition-all text-left ${
+                            !wedding?.music_id
+                              ? 'border-pink-400 bg-pink-50 shadow-sm shadow-pink-100'
+                              : 'border-gray-100 bg-white hover:border-pink-200'
+                          }`}
+                        >
+                          <div className='flex items-center gap-3'>
+                            <div
+                              className={`flex items-center justify-center w-9 h-9 rounded-full ${!wedding?.music_id ? 'bg-pink-500' : 'bg-gray-100'}`}
+                            >
+                              <Music size={16} className={!wedding?.music_id ? 'text-white' : 'text-gray-400'} />
+                            </div>
+                            <p
+                              className={`font-medium text-sm ${!wedding?.music_id ? 'text-pink-700' : 'text-gray-800'}`}
+                            >
+                              Không chọn
+                            </p>
+                          </div>
+                          {!wedding?.music_id && (
+                            <span className='text-xs font-semibold text-pink-500 bg-pink-100 px-2.5 py-1 rounded-full'>
+                              Đang chọn
+                            </span>
+                          )}
+                        </button>
+                        {allMusics.length === 0 ? (
+                          <div className='text-center py-8 text-gray-400 text-sm'>Chưa có bài nhạc nào.</div>
+                        ) : (
+                          allMusics.map((m) => {
+                            const isSelected = wedding?.music_id === m.id
+                            const isPlaying = playingMusicId === m.id
+                            return (
+                              <button
+                                key={m.id}
+                                type='button'
+                                onClick={() => {
+                                  if (!isSelected) {
+                                    // Lần 1: chọn bài mới và phát
+                                    if (previewAudioRef.current) {
+                                      previewAudioRef.current.pause()
+                                      previewAudioRef.current = null
+                                    }
+                                    const audio = new Audio(m.url)
+                                    audio.loop = true
+                                    audio.play().catch(() => {})
+                                    previewAudioRef.current = audio
+                                    setPlayingMusicId(m.id)
+                                    if (!wedding) return
+                                    setWedding((prev) =>
+                                      prev
+                                        ? { ...prev, music_id: m.id, content: { ...prev.content, music_url: m.url } }
+                                        : prev
+                                    )
+                                    setIsDirty(true)
+                                  } else if (isPlaying) {
+                                    // Lần 2: đang phát → pause, giữ nguyên chọn
+                                    if (previewAudioRef.current) {
+                                      previewAudioRef.current.pause()
+                                    }
+                                    setPlayingMusicId(null)
+                                  } else {
+                                    // Lần 3: đang pause → tiếp tục phát
+                                    if (previewAudioRef.current) {
+                                      previewAudioRef.current.play().catch(() => {})
+                                      setPlayingMusicId(m.id)
+                                    }
+                                  }
+                                }}
+                                className={`w-full flex items-center justify-between px-5 py-3 rounded-2xl border transition-all text-left ${
+                                  isSelected
+                                    ? 'border-pink-400 bg-pink-50 shadow-sm shadow-pink-100'
+                                    : 'border-gray-100 bg-white hover:border-pink-200'
+                                }`}
+                              >
+                                <div className='flex items-center gap-3'>
+                                  <div
+                                    className={`flex items-center justify-center w-9 h-9 rounded-full ${isSelected ? 'bg-pink-500' : 'bg-gray-100'}`}
+                                  >
+                                    <Music
+                                      size={16}
+                                      className={`${isSelected ? 'text-white' : 'text-gray-400'} ${isPlaying ? 'animate-spin' : ''}`}
+                                      style={isPlaying ? { animationDuration: '3s' } : {}}
+                                    />
+                                  </div>
+                                  <div>
+                                    <p
+                                      className={`font-medium text-sm ${isSelected ? 'text-pink-700' : 'text-gray-800'}`}
+                                    >
+                                      {m.title}
+                                    </p>
+                                    {m.artist && <p className='text-xs text-gray-400'>{m.artist}</p>}
+                                  </div>
+                                </div>
+                                {isSelected && (
+                                  <span className='text-xs font-semibold text-pink-500 bg-pink-100 px-2.5 py-1 rounded-full'>
+                                    {isPlaying ? 'Đang phát' : 'Đang chọn'}
+                                  </span>
+                                )}
+                              </button>
+                            )
+                          })
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
 
-        <LivePreview
-          wedding={wedding}
-          isDirty={isDirty}
-          onUnsavedWarning={() => error('Vui lòng lưu thay đổi trước khi xem thiệp.')}
-        />
+        {(!isAdminMode || adminSelectedWedding) && (
+          <LivePreview
+            wedding={isAdminMode && adminSelectedWedding ? (adminSelectedWedding as any) : wedding}
+            isDirty={isAdminMode ? false : isDirty}
+            onUnsavedWarning={() => error('Vui lòng lưu thay đổi trước khi xem thiệp.')}
+            onOpen={() => {
+              if (previewAudioRef.current) {
+                previewAudioRef.current.pause()
+              }
+              setPlayingMusicId(null)
+            }}
+          />
+        )}
       </div>
     </StudioLayout>
   )

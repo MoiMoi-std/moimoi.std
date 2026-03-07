@@ -110,13 +110,14 @@ export const dataService = {
     } as Wedding
   },
 
-  updateWedding: async (weddingId: string, content: WeddingContent): Promise<Wedding | null> => {
-    const { data, error } = await supabase
-      .from('weddings')
-      .update({ content: content })
-      .eq('id', weddingId)
-      .select()
-      .single()
+  updateWedding: async (
+    weddingId: string,
+    content: WeddingContent,
+    musicId?: number | null
+  ): Promise<Wedding | null> => {
+    const updates: Database['public']['Tables']['weddings']['Update'] = { content: content as any }
+    if (musicId !== undefined) updates.music_id = musicId
+    const { data, error } = await supabase.from('weddings').update(updates).eq('id', weddingId).select().single()
 
     if (error) {
       console.error('Error updating wedding:', error)
