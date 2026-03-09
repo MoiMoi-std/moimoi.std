@@ -81,7 +81,7 @@ const Guests = () => {
     if (attendanceFilter === 'attending') {
       result = result.filter((r) => r.is_attending === true)
     } else if (attendanceFilter === 'not_attending') {
-      result = result.filter((r) => r.is_attending === false)
+      result = result.filter((r) => r.is_attending === false || r.is_attending === null)
     }
     setFilteredRsvps(result)
     setCurrentPage(1)
@@ -119,7 +119,7 @@ const Guests = () => {
     let link: string
     if (matchedRsvp) {
       // Dùng id record rsvp đã có
-      link = `http://localhost:3000/${wedding.slug}/${matchedRsvp.id}`
+      link = `${getBaseUrl()}/${wedding.slug}/${matchedRsvp.id}`
 
       // Lưu link vào bảng rsvp
       const updated = await dataService.updateRSVP(matchedRsvp.id, { link })
@@ -141,7 +141,7 @@ const Guests = () => {
 
       if (newRsvp) {
         // Dùng id record vừa tạo để sinh link
-        link = `http://localhost:3000/${wedding.slug}/${newRsvp.id}`
+        link = `${getBaseUrl()}/${wedding.slug}/${newRsvp.id}`
 
         // Lưu link vào record mới
         const updated = await dataService.updateRSVP(newRsvp.id, { link })
@@ -153,7 +153,7 @@ const Guests = () => {
         setFilteredRsvps(newRsvps)
       } else {
         // Fallback nếu DB lỗi
-        link = `http://localhost:3000/${wedding.slug}/${linkFormData.name.trim().replace(/\s+/g, '-')}`
+        link = `${getBaseUrl()}/${wedding.slug}/${linkFormData.name.trim().replace(/\s+/g, '-')}`
       }
     }
 
@@ -294,7 +294,7 @@ const Guests = () => {
   const handleShowQR = (rsvp: RSVP) => {
     if (!wedding) return
     // Ưu tiên link đã lưu trong DB, fallback dùng id
-    const link = rsvp.link || `http://localhost:3000/${wedding.slug}/${rsvp.id}`
+    const link = rsvp.link || `${getBaseUrl()}/${wedding.slug}/${rsvp.id}`
     setQrGuest({ name: rsvp.guest_name, link })
   }
 
@@ -312,7 +312,7 @@ const Guests = () => {
     if (!wedding) return ''
     // Ưu tiên link đã lưu trong DB
     if (rsvp.link) return rsvp.link
-    return `http://localhost:3000/${wedding.slug}/${rsvp.id}`
+    return `${getBaseUrl()}/${wedding.slug}/${rsvp.id}`
   }
 
   useEffect(() => {
@@ -551,7 +551,7 @@ const Guests = () => {
                   {
                     key: 'not_attending',
                     label: '❌ Không tham dự',
-                    count: rsvps.filter((r) => r.is_attending === false).length
+                    count: rsvps.filter((r) => r.is_attending === false || r.is_attending === null).length
                   }
                 ] as const
               ).map(({ key, label, count }) => (

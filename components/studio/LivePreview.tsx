@@ -131,7 +131,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ wedding, isDirty, onUnsavedWa
                 }
               >
                 <TemplateViewportContext.Provider value='phone'>
-                  <GeneralView wedding={wedding} />
+                  <GeneralView wedding={wedding} disableSplash />
                 </TemplateViewportContext.Provider>
               </div>
             </div>
@@ -219,7 +219,7 @@ const LivePreview: React.FC<LivePreviewProps> = ({ wedding, isDirty, onUnsavedWa
                   }
                 >
                   <TemplateViewportContext.Provider value='laptop'>
-                    <GeneralView wedding={wedding} />
+                    <GeneralView wedding={wedding} disableSplash />
                   </TemplateViewportContext.Provider>
                 </div>
               </div>

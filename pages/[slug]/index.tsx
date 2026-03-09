@@ -5,7 +5,6 @@ import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateViewportContext } from '@/lib/TemplateViewportContext'
 import MusicPlayer from '@/components/MusicPlayer'
-import InvitationSplash from '@/components/InvitationSplash'
 
 interface Props {
   wedding: any
@@ -15,23 +14,12 @@ interface Props {
 export default function GeneralWeddingPage({ wedding, slug }: Props) {
   const [phoneMode, setPhoneMode] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
-  const [splashMounted, setSplashMounted] = useState(false)
-  const [templateReady, setTemplateReady] = useState(false)
-
-  const handleSplashOpen = () => {
-    setTemplateReady(true)
-    setTimeout(() => setSplashMounted(false), 820)
-  }
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 768)
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
-  }, [])
-
-  useEffect(() => {
-    setSplashMounted(true)
   }, [])
 
   if (!wedding) {
@@ -187,13 +175,7 @@ export default function GeneralWeddingPage({ wedding, slug }: Props) {
       )}
 
       {/* Nội dung template */}
-      <div
-        style={{
-          opacity: templateReady ? 1 : 0,
-          transition: templateReady ? 'opacity 0.9s ease 0.1s' : 'none',
-          pointerEvents: templateReady ? 'auto' : 'none'
-        }}
-      >
+      <div>
         {phoneMode && isDesktop ? (
           <TemplateViewportContext.Provider value='phone'>
             <div
@@ -216,20 +198,19 @@ export default function GeneralWeddingPage({ wedding, slug }: Props) {
                   position: 'relative'
                 }}
               >
-                <SelectedTemplate wedding={wedding} />
+                <SelectedTemplate wedding={wedding} musicUrl={wedding.content?.music_url} />
               </div>
             </div>
           </TemplateViewportContext.Provider>
         ) : (
           <TemplateViewportContext.Provider value={isDesktop ? 'laptop' : 'phone'}>
-            <SelectedTemplate wedding={wedding} />
+            <SelectedTemplate wedding={wedding} musicUrl={wedding.content?.music_url} />
           </TemplateViewportContext.Provider>
         )}
       </div>
 
-      <MusicPlayer musicUrl={wedding.content?.music_url} />
-
-      {splashMounted && <InvitationSplash coupleNames={coupleNames} onOpen={handleSplashOpen} />}
+      {/* Music player cho các template không tự quản lý nhạc */}
+      {branch !== 'vintage' && <MusicPlayer musicUrl={wedding.content?.music_url} />}
     </>
   )
 }
