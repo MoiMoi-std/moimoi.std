@@ -81,7 +81,7 @@ const Guests = () => {
     if (attendanceFilter === 'attending') {
       result = result.filter((r) => r.is_attending === true)
     } else if (attendanceFilter === 'not_attending') {
-      result = result.filter((r) => r.is_attending === false)
+      result = result.filter((r) => r.is_attending === false || r.is_attending === null)
     }
     setFilteredRsvps(result)
     setCurrentPage(1)
@@ -551,7 +551,7 @@ const Guests = () => {
                   {
                     key: 'not_attending',
                     label: '❌ Không tham dự',
-                    count: rsvps.filter((r) => r.is_attending === false).length
+                    count: rsvps.filter((r) => r.is_attending === false || r.is_attending === null).length
                   }
                 ] as const
               ).map(({ key, label, count }) => (

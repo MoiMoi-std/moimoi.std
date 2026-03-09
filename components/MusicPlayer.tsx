@@ -60,9 +60,9 @@ export default function MusicPlayer({ musicUrl }: MusicPlayerProps) {
         title={isPlaying ? 'Tắt nhạc' : 'Bật nhạc'}
         style={{
           position: 'fixed',
-          top: 20,
-          right: 20,
-          zIndex: 9999,
+          bottom: 24,
+          right: 24,
+          zIndex: 9998,
           width: 44,
           height: 44,
           borderRadius: '50%',

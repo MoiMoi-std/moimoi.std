@@ -6,6 +6,8 @@ export interface TemplateProps {
   wedding: Wedding
   guestName?: string
   rsvpId?: number
+  disableSplash?: boolean
+  musicUrl?: string
 }
 
 // Map 'repo_branch' từ DB với Component giao diện tương ứng
@@ -21,8 +23,8 @@ export const Templates: Record<
     GuestView: dynamic(() => import('./DefaultTheme/GuestView'))
   },
   'theme-vintage': {
-    GeneralView: dynamic(() => import('./DefaultTheme/GeneralView')),
-    GuestView: dynamic(() => import('./DefaultTheme/GuestView'))
+    GeneralView: dynamic(() => import('./ThemeVintage/GeneralView')),
+    GuestView: dynamic(() => import('./ThemeVintage/GuestView'))
   },
   'theme-modern': {
     GeneralView: dynamic(() => import('./ThemeModern/GeneralView')),
