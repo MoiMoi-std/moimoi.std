@@ -349,11 +349,6 @@ export default function TemplatesPage() {
                     </button>
                   </div>
                 )}
-                {hasPlanLimit && (
-                  <div className='text-sm text-gray-500 bg-pink-50/60 border border-pink-100 rounded-lg p-3'>
-                    Mẫu này thuộc gói trả phí. Nâng cấp để mở khóa và được giảm giá bằng với gói đã mua trước đó.
-                  </div>
-                )}
               </div>
             </div>
           )

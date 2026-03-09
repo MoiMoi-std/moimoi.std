@@ -109,7 +109,7 @@ export default function Header() {
               </Link>
             ) : (
               <Link href='/studio/login' onClick={() => setMobileMenuOpen(false)}>
-                <button className='w-full py-3 border border-pink-200 text-pink-600 rounded-xl font-bold'>
+                <button className='w-full py-3 border border-pink-200 text-pink-600 rounded-xl font-bold mb-3'>
                   Đăng Nhập
                 </button>
               </Link>
