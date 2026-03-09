@@ -2,6 +2,8 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { VNPay, ProductCode, VnpLocale, HashAlgorithm } from 'vnpay'
 import { supabase } from '@/lib/initSupabase'
 
+const getBaseUrl = () => (typeof window !== 'undefined' ? window.location.origin : 'https://www.moimoi.io.vn')
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' })
@@ -73,7 +75,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Use order.id as txnRef so we can look it up on return
     const txnRef = order.id
 
-    const returnUrl = process.env.VNPAY_RETURN_URL || 'http://localhost:3000/api/vnpay-return'
+    const returnUrl = process.env.VNPAY_RETURN_URL || `${getBaseUrl()}/api/vnpay-return`
 
     const paymentUrl = vnpay.buildPaymentUrl({
       vnp_Amount: amount,
