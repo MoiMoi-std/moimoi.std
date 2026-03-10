@@ -31,8 +31,7 @@ const PLAN_RANK: { keyword: string; rank: number }[] = [
   { keyword: 'sinh viên', rank: 1 }
 ]
 
-const getPlanRank = (name: string): number =>
-  PLAN_RANK.find((r) => name.toLowerCase().includes(r.keyword))?.rank ?? 0
+const getPlanRank = (name: string): number => PLAN_RANK.find((r) => name.toLowerCase().includes(r.keyword))?.rank ?? 0
 
 const isStudentPromoPlan = (name: string | undefined): boolean => {
   if (!name) return false
@@ -41,9 +40,7 @@ const isStudentPromoPlan = (name: string | undefined): boolean => {
 
 const getHighestPlan = (plans: string[]): string => {
   if (plans.length === 0) return ''
-  return plans.reduce((best, current) =>
-    getPlanRank(current) > getPlanRank(best) ? current : best
-  )
+  return plans.reduce((best, current) => (getPlanRank(current) > getPlanRank(best) ? current : best))
 }
 
 const formatPrice = (price: number) => {
@@ -145,22 +142,23 @@ export default function TemplatesPage() {
   }, [templates])
 
   // The effective plan name — may differ from the stale FK join after a purchase
-  const effectivePackageName = effectivePlanId
-    ? (allPackagesMap[effectivePlanId] ?? userPackageName)
-    : userPackageName
+  const effectivePackageName = effectivePlanId ? (allPackagesMap[effectivePlanId] ?? userPackageName) : userPackageName
 
   // Unique plan names from packages table, sorted high → low for the dropdown.
   // Falls back to packages derived from templates if API hasn't loaded yet.
   const availablePlans = useMemo(() => {
-    const source = packages.length > 0 ? packages.map((p) => p.name) : (() => {
-      const planSet = new Set<string>()
-      templates.forEach((t: any) => {
-        ;(t.packages || []).forEach((p: any) => {
-          if (p.name) planSet.add(p.name)
-        })
-      })
-      return Array.from(planSet)
-    })()
+    const source =
+      packages.length > 0
+        ? packages.map((p) => p.name)
+        : (() => {
+            const planSet = new Set<string>()
+            templates.forEach((t: any) => {
+              ;(t.packages || []).forEach((p: any) => {
+                if (p.name) planSet.add(p.name)
+              })
+            })
+            return Array.from(planSet)
+          })()
     return source.sort((a, b) => getPlanRank(b) - getPlanRank(a))
   }, [packages, templates])
 
@@ -271,7 +269,9 @@ export default function TemplatesPage() {
           <span className='text-lg leading-none'>⚠️</span>
           <div className='flex-1'>
             <p className='font-semibold'>Gói dịch vụ của bạn đã hết hạn</p>
-            <p className='mt-0.5 text-amber-700'>Các mẫu thiệp cao cấp đã bị khóa. Vui lòng gia hạn để tiếp tục sử dụng.</p>
+            <p className='mt-0.5 text-amber-700'>
+              Các mẫu thiệp cao cấp đã bị khóa. Vui lòng gia hạn để tiếp tục sử dụng.
+            </p>
           </div>
           <button
             onClick={() => router.push('/studio/upgrade')}
@@ -371,9 +371,7 @@ export default function TemplatesPage() {
                       onClick={() => {
                         const requiredPlan = getHighestPlan(meta.allowed_plans)
                         router.push(
-                          requiredPlan
-                            ? `/studio/upgrade?plan=${encodeURIComponent(requiredPlan)}`
-                            : '/studio/upgrade'
+                          requiredPlan ? `/studio/upgrade?plan=${encodeURIComponent(requiredPlan)}` : '/studio/upgrade'
                         )
                       }}
                       className='w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:shadow-lg shadow-amber-200 hover:scale-[1.01] active:scale-[0.99] transition-all'
