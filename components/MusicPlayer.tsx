@@ -13,13 +13,24 @@ export default function MusicPlayer({ musicUrl }: MusicPlayerProps) {
     const audio = new Audio(musicUrl)
     audio.loop = true
     audioRef.current = audio
-    audio
-      .play()
+
+    const handleInteraction = () => {
+      audio.play().then(() => setIsPlaying(true)).catch(() => {})
+    }
+
+    audio.play()
       .then(() => setIsPlaying(true))
-      .catch(() => {})
+      .catch(() => {
+        // Autoplay blocked by browser — start on first user gesture
+        document.addEventListener('click', handleInteraction, { once: true })
+        document.addEventListener('touchstart', handleInteraction, { once: true })
+      })
+
     return () => {
       audio.pause()
       audioRef.current = null
+      document.removeEventListener('click', handleInteraction)
+      document.removeEventListener('touchstart', handleInteraction)
     }
   }, [musicUrl])
 
