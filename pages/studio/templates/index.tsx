@@ -3,6 +3,7 @@ import StudioLayout from '@/components/studio/StudioLayout'
 import StudioLoading from '@/components/studio/StudioLoading'
 import { useToast } from '@/components/ui/ToastProvider'
 import { dataService, Template } from '@/lib/data-service'
+import { isPlanExpired } from '@/lib/plan-store'
 import { useWedding } from '@/lib/useWedding'
 import { Check, Eye, LayoutTemplate, Search, Sparkles } from 'lucide-react'
 import { useRouter } from 'next/router'
@@ -23,6 +24,28 @@ const DEFAULT_META: TemplateAdminMeta = {
   sort_order: 0
 }
 
+const PLAN_RANK: { keyword: string; rank: number }[] = [
+  { keyword: 'premium', rank: 4 },
+  { keyword: 'nâng cao', rank: 3 },
+  { keyword: 'cơ bản', rank: 2 },
+  { keyword: 'sinh viên', rank: 1 }
+]
+
+const getPlanRank = (name: string): number =>
+  PLAN_RANK.find((r) => name.toLowerCase().includes(r.keyword))?.rank ?? 0
+
+const isStudentPromoPlan = (name: string | undefined): boolean => {
+  if (!name) return false
+  return name.toLowerCase().includes('sinh viên')
+}
+
+const getHighestPlan = (plans: string[]): string => {
+  if (plans.length === 0) return ''
+  return plans.reduce((best, current) =>
+    getPlanRank(current) > getPlanRank(best) ? current : best
+  )
+}
+
 const formatPrice = (price: number) => {
   if (!price) return 'Miễn phí'
   return `${price.toLocaleString('vi-VN')}đ`
@@ -33,17 +56,22 @@ export default function TemplatesPage() {
   const { wedding, setWedding, loading } = useWedding()
   const [templates, setTemplates] = useState<Template[]>([])
   const [templateMeta, setTemplateMeta] = useState<Record<number, TemplateAdminMeta>>({})
-  const [selectedStyle, setSelectedStyle] = useState('all')
+  const [packages, setPackages] = useState<{ id: number; name: string }[]>([])
+  const [selectedPlan, setSelectedPlan] = useState('all')
   const [loadingTemplates, setLoadingTemplates] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'mine'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 9
   const { toast, success, error } = useToast()
 
-  // Derived from wedding join — user's currently active package
+  // wedding.package (FK join) is set at account creation and never updated on plan purchase.
+  // wedding.content.plan is the authoritative active plan ID (set by payment callback).
   const userPackageId = (wedding as any)?.package?.id as number | null | undefined
   const userPackageName = (wedding as any)?.package?.name as string | undefined
+  const contentPlanId = (wedding as any)?.content?.plan as string | undefined
+  // Effective plan: content.plan takes priority over stale FK join
+  const effectivePlanId: number | null | undefined = contentPlanId ? parseInt(contentPlanId) : userPackageId
+  const planExpired = isPlanExpired((wedding as any)?.content?.expires_at)
 
   useEffect(() => {
     const loadTemplates = async () => {
@@ -63,7 +91,6 @@ export default function TemplatesPage() {
           const next = { ...prev }
           data.forEach((template: any, index: number) => {
             if (!next[template.id]) {
-              // Extract packages info from API response
               const packages = template.packages || []
               const allowed_plans = packages.map((pkg: any) => pkg.name)
               const price = packages.length > 0 ? packages[0].price : 0
@@ -91,6 +118,52 @@ export default function TemplatesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    const loadPackages = async () => {
+      try {
+        const res = await fetch('/api/get-packages')
+        if (!res.ok) return
+        const result = await res.json()
+        const plans: any[] = result.plans || []
+        setPackages(plans.map((p) => ({ id: p.id, name: p.name })))
+      } catch {
+        // silent — filter sẽ fallback về packages từ templates
+      }
+    }
+    loadPackages()
+  }, [])
+
+  // Build a map of package id → name from all loaded templates
+  const allPackagesMap = useMemo(() => {
+    const map: Record<number, string> = {}
+    templates.forEach((t: any) => {
+      ;(t.packages || []).forEach((p: any) => {
+        if (p.id != null && p.name) map[Number(p.id)] = p.name
+      })
+    })
+    return map
+  }, [templates])
+
+  // The effective plan name — may differ from the stale FK join after a purchase
+  const effectivePackageName = effectivePlanId
+    ? (allPackagesMap[effectivePlanId] ?? userPackageName)
+    : userPackageName
+
+  // Unique plan names from packages table, sorted high → low for the dropdown.
+  // Falls back to packages derived from templates if API hasn't loaded yet.
+  const availablePlans = useMemo(() => {
+    const source = packages.length > 0 ? packages.map((p) => p.name) : (() => {
+      const planSet = new Set<string>()
+      templates.forEach((t: any) => {
+        ;(t.packages || []).forEach((p: any) => {
+          if (p.name) planSet.add(p.name)
+        })
+      })
+      return Array.from(planSet)
+    })()
+    return source.sort((a, b) => getPlanRank(b) - getPlanRank(a))
+  }, [packages, templates])
+
   const templatesWithMeta = useMemo(() => {
     return templates.map((template) => ({
       ...template,
@@ -101,38 +174,29 @@ export default function TemplatesPage() {
   const filteredTemplates = useMemo(() => {
     let data = templatesWithMeta.filter((template) => template.meta.is_active)
 
-    if (selectedStyle !== 'all') {
-      const keyword = selectedStyle.toLowerCase()
-      data = data.filter((template) => template.name.toLowerCase().includes(keyword))
+    if (selectedPlan !== 'all') {
+      data = data.filter((template) => {
+        const pkgs: any[] = (template as any).packages || []
+        return pkgs.some((p: any) => p.name === selectedPlan)
+      })
     }
 
     if (searchTerm.trim()) {
       const keyword = searchTerm.toLowerCase()
-      data = data.filter((template) => {
-        return template.name.toLowerCase().includes(keyword)
-      })
+      data = data.filter((template) => template.name.toLowerCase().includes(keyword))
     }
 
     return data.sort((a, b) => a.meta.sort_order - b.meta.sort_order)
-  }, [templatesWithMeta, searchTerm, selectedStyle])
+  }, [templatesWithMeta, searchTerm, selectedPlan])
 
   const pagedTemplates = useMemo(() => {
-    let owned = filteredTemplates
-    if (ownershipFilter === 'mine') {
-      owned = filteredTemplates.filter((t) => {
-        const pkgs: any[] = (t as any).packages || []
-        if (pkgs.length === 0) return true // free templates belong to everyone
-        if (!userPackageId) return false
-        return pkgs.some((p: any) => p.id === userPackageId)
-      })
-    }
     const start = (currentPage - 1) * itemsPerPage
-    return owned.slice(start, start + itemsPerPage)
-  }, [currentPage, filteredTemplates, itemsPerPage, ownershipFilter, userPackageId])
+    return filteredTemplates.slice(start, start + itemsPerPage)
+  }, [currentPage, filteredTemplates, itemsPerPage])
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTerm, selectedStyle, ownershipFilter])
+  }, [searchTerm, selectedPlan])
 
   if (loadingTemplates) {
     return (
@@ -167,15 +231,24 @@ export default function TemplatesPage() {
     }
   }
 
-  // Returns true if user can apply this template
-  // (free template = no packages attached, OR user's package is in the allowed list)
+  // Returns true if user can apply this template.
+  // Higher-tier users can access templates from lower-tier plans as well.
   const canUseTemplate = (templateId: number): boolean => {
+    // Block only if user has NOT paid for any plan AND default package is student
+    if (!contentPlanId && isStudentPromoPlan(userPackageName)) return false
     const tpl = templates.find((t) => t.id === templateId) as any
     if (!tpl) return false
     const pkgs: any[] = tpl.packages || []
     if (pkgs.length === 0) return true // free template — accessible by all
-    if (!userPackageId) return false
-    return pkgs.some((p: any) => p.id === userPackageId)
+    if (planExpired) return false // plan expired — block paid templates
+    if (!effectivePlanId) return false
+    const userRank = getPlanRank(effectivePackageName ?? '')
+    return pkgs.some((p: any) => {
+      if (p.id === effectivePlanId) return true // exact match
+      if (userRank === 0) return false
+      const pRank = getPlanRank(p.name ?? '')
+      return pRank > 0 && pRank <= userRank // lower-tier plan templates also accessible
+    })
   }
 
   const previewTemplate = (templateId: number) => {
@@ -193,6 +266,22 @@ export default function TemplatesPage() {
         </div>
       </div>
 
+      {planExpired && (
+        <div className='mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800'>
+          <span className='text-lg leading-none'>⚠️</span>
+          <div className='flex-1'>
+            <p className='font-semibold'>Gói dịch vụ của bạn đã hết hạn</p>
+            <p className='mt-0.5 text-amber-700'>Các mẫu thiệp cao cấp đã bị khóa. Vui lòng gia hạn để tiếp tục sử dụng.</p>
+          </div>
+          <button
+            onClick={() => router.push('/studio/upgrade')}
+            className='shrink-0 rounded-xl bg-amber-500 px-4 py-1.5 text-sm font-bold text-white hover:bg-amber-600 transition-colors'
+          >
+            Gia hạn ngay
+          </button>
+        </div>
+      )}
+
       <div className='mt-6 flex flex-wrap items-center gap-3'>
         <div className='relative'>
           <Search size={16} className='absolute left-3 top-2.5 text-gray-400' />
@@ -206,46 +295,25 @@ export default function TemplatesPage() {
         <div className='flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2'>
           <LayoutTemplate size={16} className='text-gray-400' />
           <select
-            value={selectedStyle}
-            onChange={(e) => setSelectedStyle(e.target.value)}
+            value={selectedPlan}
+            onChange={(e) => setSelectedPlan(e.target.value)}
             className='text-sm font-medium text-gray-700 focus:outline-none'
           >
-            <option value='all'>Tất cả</option>
-            <option value='vintage'>Vintage</option>
-            <option value='modern'>Modern</option>
-            <option value='minimal'>Minimal</option>
+            <option value='all'>Tất cả gói</option>
+            {availablePlans.map((plan) => (
+              <option key={plan} value={plan}>
+                {plan}
+              </option>
+            ))}
           </select>
         </div>
-        {/* Ownership filter */}
-        <div className='flex gap-1 bg-gray-100 rounded-xl p-1'>
-          <button
-            onClick={() => setOwnershipFilter('all')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              ownershipFilter === 'all' ? 'bg-white text-gray-800 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Tất cả
-          </button>
-          <button
-            onClick={() => setOwnershipFilter('mine')}
-            className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-all ${
-              ownershipFilter === 'mine' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            Gói của tôi
-            {userPackageName && (
-              <span className='ml-1.5 px-1.5 py-0.5 bg-pink-100 text-pink-600 rounded-full text-xs'>
-                {userPackageName}
-              </span>
-            )}
-          </button>
-        </div>
-        {/* <button
-          onClick={() => toast('Bộ lọc demo dựa theo tên mẫu', 'info')}
-          className='px-4 py-2 bg-pink-50 text-pink-600 rounded-xl text-sm font-bold'
-        >
-          Mẹo chọn mẫu
-        </button> */}
+        {/* Current plan badge — informational only */}
+        {effectivePackageName && (
+          <div className='flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 border border-pink-100 rounded-xl text-sm text-pink-700 select-none'>
+            Gói của bạn:
+            <span className='font-semibold'>{effectivePackageName}</span>
+          </div>
+        )}
       </div>
 
       <div className='mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
@@ -279,15 +347,12 @@ export default function TemplatesPage() {
                 </div>
                 {/* <p className='text-sm text-gray-500'>Gợi ý phong cách: {template.repo_branch}</p> */}
                 <div className='flex flex-wrap gap-2 text-sm'>
-                  <span className='px-2 py-1 rounded-full bg-gray-100 text-gray-600'>
-                    Gói giá: {formatPrice(meta.price)}
-                  </span>
                   <span
                     className={`px-2 py-1 rounded-full ${
                       hasPlanLimit ? 'bg-amber-50 text-amber-700' : 'bg-green-50 text-green-700'
                     }`}
                   >
-                    {hasPlanLimit ? `Gói: ${meta.allowed_plans.join(', ')}` : 'Tất cả gói'}
+                    {hasPlanLimit ? `Gói: ${getHighestPlan(meta.allowed_plans)}` : 'Tất cả gói'}
                   </span>
                 </div>
                 {/* Preview template button */}
@@ -300,20 +365,35 @@ export default function TemplatesPage() {
 
                 {/* Apply / Upgrade / Active button */}
                 {!canUseTemplate(template.id) ? (
-                  // User doesn't own the required plan
+                  // User doesn't own the required plan or plan expired
                   <div>
                     <button
-                      onClick={() => router.push('/studio/upgrade')}
+                      onClick={() => {
+                        const requiredPlan = getHighestPlan(meta.allowed_plans)
+                        router.push(
+                          requiredPlan
+                            ? `/studio/upgrade?plan=${encodeURIComponent(requiredPlan)}`
+                            : '/studio/upgrade'
+                        )
+                      }}
                       className='w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:shadow-lg shadow-amber-200 hover:scale-[1.01] active:scale-[0.99] transition-all'
                     >
-                      ⚡ Nâng cấp gói
+                      ⚡ {planExpired ? 'Gia hạn gói' : 'Nâng cấp gói'}
                     </button>
                     <p className='mt-2 text-xs text-center text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2'>
-                      Bạn cần nâng cấp gói để sử dụng mẫu này
-                      {meta.allowed_plans.length > 0 && (
+                      {planExpired ? (
+                        <>Gói của bạn đã hết hạn. Vui lòng gia hạn để sử dụng mẫu này.</>
+                      ) : !contentPlanId && isStudentPromoPlan(userPackageName) ? (
+                        <>Vui lòng nâng cấp để sử dụng tính năng này.</>
+                      ) : (
                         <>
-                          <br />
-                          <span className='font-semibold'>{meta.allowed_plans.join(', ')}</span>
+                          Bạn cần nâng cấp gói để sử dụng mẫu này
+                          {meta.allowed_plans.length > 0 && (
+                            <>
+                              <br />
+                              <span className='font-semibold'>{getHighestPlan(meta.allowed_plans)}</span>
+                            </>
+                          )}
                         </>
                       )}
                     </p>
