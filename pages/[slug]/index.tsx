@@ -52,12 +52,14 @@ export default function GeneralWeddingPage({ wedding, slug }: Props) {
   const SelectedTemplate = getTemplate(branch).GeneralView
 
   // Thông tin cho SEO động
-  const groomName: string = wedding.content?.groom_name || ''
-  const brideName: string = wedding.content?.bride_name || ''
-  const coupleNames = groomName && brideName ? `${groomName} & ${brideName}` : 'Thiệp Cưới'
+  const groomName: string = (wedding.content?.groom_name || '').trim()
+  const brideName: string = (wedding.content?.bride_name || '').trim()
+  const coupleNames = groomName && brideName ? `${groomName} & ${brideName}` : ''
   const weddingDate: string = wedding.content?.wedding_date || ''
-  const pageTitle = `Thiệp Cưới ${coupleNames} | MoiMoi`
-  const pageDescription = `Trân trọng kính mời bạn tham dự lễ cưới của ${coupleNames}${weddingDate ? ` vào ngày ${weddingDate}` : ''}. Xem thiệp online trên MoiMoi.`
+  const pageTitle = coupleNames ? `Thiệp Cưới ${coupleNames}` : 'Thiệp Cưới MoiMoi'
+  const pageDescription = coupleNames
+    ? `Trân trọng kính mời bạn tham dự lễ cưới của ${coupleNames}${weddingDate ? ` vào ngày ${weddingDate}` : ''}.`
+    : 'Trân trọng kính mời bạn tham dự lễ cưới. Xem thiệp online trên MoiMoi.'
   const canonicalUrl = `https://www.moimoi.io.vn/${slug}`
   const coverImage = wedding.content?.cover_image || 'https://www.moimoi.io.vn/og-cover.png'
 
@@ -85,7 +87,7 @@ export default function GeneralWeddingPage({ wedding, slug }: Props) {
             __html: JSON.stringify({
               '@context': 'https://schema.org',
               '@type': 'Event',
-              name: `Lễ Cưới ${coupleNames}`,
+              name: coupleNames ? `Lễ Cưới ${coupleNames}` : 'Lễ Cưới',
               description: pageDescription,
               url: canonicalUrl,
               ...(weddingDate && { startDate: weddingDate }),
@@ -105,7 +107,7 @@ export default function GeneralWeddingPage({ wedding, slug }: Props) {
           onClick={() => setPhoneMode((p) => !p)}
           style={{
             position: 'fixed',
-            bottom: 28,
+            bottom: 88,
             right: 28,
             zIndex: 9999,
             display: 'flex',
@@ -210,7 +212,7 @@ export default function GeneralWeddingPage({ wedding, slug }: Props) {
       </div>
 
       {/* Music player cho các template không tự quản lý nhạc */}
-      {branch !== 'vintage' && <MusicPlayer musicUrl={wedding.content?.music_url} />}
+      {branch !== 'theme-vintage' && <MusicPlayer musicUrl={wedding.content?.music_url} />}
     </>
   )
 }

@@ -75,6 +75,7 @@ const Editor = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [originalImages, setOriginalImages] = useState<string[]>([])
   const [originalCoverImage, setOriginalCoverImage] = useState<string | null>(null)
+  const [originalMusicId, setOriginalMusicId] = useState<number | null>(null)
   const [isDirty, setIsDirty] = useState(false)
   const { success, error } = useToast()
 
@@ -84,6 +85,7 @@ const Editor = () => {
       setOriginalImages(wedding.content.images)
     }
     setOriginalCoverImage(wedding?.content?.cover_image || null)
+    setOriginalMusicId(wedding?.music_id ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding?.id])
 
@@ -184,6 +186,7 @@ const Editor = () => {
       setWedding({ ...wedding, content: updatedContent })
       setOriginalImages(newImages)
       setOriginalCoverImage(newCoverImage)
+      setOriginalMusicId(wedding.music_id ?? null)
       setIsDirty(false)
 
       // Dừng nhạc preview sau khi lưu
@@ -499,72 +502,72 @@ const Editor = () => {
         <div className='bg-white rounded-3xl shadow-sm border border-pink-100 overflow-hidden min-h-[600px]'>
           {/* Tab bar - ẩn khi ở chế độ admin thuần, hiện khi đang sửa thiệp cụ thể hoặc chế độ thường */}
           {(!isAdminMode || adminSelectedWedding) && (
-            <div className='flex border-b border-gray-100'>
+            <div className='flex border-b border-gray-100 overflow-x-auto'>
               <button
                 onClick={() => setActiveTab('info')}
-                className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
+                className={`flex-1 min-w-[80px] py-4 text-center font-medium transition-colors border-b-2 ${
                   activeTab === 'info'
                     ? 'border-pink-500 text-pink-600 bg-pink-50/30'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <div className='flex items-center justify-center gap-2'>
-                  <Info size={18} /> Thông Tin
+                <div className='flex items-center justify-center gap-1 md:gap-2'>
+                  <Info size={18} /> <span className='hidden sm:inline'>Thông Tin</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('album')}
-                className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
+                className={`flex-1 min-w-[80px] py-4 text-center font-medium transition-colors border-b-2 ${
                   activeTab === 'album'
                     ? 'border-pink-500 text-pink-600 bg-pink-50/30'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <div className='flex items-center justify-center gap-2'>
-                  <ImageIcon size={18} /> Album Ảnh
+                <div className='flex items-center justify-center gap-1 md:gap-2'>
+                  <ImageIcon size={18} /> <span className='hidden sm:inline'>Album Ảnh</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('bank')}
-                className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
+                className={`flex-1 min-w-[80px] py-4 text-center font-medium transition-colors border-b-2 ${
                   activeTab === 'bank'
                     ? 'border-pink-500 text-pink-600 bg-pink-50/30'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <div className='flex items-center justify-center gap-2'>
-                  <CreditCard size={18} /> Tiền mừng
+                <div className='flex items-center justify-center gap-1 md:gap-2'>
+                  <CreditCard size={18} /> <span className='hidden sm:inline'>Tiền mừng</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('style')}
-                className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
+                className={`flex-1 min-w-[80px] py-4 text-center font-medium transition-colors border-b-2 ${
                   activeTab === 'style'
                     ? 'border-pink-500 text-pink-600 bg-pink-50/30'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <div className='flex items-center justify-center gap-2'>
-                  <Palette size={18} /> Kiểu Dáng
+                <div className='flex items-center justify-center gap-1 md:gap-2'>
+                  <Palette size={18} /> <span className='hidden sm:inline'>Kiểu Dáng</span>
                 </div>
               </button>
               <button
                 onClick={() => setActiveTab('music')}
-                className={`flex-1 py-4 text-center font-medium transition-colors border-b-2 ${
+                className={`flex-1 min-w-[80px] py-4 text-center font-medium transition-colors border-b-2 ${
                   activeTab === 'music'
                     ? 'border-pink-500 text-pink-600 bg-pink-50/30'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                <div className='flex items-center justify-center gap-2'>
-                  <Music size={18} /> Nhạc
+                <div className='flex items-center justify-center gap-1 md:gap-2'>
+                  <Music size={18} /> <span className='hidden sm:inline'>Nhạc</span>
                 </div>
               </button>
             </div>
           )}
 
           {/* Tab Content */}
-          <div className='p-8'>
+          <div className='p-4 md:p-8'>
             {isAdminMode && adminSelectedWedding ? (
               /* Admin đang sửa thiệp của người dùng */
               <div>
@@ -926,7 +929,10 @@ const Editor = () => {
                             setWedding((prev) =>
                               prev ? { ...prev, music_id: null, content: { ...prev.content, music_url: '' } } : prev
                             )
-                            setIsDirty(true)
+                            // Only mark dirty if different from original
+                            if (originalMusicId !== null) {
+                              setIsDirty(true)
+                            }
                           }}
                           className={`w-full flex items-center justify-between px-5 py-3 rounded-2xl border transition-all text-left ${
                             !wedding?.music_id
@@ -980,7 +986,10 @@ const Editor = () => {
                                         ? { ...prev, music_id: m.id, content: { ...prev.content, music_url: m.url } }
                                         : prev
                                     )
-                                    setIsDirty(true)
+                                    // Only mark dirty if different from original
+                                    if (m.id !== originalMusicId) {
+                                      setIsDirty(true)
+                                    }
                                   } else if (isPlaying) {
                                     // Lần 2: đang phát → pause, giữ nguyên chọn
                                     if (previewAudioRef.current) {

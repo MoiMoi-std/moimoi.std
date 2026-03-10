@@ -510,7 +510,7 @@ const Guests = () => {
                 <button
                   className='flex-1 flex items-center justify-center gap-2 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium shadow-md shadow-blue-200'
                   onClick={() =>
-                    window.open(`http://zalo.me/share/?url=${encodeURIComponent(generatedLink)}`, '_blank')
+                    window.open(`https://zalo.me/share/url?url=${encodeURIComponent(generatedLink)}`, '_blank')
                   }
                 >
                   <Share2 size={16} /> Zalo

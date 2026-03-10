@@ -78,5 +78,13 @@ port = 54324
 # Uncomment to expose additional ports for testing user applications that send emails.
 # smtp_port = 54325
 # pop3_port = 54326
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+admin_email = "noreply@moimoi.io.vn"
+sender_name = "MoiMoiStudio"
+
+# IMPORTANT: Cấu hình email trên Supabase Dashboard (production):
+# 1. Vào Authentication > Email Templates
+# 2. Đổi Sender Name thành "MoiMoiStudio"
+# 3. Viết nội dung email xác nhận bằng tiếng Việt:
+#    - Subject: "Xác nhận tài khoản MoiMoiStudio"
+#    - Body: Hướng dẫn người dùng nhấn vào link xác nhận
+# 4. Đảm bảo Site URL (Authentication > URL Configuration) là https://www.moimoi.io.vn

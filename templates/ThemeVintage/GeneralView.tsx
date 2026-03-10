@@ -128,6 +128,16 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
         <style>{`
           @media (max-width: 768px) {
             .vintage-side-panel { display: none !important; }
+            .vintage-card { width: 100% !important; max-width: 100% !important; }
+            .vintage-avatar { width: 120px !important; height: 120px !important; }
+            .vintage-couple-name { font-size: 1.8rem !important; }
+            .vintage-couple-name-lg { font-size: 2rem !important; }
+            .vintage-section-padding { padding-left: 16px !important; padding-right: 16px !important; }
+            .vintage-parents-flex { flex-direction: column !important; gap: 20px !important; }
+            .vintage-parents-divider { display: none !important; }
+            .vintage-date-flex { gap: 8px !important; }
+            .vintage-date-day { font-size: 2rem !important; }
+            .vintage-album-grid { grid-template-columns: repeat(2, 1fr) !important; }
           }
         `}</style>
       </Head>
@@ -317,8 +327,10 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
         {/* ═════════ WEDDING CARD ═════════ */}
         <div
+          className='vintage-card'
           style={{
             width: 896,
+            maxWidth: '100%',
             flexShrink: 0,
             background: cream,
             minHeight: '100vh',
@@ -356,6 +368,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
               {/* Groom */}
               <div style={{ textAlign: 'center', width: '40%' }}>
                 <div
+                  className='vintage-avatar'
                   style={{
                     width: 240,
                     height: 240,
@@ -418,6 +431,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
               {/* Bride */}
               <div style={{ textAlign: 'center', width: '40%' }}>
                 <div
+                  className='vintage-avatar'
                   style={{
                     width: 240,
                     height: 240,
@@ -486,6 +500,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
           {/* ═════════ PARENTS INFO ═════════ */}
           <div
+            className='vintage-parents-flex vintage-section-padding'
             style={{
               display: 'flex',
               justifyContent: 'space-between',
@@ -517,7 +532,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             </div>
 
             {/* Vertical divider */}
-            <div style={{ width: 1, alignSelf: 'stretch', backgroundColor: '#c8b6a6', flexShrink: 0 }} />
+            <div className='vintage-parents-divider' style={{ width: 1, alignSelf: 'stretch', backgroundColor: '#c8b6a6', flexShrink: 0 }} />
 
             {/* Bride Parents */}
             <div style={{ flex: 1, padding: '0 0 0 16px' }}>
@@ -542,7 +557,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           </div>
 
           {/* ═════════ WEDDING ANNOUNCEMENT ═════════ */}
-          <div style={{ textAlign: 'center', padding: '16px 32px 32px' }}>
+          <div className='vintage-section-padding' style={{ textAlign: 'center', padding: '16px 32px 32px' }}>
             {/* Trân trọng báo tin */}
             <p
               style={{
@@ -735,7 +750,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
           {/* ═════════ ALBUM ═════════ */}
           <div style={{ padding: '20px 20px', marginBottom: 40 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            <div className='vintage-album-grid' style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
               {albumImages.slice(0, 4).map((img: string, i: number) => {
                 const isLast = i === 3
                 const extraCount = albumImages.length - 4

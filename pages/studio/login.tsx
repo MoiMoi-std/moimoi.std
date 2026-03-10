@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 
-type ViewType = 'sign-in' | 'sign-up' | 'forgot-password'
+type ViewType = 'sign-in' | 'sign-up' | 'forgot-password' | 'check-email'
 
 const LoginPage = () => {
   const session = useSession()
@@ -73,7 +73,10 @@ const LoginPage = () => {
 
     const { data: authData, error } = await supabase.auth.signUp({
       email,
-      password
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/studio/login`
+      }
     })
 
     if (error) {
@@ -104,6 +107,7 @@ const LoginPage = () => {
     }
 
     setMessage({ type: 'success', text: 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.' })
+    setView('check-email')
     setLoading(false)
   }
 
@@ -135,7 +139,7 @@ const LoginPage = () => {
         <div className='absolute bottom-[10%] left-[30%] w-[35%] h-[35%] bg-rose-200/20 rounded-full blur-[100px] animate-pulse delay-700'></div>
       </div>
 
-      <div className='w-full max-w-md p-6 md:p-10 bg-white rounded-3xl shadow-xl shadow-pink-100/50 border border-white z-10'>
+      <div className='w-full max-w-md mx-4 p-6 md:p-10 bg-white rounded-3xl shadow-xl shadow-pink-100/50 border border-white z-10'>
         <div className='mb-8 text-center'>
           <div className='flex items-center justify-center mx-auto mb-6'>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -362,6 +366,40 @@ const LoginPage = () => {
               </button>
             </div>
           </form>
+        )}
+
+        {/* Check Email View */}
+        {view === 'check-email' && (
+          <div className='text-center space-y-4'>
+            <div className='w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto'>
+              <svg className='w-8 h-8 text-green-600' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                <path
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  strokeWidth={2}
+                  d='M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z'
+                />
+              </svg>
+            </div>
+            <h2 className='text-xl font-bold text-gray-900'>Kiểm tra email của bạn</h2>
+            <p className='text-gray-500 text-sm'>
+              Chúng tôi đã gửi một email xác nhận đến <strong className='text-gray-700'>{email}</strong>. Vui lòng mở
+              email và nhấn vào liên kết xác nhận để kích hoạt tài khoản.
+            </p>
+            <div className='bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-700'>
+              Nếu không thấy email, hãy kiểm tra thư mục <strong>Spam</strong> hoặc <strong>Quảng cáo</strong>.
+            </div>
+            <button
+              type='button'
+              onClick={() => {
+                setView('sign-in')
+                setMessage(null)
+              }}
+              className='text-pink-600 hover:text-pink-700 font-bold text-sm'
+            >
+              Quay lại đăng nhập
+            </button>
+          </div>
         )}
 
         <div className='mt-8 pt-6 border-t border-gray-100 text-center'>
