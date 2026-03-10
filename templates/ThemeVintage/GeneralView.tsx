@@ -532,7 +532,10 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             </div>
 
             {/* Vertical divider */}
-            <div className='vintage-parents-divider' style={{ width: 1, alignSelf: 'stretch', backgroundColor: '#c8b6a6', flexShrink: 0 }} />
+            <div
+              className='vintage-parents-divider'
+              style={{ width: 1, alignSelf: 'stretch', backgroundColor: '#c8b6a6', flexShrink: 0 }}
+            />
 
             {/* Bride Parents */}
             <div style={{ flex: 1, padding: '0 0 0 16px' }}>
@@ -750,7 +753,10 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
           {/* ═════════ ALBUM ═════════ */}
           <div style={{ padding: '20px 20px', marginBottom: 40 }}>
-            <div className='vintage-album-grid' style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+            <div
+              className='vintage-album-grid'
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}
+            >
               {albumImages.slice(0, 4).map((img: string, i: number) => {
                 const isLast = i === 3
                 const extraCount = albumImages.length - 4

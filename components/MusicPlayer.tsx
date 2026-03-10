@@ -15,10 +15,14 @@ export default function MusicPlayer({ musicUrl }: MusicPlayerProps) {
     audioRef.current = audio
 
     const handleInteraction = () => {
-      audio.play().then(() => setIsPlaying(true)).catch(() => {})
+      audio
+        .play()
+        .then(() => setIsPlaying(true))
+        .catch(() => {})
     }
 
-    audio.play()
+    audio
+      .play()
       .then(() => setIsPlaying(true))
       .catch(() => {
         // Autoplay blocked by browser — start on first user gesture
