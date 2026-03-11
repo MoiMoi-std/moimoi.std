@@ -23,18 +23,18 @@
 
 ## 🛠 Tech Stack
 
-| Lớp | Công nghệ |
-|-----|-----------|
-| Framework | [Next.js 13](https://nextjs.org/) (Pages Router) |
-| Ngôn ngữ | TypeScript |
-| Styling | Tailwind CSS |
+| Lớp             | Công nghệ                                                           |
+| --------------- | ------------------------------------------------------------------- |
+| Framework       | [Next.js 13](https://nextjs.org/) (Pages Router)                    |
+| Ngôn ngữ        | TypeScript                                                          |
+| Styling         | Tailwind CSS                                                        |
 | Database & Auth | [Supabase](https://supabase.com/) (PostgreSQL + Row Level Security) |
-| Lưu trữ ảnh | [Cloudinary](https://cloudinary.com/) |
-| Thanh toán | [VNPay](https://vnpay.vn/) |
-| Animation | [Framer Motion](https://www.framer.com/motion/) |
-| Icons | [Lucide React](https://lucide.dev/) |
-| QR Code | [qrcode](https://github.com/soldair/node-qrcode) |
-| Deploy | [Vercel](https://vercel.com/) |
+| Lưu trữ ảnh     | [Cloudinary](https://cloudinary.com/)                               |
+| Thanh toán      | [VNPay](https://vnpay.vn/)                                          |
+| Animation       | [Framer Motion](https://www.framer.com/motion/)                     |
+| Icons           | [Lucide React](https://lucide.dev/)                                 |
+| QR Code         | [qrcode](https://github.com/soldair/node-qrcode)                    |
+| Deploy          | [Vercel](https://vercel.com/)                                       |
 
 ---
 
@@ -118,13 +118,13 @@ moimoi_std/
 
 ## 📜 Scripts
 
-| Lệnh | Mô tả |
-|------|-------|
-| `npm run dev` | Chạy dev server (Next.js + Tailwind watch) |
-| `npm run build` | Build production + generate sitemap |
-| `npm run start` | Chạy production server |
-| `npm run lint` | Kiểm tra linting |
-| `npm run format` | Format code với Prettier |
+| Lệnh             | Mô tả                                      |
+| ---------------- | ------------------------------------------ |
+| `npm run dev`    | Chạy dev server (Next.js + Tailwind watch) |
+| `npm run build`  | Build production + generate sitemap        |
+| `npm run start`  | Chạy production server                     |
+| `npm run lint`   | Kiểm tra linting                           |
+| `npm run format` | Format code với Prettier                   |
 
 ---
 
