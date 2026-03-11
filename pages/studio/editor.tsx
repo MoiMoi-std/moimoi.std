@@ -927,10 +927,7 @@ const Editor = () => {
                   />
                 </div>
                 <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
-                  <TabQR
-                    qrImage={wedding?.content?.qr_image ?? null}
-                    onQrImageChange={handleQrImageChange}
-                  />
+                  <TabQR qrImage={wedding?.content?.qr_image ?? null} onQrImageChange={handleQrImageChange} />
                 </div>
                 <div className={activeTab === 'style' ? 'block' : 'hidden'}>
                   <TabStyle content={wedding?.content} onChange={handleInfoChange} onBatchChange={handleBatchChange} />
