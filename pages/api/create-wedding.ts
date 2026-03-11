@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .insert({
         host_id,
         content: {},
-        template_id: 1, // Default
+        // No template_id — new weddings start with null, code falls back to DefaultTheme via TemplateRegistry
         deployment_status: 'draft'
       })
       .select()

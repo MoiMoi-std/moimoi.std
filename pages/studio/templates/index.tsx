@@ -322,7 +322,9 @@ export default function TemplatesPage() {
       <div className='mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
         {pagedTemplates.map((template) => {
           const meta = template.meta
-          const isActive = wedding?.template_id === template.id
+          // Only show "Đang dùng" when a template_id is explicitly set (not null).
+          // New accounts have template_id = null thanks to create-wedding.ts fix.
+          const isActive = !!wedding?.template_id && wedding.template_id === template.id
           const hasPlanLimit = meta.allowed_plans.length > 0
           return (
             <div

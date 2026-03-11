@@ -3358,7 +3358,7 @@ h1 {
 /* Shimmer animation — used by LazyIframePreview skeleton */
 
 @keyframes shimmer {
-  0%   {
+  0% {
     background-position: -400px 0;
   }
 
