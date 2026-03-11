@@ -46,10 +46,17 @@ const ImagePositionEditorModal: React.FC<EditorModalProps> = ({
   onClose,
   onReplace
 }) => {
-  const [adj, setAdj] = useState<ImageAdjust>(
+  const [activeTab, setActiveTab] = useState<'phone' | 'laptop'>('phone')
+  const [phoneAdj, setPhoneAdj] = useState<ImageAdjust>(
     initialPositions.phone ?? initialPositions.laptop ?? { ...DEFAULT_ADJUST }
   )
+  const [laptopAdj, setLaptopAdj] = useState<ImageAdjust>(
+    initialPositions.laptop ?? initialPositions.phone ?? { ...DEFAULT_ADJUST }
+  )
   const previewRef = useRef<HTMLDivElement>(null)
+
+  const adj = activeTab === 'phone' ? phoneAdj : laptopAdj
+  const setAdj = activeTab === 'phone' ? setPhoneAdj : setLaptopAdj
 
   const applyPointer = (clientX: number, clientY: number) => {
     const el = previewRef.current
@@ -77,6 +84,8 @@ const ImagePositionEditorModal: React.FC<EditorModalProps> = ({
     ...(adj.zoom !== 1 ? { transform: `scale(${adj.zoom})`, transformOrigin: `${adj.x}% ${adj.y}%` } : {})
   }
 
+  const isLaptop = activeTab === 'laptop'
+
   return (
     <div className='fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4'>
       <div className='bg-white rounded-2xl shadow-2xl w-full max-w-sm flex flex-col max-h-[90dvh]'>
@@ -89,14 +98,64 @@ const ImagePositionEditorModal: React.FC<EditorModalProps> = ({
             </button>
           </div>
 
+          {/* Device tabs */}
+          <div className='flex rounded-xl bg-gray-100 p-1 gap-1'>
+            <button
+              onClick={() => setActiveTab('phone')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'phone' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <svg
+                width='14'
+                height='14'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+              >
+                <rect x='5' y='2' width='14' height='20' rx='2' />
+                <circle cx='12' cy='18' r='1' fill='currentColor' stroke='none' />
+              </svg>
+              Điện thoại
+            </button>
+            <button
+              onClick={() => setActiveTab('laptop')}
+              className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'laptop' ? 'bg-white text-pink-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <svg
+                width='14'
+                height='14'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+              >
+                <rect x='2' y='4' width='20' height='14' rx='2' />
+                <path d='M0 21h24' />
+              </svg>
+              Laptop
+            </button>
+          </div>
+
           {/* Preview + focal point drag */}
           <div>
             <p className='text-xs text-gray-400 mb-2'>Nhấp hoặc kéo để đặt điểm căn giữa</p>
-            <div style={{ height: 220 }} className='flex justify-center'>
+            <div className='flex justify-center' style={{ height: isLaptop ? 'auto' : 220 }}>
               <div
                 ref={previewRef}
-                className='relative overflow-hidden rounded-xl cursor-crosshair select-none h-full'
-                style={{ aspectRatio: '9/16', maxWidth: '100%' }}
+                className='relative overflow-hidden rounded-xl cursor-crosshair select-none'
+                style={
+                  isLaptop
+                    ? { aspectRatio: '320/210', width: '100%' }
+                    : { aspectRatio: '260/560', height: 220, maxWidth: '100%' }
+                }
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
               >
@@ -164,7 +223,7 @@ const ImagePositionEditorModal: React.FC<EditorModalProps> = ({
               Đặt lại
             </button>
             <button
-              onClick={() => onSave({ phone: adj, laptop: adj })}
+              onClick={() => onSave({ phone: phoneAdj, laptop: laptopAdj })}
               className='flex-1 py-2.5 rounded-xl bg-pink-600 text-white text-sm font-bold hover:bg-pink-700 transition-colors'
             >
               Áp dụng

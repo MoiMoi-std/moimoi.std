@@ -437,11 +437,9 @@ export default function ModernGeneralView({ wedding, guestName = '', rsvpId }: T
         <section
           style={{
             position: 'relative',
-            height: 'var(--phone-height, 100svh)',
+            height: '100vh',
             minHeight: 600,
-            overflow: 'hidden',
-            maxWidth: viewport === 'laptop' ? 390 : undefined,
-            margin: viewport === 'laptop' ? '0 auto' : undefined
+            overflow: 'hidden'
           }}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
