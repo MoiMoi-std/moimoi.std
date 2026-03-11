@@ -15,17 +15,17 @@ export default function Footer() {
             </p>
             <div className='flex gap-4 pt-2'>
               <a
-                href='#'
+                href='https://www.facebook.com/profile.php?id=61586531092445'
                 className='flex items-center justify-center w-10 h-10 transition bg-gray-800 rounded-full hover:bg-pink-600'
               >
                 <Facebook className='w-5 h-5' />
               </a>
-              <a
+              {/* <a
                 href='#'
                 className='flex items-center justify-center w-10 h-10 transition bg-gray-800 rounded-full hover:bg-pink-600'
               >
                 <Instagram className='w-5 h-5' />
-              </a>
+              </a> */}
             </div>
           </div>
 
@@ -89,15 +89,15 @@ export default function Footer() {
             <ul className='space-y-4 text-sm text-gray-400'>
               <li className='flex items-start gap-3'>
                 <MapPin className='w-5 h-5 text-pink-500 shrink-0' />
-                <span>Tầng 3, Tòa nhà Innovation, Quận 1, TP.HCM</span>
+                <span>256 Đ. Nguyễn Văn Cừ, An Hoà, Ninh Kiều, Cần Thơ</span>
               </li>
               <li className='flex items-center gap-3'>
                 <Phone className='w-5 h-5 text-pink-500 shrink-0' />
-                <span>0909.123.456</span>
+                <span>034 5517311</span>
               </li>
               <li className='flex items-center gap-3'>
                 <Mail className='w-5 h-5 text-pink-500 shrink-0' />
-                <span>support@moimoi.vn</span>
+                <span>moimoi.std@gmail.com</span>
               </li>
             </ul>
           </div>
