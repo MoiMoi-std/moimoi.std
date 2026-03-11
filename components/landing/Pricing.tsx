@@ -108,7 +108,7 @@ export default function Pricing() {
           </p>
         </div>
 
-        <div className='grid max-w-7xl gap-8 mx-auto md:grid-cols-2 lg:grid-cols-4'>
+        <div className='flex flex-wrap justify-center items-stretch gap-5 mx-auto max-w-7xl'>
           {visiblePlans.map((plan) => {
             const hasDiscount = plan.discountPrice && plan.discountPrice < plan.price
             const displayPrice = hasDiscount ? plan.discountPrice : plan.price
@@ -117,7 +117,7 @@ export default function Pricing() {
             return (
               <div
                 key={plan.id}
-                className={`relative rounded-2xl p-8 transition-all duration-300 ${
+                className={`relative flex flex-col rounded-2xl p-8 transition-all duration-300 w-full sm:w-72 lg:w-64 xl:w-72 ${
                   plan.highlight
                     ? 'bg-white border-2 border-pink-500 shadow-xl scale-105 z-10'
                     : 'bg-white border border-gray-100 hover:shadow-lg'
@@ -129,11 +129,21 @@ export default function Pricing() {
                   </div>
                 )}
 
-                <h3 className='mb-2 text-xl font-bold text-gray-900'>{plan.name}</h3>
-                <div className='flex items-baseline gap-2 mb-2'>
+                {/khuyến mãi/i.test(plan.name) && (
+                  <span className='absolute top-8 right-6 text-[10px] font-semibold text-pink-600 bg-pink-50 border border-pink-200 rounded-full px-1.5 py-0.5 whitespace-nowrap'>
+                    Khuyến mãi
+                  </span>
+                )}
+
+                <div className='mb-2'>
+                  <h3 className='text-xl font-bold text-gray-900 pr-16'>
+                    {plan.name.replace(/\s*[–-]\s*Khuyến Mãi/i, '').replace(/\s*Khuyến Mãi/i, '')}
+                  </h3>
+                </div>
+                <div className='mb-2 min-h-[4.5rem]'>
                   <span className='text-4xl font-bold text-pink-600'>{formatVnd(displayPrice || 0)}</span>
                   {hasDiscount && originalPrice && (
-                    <span className='text-sm text-gray-400 line-through opacity-70'>{formatVnd(originalPrice)}</span>
+                    <div className='mt-1 text-xs text-gray-400 line-through'>{formatVnd(originalPrice)}</div>
                   )}
                 </div>
                 {plan.duration && (
@@ -151,7 +161,7 @@ export default function Pricing() {
                   Chọn Gói Này
                 </button>
 
-                <div className='space-y-4'>
+                <div className='space-y-4 mt-auto'>
                   {Array.isArray(plan.features) &&
                     plan.features.map((feature, i) => (
                       <div key={i} className='flex items-start gap-3 text-sm text-gray-700'>
