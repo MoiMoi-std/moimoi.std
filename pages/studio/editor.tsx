@@ -1,5 +1,4 @@
 import {
-  CreditCard,
   Image as ImageIcon,
   Info,
   LayoutList,
@@ -7,6 +6,7 @@ import {
   Palette,
   Pencil,
   Plus,
+  QrCode,
   Save,
   Trash2,
   X
@@ -18,7 +18,7 @@ import LivePreview from '../../components/studio/LivePreview'
 import StudioLayout from '../../components/studio/StudioLayout'
 import StudioLoading from '../../components/studio/StudioLoading'
 import TabAlbum from '../../components/studio/TabAlbum'
-import TabBank from '../../components/studio/TabBank'
+import TabQR from '../../components/studio/TabQR'
 import TabInfo from '../../components/studio/TabInfo'
 import TabStyle from '../../components/studio/TabStyle'
 import { useToast } from '../../components/ui/ToastProvider'
@@ -75,6 +75,7 @@ const Editor = () => {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [originalImages, setOriginalImages] = useState<string[]>([])
   const [originalCoverImage, setOriginalCoverImage] = useState<string | null>(null)
+  const [originalQrImage, setOriginalQrImage] = useState<string | null>(null)
   const [originalMusicId, setOriginalMusicId] = useState<number | null>(null)
   const [isDirty, setIsDirty] = useState(false)
   const { success, error } = useToast()
@@ -85,6 +86,7 @@ const Editor = () => {
       setOriginalImages(wedding.content.images)
     }
     setOriginalCoverImage(wedding?.content?.cover_image || null)
+    setOriginalQrImage(wedding?.content?.qr_image || null)
     setOriginalMusicId(wedding?.music_id ?? null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding?.id])
@@ -132,6 +134,12 @@ const Editor = () => {
     setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, cover_image: coverImage } } : prev))
   }
 
+  const handleQrImageChange = (qrImage: string | null) => {
+    if (!wedding) return
+    setIsDirty(true)
+    setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, qr_image: qrImage } } : prev))
+  }
+
   const handleImagePositionsChange = (positions: (ImagePosition | null)[]) => {
     if (!wedding) return
     setIsDirty(true)
@@ -156,6 +164,7 @@ const Editor = () => {
       const previousImages = originalImages
       const currentImages = wedding.content.images || []
       const coverIsBase64 = Boolean(wedding.content.cover_image?.startsWith('data:'))
+      const qrIsBase64 = Boolean(wedding.content.qr_image?.startsWith('data:'))
 
       const { newImages, uploadedCount, deletedCount, failedCount } = await processImages(
         currentImages,
@@ -169,8 +178,15 @@ const Editor = () => {
         wedding.slug ?? undefined
       )
 
+      const newQrImage = await processSingleImage(
+        wedding.content.qr_image ?? null,
+        originalQrImage,
+        wedding.slug ?? undefined
+      )
+
       const coverUploadFailed = coverIsBase64 && !newCoverImage
-      if (failedCount > 0 || coverUploadFailed) {
+      const qrUploadFailed = qrIsBase64 && !newQrImage
+      if (failedCount > 0 || coverUploadFailed || qrUploadFailed) {
         error('Tải ảnh lên Cloudinary thất bại. Vui lòng kiểm tra kết nối và thử lại.')
         return
       }
@@ -179,13 +195,14 @@ const Editor = () => {
         console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
       }
 
-      const updatedContent = { ...wedding.content, images: newImages, cover_image: newCoverImage }
+      const updatedContent = { ...wedding.content, images: newImages, cover_image: newCoverImage, qr_image: newQrImage }
       await dataService.updateWedding(wedding.id, updatedContent, wedding.music_id ?? null)
 
       // Update local state and original images
       setWedding({ ...wedding, content: updatedContent })
       setOriginalImages(newImages)
       setOriginalCoverImage(newCoverImage)
+      setOriginalQrImage(newQrImage)
       setOriginalMusicId(wedding.music_id ?? null)
       setIsDirty(false)
 
@@ -536,7 +553,7 @@ const Editor = () => {
                 }`}
               >
                 <div className='flex items-center justify-center gap-1 md:gap-2'>
-                  <CreditCard size={18} /> <span className='hidden sm:inline'>Tiền mừng</span>
+                  <QrCode size={18} /> <span className='hidden sm:inline'>Tiền mừng</span>
                 </div>
               </button>
               <button
@@ -629,7 +646,14 @@ const Editor = () => {
                   />
                 </div>
                 <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
-                  <TabBank content={adminSelectedWedding.content} onChange={handleAdminContentChange} />
+                  <TabQR
+                    qrImage={adminSelectedWedding.content?.qr_image ?? null}
+                    onQrImageChange={(qr) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, qr_image: qr } } : prev
+                      )
+                    }
+                  />
                 </div>
                 <div className={activeTab === 'style' ? 'block' : 'hidden'}>
                   <TabStyle
@@ -903,7 +927,10 @@ const Editor = () => {
                   />
                 </div>
                 <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
-                  <TabBank content={wedding?.content} onChange={handleInfoChange} />
+                  <TabQR
+                    qrImage={wedding?.content?.qr_image ?? null}
+                    onQrImageChange={handleQrImageChange}
+                  />
                 </div>
                 <div className={activeTab === 'style' ? 'block' : 'hidden'}>
                   <TabStyle content={wedding?.content} onChange={handleInfoChange} onBatchChange={handleBatchChange} />
