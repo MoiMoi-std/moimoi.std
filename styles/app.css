@@ -698,10 +698,6 @@ video {
   top: 20%;
 }
 
-.right-3 {
-  right: 0.75rem;
-}
-
 .top-8 {
   top: 2rem;
 }
@@ -961,6 +957,10 @@ video {
 
 .aspect-\[4\/3\] {
   aspect-ratio: 4/3;
+}
+
+.aspect-square {
+  aspect-ratio: 1 / 1;
 }
 
 .h-0 {
