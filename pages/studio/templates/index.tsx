@@ -1,4 +1,5 @@
 import Pagination from '@/components/common/Pagination'
+import LazyIframePreview from '@/components/studio/LazyIframePreview'
 import StudioLayout from '@/components/studio/StudioLayout'
 import StudioLoading from '@/components/studio/StudioLoading'
 import { useToast } from '@/components/ui/ToastProvider'
@@ -141,8 +142,10 @@ export default function TemplatesPage() {
     return map
   }, [templates])
 
-  // The effective plan name — may differ from the stale FK join after a purchase
-  const effectivePackageName = effectivePlanId ? (allPackagesMap[effectivePlanId] ?? userPackageName) : userPackageName
+  // The effective plan name — only set when user has actually paid (contentPlanId exists).
+  // We intentionally do NOT fall back to userPackageName because wedding.package FK is
+  // assigned at account creation (default free/student package) and does NOT indicate payment.
+  const effectivePackageName = contentPlanId ? (allPackagesMap[parseInt(contentPlanId)] ?? userPackageName) : null
 
   // Unique plan names from packages table, sorted high → low for the dropdown.
   // Falls back to packages derived from templates if API hasn't loaded yet.
@@ -326,16 +329,17 @@ export default function TemplatesPage() {
               key={template.id}
               className='bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow'
             >
-              <div className='aspect-[4/3] bg-gray-100'>
-                {template.thumbnail_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={template.thumbnail_url} alt={template.name} className='w-full h-full object-cover' />
-                ) : (
-                  <div className='h-full w-full flex items-center justify-center text-gray-400 text-sm'>
-                    Chưa có ảnh mẫu
-                  </div>
-                )}
-              </div>
+              {/* Live iframe thumbnail — lazy loaded */}
+              {(template as any).repo_branch ? (
+                <LazyIframePreview
+                  src={`/studio/templates/preview/${encodeURIComponent((template as any).repo_branch)}`}
+                  title={`Preview ${template.name}`}
+                />
+              ) : (
+                <div className='aspect-[4/3] bg-gray-100 rounded-t-3xl flex items-center justify-center text-gray-400 text-sm'>
+                  Chưa có mẫu xem trước
+                </div>
+              )}
               <div className='p-5 space-y-3'>
                 <div className='flex items-center justify-between'>
                   <h3 className='font-bold text-gray-900'>{template.name}</h3>

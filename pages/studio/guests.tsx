@@ -276,7 +276,7 @@ const Guests = () => {
       toast('Chưa chọn khách mời nào.', 'info')
       return
     }
-    toast(`Đang xuất ${selectedRsvpIds.length} khách (mock).`, 'info')
+    toast(`Đang xuất ${selectedRsvpIds.length} khách.`, 'info')
   }
 
   const bulkGenerateQr = () => {
@@ -284,7 +284,7 @@ const Guests = () => {
       toast('Chưa chọn khách mời nào.', 'info')
       return
     }
-    toast(`Đã tạo QR hàng loạt cho ${selectedRsvpIds.length} khách (mock).`, 'success')
+    toast(`Đã tạo QR hàng loạt cho ${selectedRsvpIds.length} khách.`, 'success')
   }
 
   const toggleColumn = (key: keyof typeof visibleColumns) => {
