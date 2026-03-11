@@ -1,114 +1,152 @@
-# Todo example using Supabase
+# 💌 MoiMoi — Nền tảng Thiệp Cưới Điện Tử
 
-- Frontend:
-  - [Next.js](https://github.com/vercel/next.js) - a React framework for production.
-  - [Tailwind](https://tailwindcss.com/) for styling and layout.
-  - [Supabase.js](https://supabase.com/docs/library/getting-started) for user management and realtime data syncing.
-- Backend:
-  - [supabase.com/dashboard](https://supabase.com/dashboard/): hosted Postgres database with restful API for usage with Supabase.js.
+**MoiMoi** là ứng dụng web giúp các cặp đôi tạo và chia sẻ thiệp cưới điện tử đẹp, hiện đại — chỉ trong vài phút. Hỗ trợ QR tiền mừng, RSVP, album ảnh, nhạc nền và nhiều tính năng khác.
 
-## Deploy with Vercel
-
-The Vercel deployment will guide you through creating a Supabase account and project. After installation of the Supabase integration, all relevant environment variables will be set up so that the project is usable immediately after deployment 🚀
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fsupabase%2Fsupabase%2Ftree%2Fmaster%2Fexamples%2Ftodo-list%2Fnextjs-todo-list&project-name=supabase-nextjs-todo-list&repository-name=supabase-nextjs-todo-list&integration-ids=oac_VqOgBHqhEoFTPzGkPd7L0iH6&external-id=https%3A%2F%2Fgithub.com%2Fsupabase%2Fsupabase%2Ftree%2Fmaster%2Fexamples%2Ftodo-list%2Fnextjs-todo-list)
-
-### 1. Create new project
-
-Sign up to Supabase - [https://supabase.com/dashboard](https://supabase.com/dashboard) and create a new project. Wait for your database to start.
-
-### 2. Run "Todo List" Quickstart
-
-Once your database has started, run the "Todo List" quickstart. Inside of your project, enter the `SQL editor` tab and scroll down until you see `TODO LIST: Build a basic todo list with Row Level Security`.
-
-### 3. Get the URL and Key
-
-Go to the Project Settings (the cog icon), open the API tab, and find your API URL and `anon` key, you'll need these in the next step.
-
-The `anon` key is your client-side API key. It allows "anonymous access" to your database, until the user has logged in. Once they have logged in, the keys will switch to the user's own login token. This enables row level security for your data. Read more about this [below](#postgres-row-level-security).
-
-![image](https://user-images.githubusercontent.com/10214025/88916245-528c2680-d298-11ea-8a71-708f93e1ce4f.png)
-
-**_NOTE_**: The `service_role` key has full access to your data, bypassing any security policies. These keys have to be kept secret and are meant to be used in server environments and never on a client or browser.
-
-## Supabase details
-
-### Using a Remote Supabase Project
-
-1. Create or select a project on [Supabase Dashboard](https://supabase.com/dashboard).
-2. Copy and fill the dotenv template `cp .env.production.example .env.production`
-3. Link the local project and merge the local configuration with the remote one:
-
-```bash
-SUPABASE_ENV=production npx supabase@latest link --project-ref <your-project-ref>
-```
-
-3. Sync the configuration:
-
-```bash
-SUPABASE_ENV=production npx supabase@latest config push
-```
-
-4. Sync the database schema:
-
-```bash
-SUPABASE_ENV=production npx supabase@latest db push
-```
-
-## Vercel Preview with Branching
-
-Supabase integrates seamlessly with Vercel's preview branches, giving each branch a dedicated Supabase project. This setup allows testing database migrations or service configurations safely before applying them to production.
-
-### Steps
-
-1. Ensure the Vercel project is linked to a Git repository.
-2. Configure the "Preview" environment variables in Vercel:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-
-3. Create a new branch, make changes (e.g., update `max_frequency`), and push the branch to Git.
-   - Open a pull request to trigger Vercel + Supabase integration.
-   - Upon successful deployment, the preview environment reflects the changes.
-
-![Preview Checks](https://github.com/user-attachments/assets/db688cc2-60fd-4463-bbed-e8ecc11b1a39)
+🌐 **Live:** [moimoi.io.vn](https://www.moimoi.io.vn)
 
 ---
 
-### Postgres Row level security
+## ✨ Tính năng nổi bật
 
-This project uses very high-level Authorization using Postgres' Row Level Security.
-When you start a Postgres database on Supabase, we populate it with an `auth` schema, and some helper functions.
-When a user logs in, they are issued a JWT with the role `authenticated` and their UUID.
-We can use these details to provide fine-grained control over what each user can and cannot do.
+- 🎨 **Chọn mẫu thiệp** — Thư viện nhiều mẫu thiệp đẹp, phong cách khác nhau
+- ✏️ **Studio chỉnh sửa** — Tùy chỉnh thông tin, album ảnh, màu sắc, nhạc nền
+- 📷 **Album ảnh cưới** — Upload & quản lý ảnh với chỉnh vị trí focal point + zoom
+- 💸 **QR Tiền mừng** — Upload ảnh mã QR chuyển khoản trực tiếp vào thiệp
+- 🎵 **Nhạc nền** — Chọn nhạc phát tự động khi khách mở thiệp
+- 📋 **Quản lý khách mời (RSVP)** — Thu thập phản hồi xác nhận tham dự
+- 🗺️ **Bản đồ chỉ đường** — Nhúng Google Maps vào thiệp
+- 🔒 **Bảo mật** — Xác thực Supabase, Row Level Security, thiệp riêng tư/công khai
+- ☁️ **Lưu trữ ảnh Cloudinary** — Upload và tối ưu ảnh tự động
+- 📦 **Gói dịch vụ** — Hệ thống gói & thanh toán tích hợp VNPay
 
-This is a trimmed-down schema, with the policies:
+---
 
-```sql
-create table todos (
-  id bigint generated by default as identity primary key,
-  user_id uuid references auth.users not null,
-  task text check (char_length(task) > 3),
-  is_complete boolean default false,
-  inserted_at timestamp with time zone default timezone('utc'::text, now()) not null
-);
+## 🛠 Tech Stack
 
-alter table todos enable row level security;
+| Lớp | Công nghệ |
+|-----|-----------|
+| Framework | [Next.js 13](https://nextjs.org/) (Pages Router) |
+| Ngôn ngữ | TypeScript |
+| Styling | Tailwind CSS |
+| Database & Auth | [Supabase](https://supabase.com/) (PostgreSQL + Row Level Security) |
+| Lưu trữ ảnh | [Cloudinary](https://cloudinary.com/) |
+| Thanh toán | [VNPay](https://vnpay.vn/) |
+| Animation | [Framer Motion](https://www.framer.com/motion/) |
+| Icons | [Lucide React](https://lucide.dev/) |
+| QR Code | [qrcode](https://github.com/soldair/node-qrcode) |
+| Deploy | [Vercel](https://vercel.com/) |
 
-create policy "Individuals can create todos." on todos for
-    insert with check ((select auth.uid()) = user_id);
+---
 
-create policy "Individuals can view their own todos. " on todos for
-    select using ((select auth.uid()) = user_id);
+## 🚀 Cài đặt & Chạy local
 
-create policy "Individuals can update their own todos." on todos for
-    update using ((select auth.uid()) = user_id);
+### Yêu cầu
 
-create policy "Individuals can delete their own todos." on todos for
-    delete using ((select auth.uid()) = user_id);
+- Node.js >= 18
+- npm hoặc yarn
+- Tài khoản Supabase
+- Tài khoản Cloudinary
+
+### 1. Clone & cài dependencies
+
+```bash
+git clone <repo-url>
+cd moimoi_std
+npm install
 ```
 
-## Authors
+### 2. Cấu hình biến môi trường
 
-- [Supabase](https://supabase.com)
+Tạo file `.env` từ mẫu:
 
-Supabase is open source. We'd love for you to follow along and get involved at https://github.com/supabase/supabase
+```bash
+cp .env.example .env
+```
+
+Điền các giá trị sau vào `.env`:
+
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+
+# Site
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# VNPay (tuỳ chọn)
+VNPAY_TMN_CODE=your_tmn_code
+VNPAY_HASH_SECRET=your_hash_secret
+```
+
+### 3. Khởi chạy
+
+```bash
+npm run dev
+```
+
+Mở [http://localhost:3000](http://localhost:3000) để xem kết quả.
+
+---
+
+## 📁 Cấu trúc thư mục
+
+```
+moimoi_std/
+├── components/
+│   ├── studio/          # Các tab chỉnh sửa (TabAlbum, TabQR, TabInfo, TabStyle...)
+│   ├── landing/         # Trang chủ (Hero, Features, Pricing, TemplateGallery...)
+│   ├── guest/           # Giao diện khách mời xem thiệp
+│   └── ui/              # UI components dùng chung (Toast, Modal...)
+├── pages/
+│   ├── [slug]/          # Trang thiệp công khai
+│   ├── studio/          # Dashboard, editor, guests, upgrade...
+│   ├── api/             # API routes (upload, templates, RSVP, payment...)
+│   └── index.tsx        # Landing page
+├── lib/                 # Utilities (Supabase client, image processor, data service...)
+├── templates/           # Template themes
+├── styles/              # Tailwind CSS
+└── types/               # TypeScript types
+```
+
+---
+
+## 📜 Scripts
+
+| Lệnh | Mô tả |
+|------|-------|
+| `npm run dev` | Chạy dev server (Next.js + Tailwind watch) |
+| `npm run build` | Build production + generate sitemap |
+| `npm run start` | Chạy production server |
+| `npm run lint` | Kiểm tra linting |
+| `npm run format` | Format code với Prettier |
+
+---
+
+## 🗄 Database (Supabase)
+
+Dự án sử dụng PostgreSQL qua Supabase với **Row Level Security** để bảo vệ dữ liệu. Mỗi người dùng chỉ có thể xem và chỉnh sửa thiệp của chính mình.
+
+Các bảng chính: `weddings`, `rsvps`, `templates`, `packages`, `orders`, `musics`
+
+Xem schema chi tiết tại: [`sql_schema.md`](./sql_schema.md)
+
+---
+
+## ☁️ Deploy lên Vercel
+
+1. Push code lên GitHub
+2. Import repo vào [Vercel](https://vercel.com/)
+3. Cấu hình **Environment Variables** (tương tự file `.env` ở trên)
+4. Deploy 🚀
+
+---
+
+## 👨‍💻 Tác giả
+
+Được xây dựng với ❤️ — [moimoi.io.vn](https://www.moimoi.io.vn)
