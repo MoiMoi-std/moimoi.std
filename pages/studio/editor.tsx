@@ -26,9 +26,11 @@ import { dataService } from '../../lib/data-service'
 import { processImages, processSingleImage } from '../../lib/image-processor'
 import type { ImagePosition } from '../../lib/imageUtils'
 import { useWedding } from '../../lib/useWedding'
+import { useAdmin } from '../../lib/useAdmin'
 
 const Editor = () => {
   const { wedding, setWedding, loading } = useWedding()
+  const { isAdmin } = useAdmin()
   const [activeTab, setActiveTab] = useState<'info' | 'album' | 'bank' | 'style' | 'music' | 'admin'>('info')
   const [saving, setSaving] = useState(false)
   const [publishing, setPublishing] = useState(false)
@@ -459,22 +461,24 @@ const Editor = () => {
           <p className='text-gray-500 mt-1'>Tùy chỉnh nội dung thiệp mời của bạn</p>
         </div>
         <div className='flex flex-wrap items-center gap-4'>
-          <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
-            <span>Chế độ quản trị</span>
-            <button
-              type='button'
-              onClick={() => setIsAdminMode((prev) => !prev)}
-              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
-                isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
-                  isAdminMode ? 'translate-x-7' : 'translate-x-1'
+          {isAdmin && (
+            <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
+              <span>Chế độ quản trị</span>
+              <button
+                type='button'
+                onClick={() => setIsAdminMode((prev) => !prev)}
+                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
+                  isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
                 }`}
-              />
-            </button>
-          </label>
+              >
+                <span
+                  className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
+                    isAdminMode ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </label>
+          )}
           <button
             onClick={handleTogglePublish}
             disabled={saving || publishing}

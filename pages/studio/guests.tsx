@@ -22,6 +22,7 @@ import StudioLoading from '../../components/studio/StudioLoading'
 import { useToast } from '../../components/ui/ToastProvider'
 import { RSVP, dataService } from '../../lib/data-service'
 import { useWedding } from '../../lib/useWedding'
+import { useAdmin } from '../../lib/useAdmin'
 
 interface LinkFormData {
   name: string
@@ -31,6 +32,7 @@ interface LinkFormData {
 const getBaseUrl = () => (typeof window !== 'undefined' ? window.location.origin : 'https://www.moimoi.io.vn')
 
 const Guests = () => {
+  const { isAdmin } = useAdmin()
   const [rsvps, setRsvps] = useState<RSVP[]>([])
   const [filteredRsvps, setFilteredRsvps] = useState<RSVP[]>([])
   const { wedding, loading: weddingLoading } = useWedding()
@@ -368,22 +370,24 @@ const Guests = () => {
           >
             <Download size={18} className='mr-2' /> Xuất Danh Sách
           </button>
-          <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
-            <span>Chế độ quản trị</span>
-            <button
-              type='button'
-              onClick={() => setIsAdminMode((prev) => !prev)}
-              className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
-                isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
-              }`}
-            >
-              <span
-                className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
-                  isAdminMode ? 'translate-x-7' : 'translate-x-1'
+          {isAdmin && (
+            <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
+              <span>Chế độ quản trị</span>
+              <button
+                type='button'
+                onClick={() => setIsAdminMode((prev) => !prev)}
+                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
+                  isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
                 }`}
-              />
-            </button>
-          </label>
+              >
+                <span
+                  className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
+                    isAdminMode ? 'translate-x-7' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </label>
+          )}
         </div>
       </div>
 

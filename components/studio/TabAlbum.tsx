@@ -525,7 +525,6 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
       <div>
         <h3 className='text-lg font-medium text-gray-900 border-b pb-2 mb-4'>Ảnh Đại Diện</h3>
         <div className='flex flex-wrap items-start gap-8'>
-          
           {/* Cover Image */}
           <div className='flex flex-col items-center gap-3'>
             {currentCoverImage ? (
@@ -570,7 +569,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
                 Đổi ảnh bìa
               </button>
             )}
-            {(groomName || brideName) ? (
+            {groomName || brideName ? (
               <p className='text-sm font-medium text-gray-700 text-center w-40 truncate'>
                 {[groomName, brideName].filter(Boolean).join(' & ')}
               </p>
@@ -616,9 +615,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
                 Đổi ảnh
               </button>
             )}
-            <p className='text-sm font-medium text-gray-700 text-center w-40 truncate'>
-              {groomName || 'Chú rể'}
-            </p>
+            <p className='text-sm font-medium text-gray-700 text-center w-40 truncate'>{groomName || 'Chú rể'}</p>
           </div>
 
           {/* Bride Image */}
@@ -658,11 +655,8 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
                 Đổi ảnh
               </button>
             )}
-            <p className='text-sm font-medium text-gray-700 text-center w-40 truncate'>
-              {brideName || 'Cô dâu'}
-            </p>
+            <p className='text-sm font-medium text-gray-700 text-center w-40 truncate'>{brideName || 'Cô dâu'}</p>
           </div>
-
         </div>
       </div>
 

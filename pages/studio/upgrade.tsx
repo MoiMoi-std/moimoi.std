@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/ToastProvider'
 import { dataService } from '@/lib/data-service'
 import { Plan, formatVnd, isDiscountActive, isPlanExpired } from '@/lib/plan-store'
 import { useWedding } from '@/lib/useWedding'
+import { useAdmin } from '@/lib/useAdmin'
 import { AlertTriangle, Check, Clock, CreditCard, Edit, Plus, Sparkles, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
@@ -91,6 +92,7 @@ const deletePackageAPI = async (id: number): Promise<boolean> => {
 export default function UpgradePage() {
   const router = useRouter()
   const { wedding, setWedding, loading } = useWedding()
+  const { isAdmin } = useAdmin()
   const [paying, setPaying] = useState(false)
   const [plans, setPlans] = useState<Plan[]>([])
   const [plansLoading, setPlansLoading] = useState(true)
@@ -243,22 +245,24 @@ export default function UpgradePage() {
                 Tạo gói mới
               </button>
             )}
-            <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
-              <span>Chế độ quản trị</span>
-              <button
-                type='button'
-                onClick={() => setIsAdminMode((prev) => !prev)}
-                className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
-                  isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
-                }`}
-              >
-                <span
-                  className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
-                    isAdminMode ? 'translate-x-7' : 'translate-x-1'
+            {isAdmin && (
+              <label className='flex items-center gap-3 text-sm font-semibold text-gray-600'>
+                <span>Chế độ quản trị</span>
+                <button
+                  type='button'
+                  onClick={() => setIsAdminMode((prev) => !prev)}
+                  className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
+                    isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
                   }`}
-                />
-              </button>
-            </label>
+                >
+                  <span
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
+                      isAdminMode ? 'translate-x-7' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </label>
+            )}
           </div>
         </div>
 
