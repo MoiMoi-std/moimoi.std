@@ -2,6 +2,8 @@ import Head from 'next/head'
 import { useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
 import MusicPlayer from '@/components/MusicPlayer'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
 // Mock data album ảnh cưới
 const mockAlbum = [
@@ -16,6 +18,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showSplash, setShowSplash] = useState(!disableSplash)
   const [splashFading, setSplashFading] = useState(false)
+  const viewport = useTemplateViewport()
 
   const handleOpenInvitation = () => {
     setSplashFading(true)
@@ -71,7 +74,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
   const eventDate = mergedContent.event_date || '01/02/2026'
   const lunarDate = mergedContent.lunar_date || '14/12 Ất Tỵ'
   const address = mergedContent.address || 'Queen Plaza Kỳ Hòa, 16A Lê Hồng Phong, Phường 12, Quận 10, TP. Hồ Chí Minh'
-  const albumImages = mergedContent.album_images?.length > 0 ? mergedContent.album_images : mockAlbum
+  const albumImages = mergedContent.images?.length > 0 ? mergedContent.images : mockAlbum
 
   // Xử lý xuống dòng cho phụ huynh
   const formatParents = (text: string) => {
@@ -391,7 +394,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                     marginBottom: 2
                   }}
                 >
-                  Trưởng Nam
+                  {mergedContent.groom_role || ''}
                 </p>
                 <h3
                   style={{
@@ -454,7 +457,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                     marginBottom: 2
                   }}
                 >
-                  Út Nữ
+                  {mergedContent.bride_role || ''}
                 </p>
                 <h3
                   style={{
@@ -609,7 +612,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 marginBottom: 20
               }}
             >
-              Trưởng Nam
+              {mergedContent.groom_role || ''}
             </p>
 
             {/* & symbol */}
@@ -648,7 +651,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 marginBottom: 32
               }}
             >
-              Út Nữ
+              {mergedContent.bride_role || ''}
             </p>
 
             {/* Lễ thành hôn tại + thời gian */}
@@ -777,7 +780,11 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                     <img
                       src={img}
                       alt={`Album ${i + 1}`}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                      }}
                     />
                     {isLast && extraCount > 0 && (
                       <div

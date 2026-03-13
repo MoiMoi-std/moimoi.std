@@ -1,6 +1,8 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
 export default function MidnightGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -17,6 +19,7 @@ export default function MidnightGeneralView({ wedding }: TemplateProps) {
       delay: (i * 0.3) % 4
     }))
   )
+  const viewport = useTemplateViewport()
 
   const { content, template } = wedding || {}
   const templateData = template as any
@@ -110,7 +113,10 @@ export default function MidnightGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                backgroundPosition: (() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return adj ? `${adj.x}% ${adj.y}%` : 'center'
+                })(),
                 filter: 'brightness(0.3) saturate(0.5) hue-rotate(200deg)'
               }}
             />
@@ -435,8 +441,8 @@ export default function MidnightGeneralView({ wedding }: TemplateProps) {
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
-                        filter: 'brightness(0.9) saturate(0.85) contrast(1.05)'
+                        filter: 'brightness(0.9) saturate(0.85) contrast(1.05)',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
                       }}
                     />
                   </div>

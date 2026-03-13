@@ -628,6 +628,18 @@ const Editor = () => {
                         prev ? { ...prev, content: { ...prev.content, cover_image: ci } } : prev
                       )
                     }
+                    groomImage={adminSelectedWedding.content?.groom_image || undefined}
+                    onGroomImageChange={(gi) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, groom_image: gi || undefined } } : prev
+                      )
+                    }
+                    brideImage={adminSelectedWedding.content?.bride_image || undefined}
+                    onBrideImageChange={(bi) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, bride_image: bi || undefined } } : prev
+                      )
+                    }
                     groomName={adminSelectedWedding.content?.groom_name || ''}
                     brideName={adminSelectedWedding.content?.bride_name || ''}
                     imagePositions={adminSelectedWedding.content?.image_positions || []}
@@ -917,6 +929,18 @@ const Editor = () => {
                     onChange={handleImagesChange}
                     coverImage={wedding?.content?.cover_image || undefined}
                     onCoverImageChange={handleCoverImageChange}
+                    groomImage={wedding?.content?.groom_image || undefined}
+                    onGroomImageChange={(ci) => {
+                      if (!wedding) return
+                      setWedding({ ...wedding, content: { ...wedding.content, groom_image: ci || undefined } })
+                      setIsDirty(true)
+                    }}
+                    brideImage={wedding?.content?.bride_image || undefined}
+                    onBrideImageChange={(ci) => {
+                      if (!wedding) return
+                      setWedding({ ...wedding, content: { ...wedding.content, bride_image: ci || undefined } })
+                      setIsDirty(true)
+                    }}
                     groomName={wedding?.content?.groom_name || ''}
                     brideName={wedding?.content?.bride_name || ''}
                     imagePositions={wedding?.content?.image_positions || []}

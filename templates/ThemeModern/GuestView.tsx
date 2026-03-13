@@ -1061,7 +1061,7 @@ export default function ModernGuestView({ wedding, guestName = '', rsvpId }: Tem
                           fontFamily: 'inherit'
                         }}
                       >
-                        ✅ Có, tôi sẽ đến
+                        Có, tôi sẽ đến
                       </button>
                       <button
                         type='button'
@@ -1080,7 +1080,7 @@ export default function ModernGuestView({ wedding, guestName = '', rsvpId }: Tem
                           fontFamily: 'inherit'
                         }}
                       >
-                        ❌ Xin lỗi, tôi bận
+                        Xin lỗi, tôi bận
                       </button>
                     </div>
                   </div>

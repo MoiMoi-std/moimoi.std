@@ -17,8 +17,17 @@ export type Template = Database['public']['Tables']['templates']['Row']
 
 export interface WeddingContent {
   groom_name?: string
+  groom_role?: string
   bride_name?: string
+  bride_role?: string
+  groom_image?: string
+  bride_image?: string
+  groom_address?: string
+  bride_address?: string
+  event_date?: string
+  party_time?: string
   wedding_date?: string
+  lunar_date?: string
   wedding_time?: string
   address?: string
   map_url?: string

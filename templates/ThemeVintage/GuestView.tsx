@@ -496,7 +496,7 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                     marginBottom: 2
                   }}
                 >
-                  Trưởng Nam
+                  {mergedContent.groom_role || ''}
                 </p>
                 <h3
                   style={{
@@ -556,7 +556,7 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                     marginBottom: 2
                   }}
                 >
-                  Út Nữ
+                  {mergedContent.bride_role || ''}
                 </p>
                 <h3
                   style={{
@@ -704,7 +704,7 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                 marginBottom: 20
               }}
             >
-              Trưởng Nam
+              {mergedContent.groom_role || ''}
             </p>
 
             <p
@@ -741,7 +741,7 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                 marginBottom: 32
               }}
             >
-              Út Nữ
+              {mergedContent.bride_role || ''}
             </p>
 
             <p

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Wedding } from '../../lib/data-service'
+import { Solar, Lunar } from 'lunar-javascript'
 
 interface TabInfoProps {
   content?: Wedding['content']
@@ -9,9 +10,18 @@ interface TabInfoProps {
 const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
   const [formData, setFormData] = useState({
     groom_name: content?.groom_name || '',
+    groom_role: content?.groom_role || '',
+    groom_image: content?.groom_image || '',
+    groom_address: content?.groom_address || '',
     bride_name: content?.bride_name || '',
+    bride_role: content?.bride_role || '',
+    bride_image: content?.bride_image || '',
+    bride_address: content?.bride_address || '',
     wedding_date: content?.wedding_date || '',
+    lunar_date: content?.lunar_date || '',
     wedding_time: content?.wedding_time || '',
+    event_date: content?.event_date || '',
+    party_time: content?.party_time || '',
     address: content?.address || '',
     map_url: content?.map_url || '',
     groom_father_name: content?.groom_father_name || '',
@@ -25,9 +35,18 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
   useEffect(() => {
     setFormData({
       groom_name: content?.groom_name || '',
+      groom_role: content?.groom_role || '',
+      groom_image: content?.groom_image || '',
+      groom_address: content?.groom_address || '',
       bride_name: content?.bride_name || '',
+      bride_role: content?.bride_role || '',
+      bride_image: content?.bride_image || '',
+      bride_address: content?.bride_address || '',
       wedding_date: content?.wedding_date || '',
+      lunar_date: content?.lunar_date || '',
       wedding_time: content?.wedding_time || '',
+      event_date: content?.event_date || '',
+      party_time: content?.party_time || '',
       address: content?.address || '',
       map_url: content?.map_url || '',
       groom_father_name: content?.groom_father_name || '',
@@ -41,6 +60,37 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+
+    if (name === 'wedding_date') {
+      try {
+        const [year, month, day] = value.split('-').map(Number)
+        if (year && month && day) {
+          const solar = Solar.fromYmd(year, month, day)
+          const lunar = solar.getLunar()
+          const lunarStr = `${lunar.getYear()}-${String(lunar.getMonth()).padStart(2, '0')}-${String(lunar.getDay()).padStart(2, '0')}`
+
+          setFormData((prev) => ({ ...prev, wedding_date: value, lunar_date: lunarStr }))
+          onChange('wedding_date', value)
+          onChange('lunar_date', lunarStr)
+          return
+        }
+      } catch (err) {}
+    } else if (name === 'lunar_date') {
+      try {
+        const [year, month, day] = value.split('-').map(Number)
+        if (year && month && day) {
+          const lunar = Lunar.fromYmd(year, month, day)
+          const solar = lunar.getSolar()
+          const solarStr = `${solar.getYear()}-${String(solar.getMonth()).padStart(2, '0')}-${String(solar.getDay()).padStart(2, '0')}`
+
+          setFormData((prev) => ({ ...prev, lunar_date: value, wedding_date: solarStr }))
+          onChange('lunar_date', value)
+          onChange('wedding_date', solarStr)
+          return
+        }
+      } catch (err) {}
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }))
     onChange(name, value)
   }
@@ -50,27 +100,73 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
       <h3 className='text-lg font-medium text-gray-900 border-b pb-2'>Thông Tin Chính</h3>
 
       <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-        <div>
-          <label className='block text-sm font-medium text-gray-700 mb-1'>Tên Chú Rể</label>
-          <input
-            type='text'
-            name='groom_name'
-            value={formData.groom_name}
-            onChange={handleChange}
-            className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
-            placeholder='Nguyễn Văn A'
-          />
+        <div className='space-y-4'>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>Tên & Vai trò (Chú Rể)</label>
+            <div className='flex gap-2'>
+              <input
+                type='text'
+                name='groom_name'
+                value={formData.groom_name}
+                onChange={handleChange}
+                className='w-2/3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+                placeholder='Nguyễn Văn A'
+              />
+              <input
+                type='text'
+                name='groom_role'
+                value={formData.groom_role}
+                onChange={handleChange}
+                className='w-1/3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+                placeholder='Trưởng nam'
+              />
+            </div>
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>Địa chỉ (Chú Rể)</label>
+            <input
+              type='text'
+              name='groom_address'
+              value={formData.groom_address}
+              onChange={handleChange}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+              placeholder='Số 1, Đường 2...'
+            />
+          </div>
         </div>
-        <div>
-          <label className='block text-sm font-medium text-gray-700 mb-1'>Tên Cô Dâu</label>
-          <input
-            type='text'
-            name='bride_name'
-            value={formData.bride_name}
-            onChange={handleChange}
-            className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
-            placeholder='Lê Thị B'
-          />
+        <div className='space-y-4'>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>Tên & Vai trò (Cô Dâu)</label>
+            <div className='flex gap-2'>
+              <input
+                type='text'
+                name='bride_name'
+                value={formData.bride_name}
+                onChange={handleChange}
+                className='w-2/3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+                placeholder='Lê Thị B'
+              />
+              <input
+                type='text'
+                name='bride_role'
+                value={formData.bride_role}
+                onChange={handleChange}
+                className='w-1/3 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+                placeholder='Trưởng nữ'
+              />
+            </div>
+          </div>
+          <div>
+            <label className='block text-sm font-medium text-gray-700 mb-1'>Địa chỉ (Cô Dâu)</label>
+            <input
+              type='text'
+              name='bride_address'
+              value={formData.bride_address}
+              onChange={handleChange}
+              className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+              placeholder='Số 1, Đường 2...'
+            />
+          </div>
         </div>
       </div>
 
@@ -153,13 +249,33 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
         </div>
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6'>
         <div>
-          <label className='block text-sm font-medium text-gray-700 mb-1'>Ngày Cưới</label>
+          <label className='block text-sm font-medium text-gray-700 mb-1'>Ngày Cưới (Dương)</label>
           <input
             type='date'
             name='wedding_date'
             value={formData.wedding_date}
+            onChange={handleChange}
+            className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+          />
+        </div>
+        <div>
+          <label className='block text-sm font-medium text-gray-700 mb-1'>Ngày Cưới (Âm)</label>
+          <input
+            type='date'
+            name='lunar_date'
+            value={formData.lunar_date}
+            onChange={handleChange}
+            className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+          />
+        </div>
+        <div>
+          <label className='block text-sm font-medium text-gray-700 mb-1'>Ngày Đón Khách</label>
+          <input
+            type='date'
+            name='event_date'
+            value={formData.event_date}
             onChange={handleChange}
             className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
           />
@@ -170,6 +286,16 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
             type='time'
             name='wedding_time'
             value={formData.wedding_time}
+            onChange={handleChange}
+            className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
+          />
+        </div>
+        <div>
+          <label className='block text-sm font-medium text-gray-700 mb-1'>Giờ Đón Khách</label>
+          <input
+            type='time'
+            name='party_time'
+            value={formData.party_time}
             onChange={handleChange}
             className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
           />

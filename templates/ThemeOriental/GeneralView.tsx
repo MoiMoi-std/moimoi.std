@@ -1,6 +1,8 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
 export default function OrientalGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -10,6 +12,7 @@ export default function OrientalGeneralView({ wedding }: TemplateProps) {
     seconds: number
   } | null>(null)
   const [lanternPos, setLanternPos] = useState(0)
+  const viewport = useTemplateViewport()
 
   const { content, template } = wedding || {}
   const templateData = template as any
@@ -120,7 +123,10 @@ export default function OrientalGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                backgroundPosition: (() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return adj ? `${adj.x}% ${adj.y}%` : 'center'
+                })(),
                 filter: 'brightness(0.35) saturate(0.7) sepia(0.3)'
               }}
             />
@@ -577,8 +583,8 @@ export default function OrientalGeneralView({ wedding }: TemplateProps) {
                       style={{
                         width: '100%',
                         height: '100%',
-                        objectFit: 'cover',
-                        filter: 'sepia(0.15) saturate(1.05)'
+                        filter: 'sepia(0.15) saturate(1.05)',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
                       }}
                     />
                   </div>

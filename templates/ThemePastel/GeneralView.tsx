@@ -1,6 +1,8 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
 export default function PastelGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -10,6 +12,7 @@ export default function PastelGeneralView({ wedding }: TemplateProps) {
     seconds: number
   } | null>(null)
   const [tick, setTick] = useState(0)
+  const viewport = useTemplateViewport()
 
   const { content, template } = wedding || {}
   const templateData = template as any
@@ -145,7 +148,10 @@ export default function PastelGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                backgroundPosition: (() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return adj ? `${adj.x}% ${adj.y}%` : 'center'
+                })(),
                 opacity: 0.18,
                 filter: 'saturate(0.7) brightness(1.2)'
               }}
@@ -502,7 +508,8 @@ export default function PastelGeneralView({ wedding }: TemplateProps) {
                         width: '100%',
                         height: '100%',
                         objectFit: 'cover',
-                        filter: 'saturate(0.9) brightness(1.03)'
+                        filter: 'saturate(0.9) brightness(1.03)',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
                       }}
                     />
                   </div>

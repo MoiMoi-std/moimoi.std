@@ -20,6 +20,10 @@ interface TabAlbumProps {
   onChange: (images: string[]) => void
   coverImage?: string
   onCoverImageChange: (coverImage: string | null) => void
+  groomImage?: string
+  onGroomImageChange: (image: string | null) => void
+  brideImage?: string
+  onBrideImageChange: (image: string | null) => void
   groomName?: string
   brideName?: string
   imagePositions?: (ImagePosition | null)[]
@@ -242,6 +246,10 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
   onChange,
   coverImage,
   onCoverImageChange,
+  groomImage,
+  onGroomImageChange,
+  brideImage,
+  onBrideImageChange,
   groomName,
   brideName,
   imagePositions,
@@ -252,10 +260,14 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
 }) => {
   const [albumImages, setAlbumImages] = useState<string[]>(images || [])
   const [currentCoverImage, setCurrentCoverImage] = useState<string | null>(coverImage || null)
-  const [editingTarget, setEditingTarget] = useState<'cover' | number | null>(null)
+  const [currentGroomImage, setCurrentGroomImage] = useState<string | null>(groomImage || null)
+  const [currentBrideImage, setCurrentBrideImage] = useState<string | null>(brideImage || null)
+  const [editingTarget, setEditingTarget] = useState<'cover' | 'groom' | 'bride' | number | null>(null)
   const [replacingAlbumIndex, setReplacingAlbumIndex] = useState<number | null>(null)
   const albumFileInputRef = useRef<HTMLInputElement>(null)
   const coverFileInputRef = useRef<HTMLInputElement>(null)
+  const groomFileInputRef = useRef<HTMLInputElement>(null)
+  const brideFileInputRef = useRef<HTMLInputElement>(null)
   const replaceAlbumFileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -264,6 +276,12 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
   useEffect(() => {
     setCurrentCoverImage(coverImage || null)
   }, [coverImage])
+  useEffect(() => {
+    setCurrentGroomImage(groomImage || null)
+  }, [groomImage])
+  useEffect(() => {
+    setCurrentBrideImage(brideImage || null)
+  }, [brideImage])
 
   const readFileAsDataURL = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -329,6 +347,34 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
     if (coverFileInputRef.current) coverFileInputRef.current.value = ''
   }
 
+  const handleGroomFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!VALID_IMAGE_TYPES.includes(file.type)) {
+      alert('Chỉ chấp nhận file ảnh (JPG, PNG, GIF, WEBP, SVG, HEIC, AVIF).')
+      if (groomFileInputRef.current) groomFileInputRef.current.value = ''
+      return
+    }
+    const dataUrl = await readFileAsDataURL(await compressIfNeeded(file))
+    setCurrentGroomImage(dataUrl)
+    onGroomImageChange(dataUrl)
+    if (groomFileInputRef.current) groomFileInputRef.current.value = ''
+  }
+
+  const handleBrideFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    if (!VALID_IMAGE_TYPES.includes(file.type)) {
+      alert('Chỉ chấp nhận file ảnh (JPG, PNG, GIF, WEBP, SVG, HEIC, AVIF).')
+      if (brideFileInputRef.current) brideFileInputRef.current.value = ''
+      return
+    }
+    const dataUrl = await readFileAsDataURL(await compressIfNeeded(file))
+    setCurrentBrideImage(dataUrl)
+    onBrideImageChange(dataUrl)
+    if (brideFileInputRef.current) brideFileInputRef.current.value = ''
+  }
+
   const handleRemoveCover = () => {
     if (currentCoverImage && (currentCoverImage.startsWith('https://') || currentCoverImage.startsWith('http://'))) {
       fetch('/api/delete-image', {
@@ -340,6 +386,32 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
     }
     setCurrentCoverImage(null)
     onCoverImageChange(null)
+  }
+
+  const handleRemoveGroom = () => {
+    if (currentGroomImage && (currentGroomImage.startsWith('https://') || currentGroomImage.startsWith('http://'))) {
+      fetch('/api/delete-image', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: currentGroomImage })
+      }).catch((err) => console.error('Error deleting groom image from Cloudinary:', err))
+      onImageDeleted?.(currentGroomImage)
+    }
+    setCurrentGroomImage(null)
+    onGroomImageChange(null)
+  }
+
+  const handleRemoveBride = () => {
+    if (currentBrideImage && (currentBrideImage.startsWith('https://') || currentBrideImage.startsWith('http://'))) {
+      fetch('/api/delete-image', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: currentBrideImage })
+      }).catch((err) => console.error('Error deleting bride image from Cloudinary:', err))
+      onImageDeleted?.(currentBrideImage)
+    }
+    setCurrentBrideImage(null)
+    onBrideImageChange(null)
   }
 
   const handleReplaceAlbumFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -433,71 +505,164 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
     setEditingTarget(null)
   }
 
-  const getPositionForTarget = (target: 'cover' | number): ImagePosition => {
+  const getPositionForTarget = (target: 'cover' | 'groom' | 'bride' | number): ImagePosition => {
     if (target === 'cover') return coverImagePosition || {}
+    if (target === 'groom' || target === 'bride') return {}
     return imagePositions?.[target as number] || {}
   }
 
   const getEditingImageUrl = (): string => {
     if (editingTarget === 'cover') return currentCoverImage || ''
+    if (editingTarget === 'groom') return currentGroomImage || ''
+    if (editingTarget === 'bride') return currentBrideImage || ''
     if (typeof editingTarget === 'number') return albumImages[editingTarget] || ''
     return ''
   }
 
   return (
     <div className='bg-white p-6 rounded-lg shadow-sm space-y-8'>
-      {/* Cover Image Section */}
+      {/* Single Images Section */}
       <div>
-        <h3 className='text-lg font-medium text-gray-900 border-b pb-2 mb-4'>Ảnh Bìa</h3>
-        <div className='flex flex-col items-start gap-3'>
-          {currentCoverImage ? (
-            <div className='relative group w-48 aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden shadow-md'>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={currentCoverImage} alt='Ảnh bìa' className='object-cover w-full h-full' />
-              <div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center gap-2'>
-                <button
-                  onClick={() => setEditingTarget('cover')}
-                  className='opacity-0 group-hover:opacity-100 bg-white text-gray-800 p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
-                  title='Chỉnh vị trí ảnh'
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  onClick={handleRemoveCover}
-                  className='opacity-0 group-hover:opacity-100 bg-red-600 text-white p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
-                  title='Xóa ảnh bìa'
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div
-              onClick={() => coverFileInputRef.current?.click()}
-              className='w-48 aspect-[3/4] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-colors'
-            >
-              <div className='text-center p-4'>
-                <div className='flex justify-center mb-2'>
-                  <ImagePlus size={32} className='text-gray-400' />
+        <h3 className='text-lg font-medium text-gray-900 border-b pb-2 mb-4'>Ảnh Đại Diện</h3>
+        <div className='flex flex-wrap items-start gap-8'>
+          
+          {/* Cover Image */}
+          <div className='flex flex-col items-center gap-3'>
+            {currentCoverImage ? (
+              <div className='relative group w-40 aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden shadow-md'>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={currentCoverImage} alt='Ảnh bìa' className='object-cover w-full h-full' />
+                <div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center gap-2'>
+                  <button
+                    onClick={() => setEditingTarget('cover')}
+                    className='opacity-0 group-hover:opacity-100 bg-white text-gray-800 p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
+                    title='Chỉnh vị trí ảnh'
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    onClick={handleRemoveCover}
+                    className='opacity-0 group-hover:opacity-100 bg-red-600 text-white p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
+                    title='Xóa ảnh bìa'
+                  >
+                    <Trash2 size={14} />
+                  </button>
                 </div>
-                <span className='text-sm text-gray-500 font-medium'>Thêm Ảnh Bìa</span>
-                <p className='text-xs text-gray-400 mt-1'>Tối đa 1 ảnh</p>
               </div>
-            </div>
-          )}
-          {currentCoverImage && (
-            <button
-              onClick={() => coverFileInputRef.current?.click()}
-              className='text-xs text-pink-600 hover:underline font-medium'
-            >
-              Đổi ảnh bìa
-            </button>
-          )}
-          {(groomName || brideName) && (
-            <p className='text-sm font-medium text-gray-700 text-center w-48'>
-              {[groomName, brideName].filter(Boolean).join(' & ')}
+            ) : (
+              <div
+                onClick={() => coverFileInputRef.current?.click()}
+                className='w-40 aspect-[3/4] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-colors'
+              >
+                <div className='text-center p-3'>
+                  <div className='flex justify-center mb-2'>
+                    <ImagePlus size={28} className='text-gray-400' />
+                  </div>
+                  <span className='text-sm text-gray-500 font-medium'>Ảnh Bìa</span>
+                </div>
+              </div>
+            )}
+            {currentCoverImage && (
+              <button
+                onClick={() => coverFileInputRef.current?.click()}
+                className='text-xs text-pink-600 hover:underline font-medium'
+              >
+                Đổi ảnh bìa
+              </button>
+            )}
+            {(groomName || brideName) ? (
+              <p className='text-sm font-medium text-gray-700 text-center w-40 truncate'>
+                {[groomName, brideName].filter(Boolean).join(' & ')}
+              </p>
+            ) : (
+              <p className='text-sm font-medium text-gray-400 text-center w-40'>Ảnh Bìa</p>
+            )}
+          </div>
+
+          {/* Groom Image */}
+          <div className='flex flex-col items-center gap-3'>
+            {currentGroomImage ? (
+              <div className='relative group w-40 aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden shadow-md'>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={currentGroomImage} alt='Chú rể' className='object-cover w-full h-full' />
+                <div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center gap-2'>
+                  <button
+                    onClick={handleRemoveGroom}
+                    className='opacity-0 group-hover:opacity-100 bg-red-600 text-white p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
+                    title='Xóa ảnh chú rể'
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => groomFileInputRef.current?.click()}
+                className='w-40 aspect-[3/4] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-colors'
+              >
+                <div className='text-center p-3'>
+                  <div className='flex justify-center mb-2'>
+                    <ImagePlus size={28} className='text-gray-400' />
+                  </div>
+                  <span className='text-sm text-gray-500 font-medium'>Ảnh Chú Rể</span>
+                </div>
+              </div>
+            )}
+            {currentGroomImage && (
+              <button
+                onClick={() => groomFileInputRef.current?.click()}
+                className='text-xs text-pink-600 hover:underline font-medium'
+              >
+                Đổi ảnh
+              </button>
+            )}
+            <p className='text-sm font-medium text-gray-700 text-center w-40 truncate'>
+              {groomName || 'Chú rể'}
             </p>
-          )}
+          </div>
+
+          {/* Bride Image */}
+          <div className='flex flex-col items-center gap-3'>
+            {currentBrideImage ? (
+              <div className='relative group w-40 aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden shadow-md'>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={currentBrideImage} alt='Cô dâu' className='object-cover w-full h-full' />
+                <div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center gap-2'>
+                  <button
+                    onClick={handleRemoveBride}
+                    className='opacity-0 group-hover:opacity-100 bg-red-600 text-white p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
+                    title='Xóa ảnh cô dâu'
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                onClick={() => brideFileInputRef.current?.click()}
+                className='w-40 aspect-[3/4] border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:border-pink-500 hover:bg-pink-50 transition-colors'
+              >
+                <div className='text-center p-3'>
+                  <div className='flex justify-center mb-2'>
+                    <ImagePlus size={28} className='text-gray-400' />
+                  </div>
+                  <span className='text-sm text-gray-500 font-medium'>Ảnh Cô Dâu</span>
+                </div>
+              </div>
+            )}
+            {currentBrideImage && (
+              <button
+                onClick={() => brideFileInputRef.current?.click()}
+                className='text-xs text-pink-600 hover:underline font-medium'
+              >
+                Đổi ảnh
+              </button>
+            )}
+            <p className='text-sm font-medium text-gray-700 text-center w-40 truncate'>
+              {brideName || 'Cô dâu'}
+            </p>
+          </div>
+
         </div>
       </div>
 
@@ -550,6 +715,8 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
       </div>
 
       <input ref={coverFileInputRef} type='file' accept='image/*' onChange={handleCoverFileChange} className='hidden' />
+      <input ref={groomFileInputRef} type='file' accept='image/*' onChange={handleGroomFileChange} className='hidden' />
+      <input ref={brideFileInputRef} type='file' accept='image/*' onChange={handleBrideFileChange} className='hidden' />
       <input
         ref={albumFileInputRef}
         type='file'
@@ -577,7 +744,7 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
             editingTarget === 'cover'
               ? () => {
                   setEditingTarget(null)
-                  coverFileInputRef.current?.click()
+                  if (editingTarget === 'cover') coverFileInputRef.current?.click()
                 }
               : () => {
                   setReplacingAlbumIndex(editingTarget as number)

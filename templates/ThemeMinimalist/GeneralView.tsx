@@ -1,6 +1,8 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
 export default function MinimalistGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -9,6 +11,7 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
     minutes: number
     seconds: number
   } | null>(null)
+  const viewport = useTemplateViewport()
 
   const { content, template } = wedding || {}
   const templateData = template as any
@@ -501,10 +504,10 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
                     alt='Wedding Cover'
                     style={{
                       width: '100%',
-                      objectFit: 'cover',
                       maxHeight: 580,
                       display: 'block',
-                      filter: 'grayscale(10%)'
+                      filter: 'grayscale(10%)',
+                      ...getImageStyle(resolveImageAdjust(mergedContent.cover_image_position, viewport))
                     }}
                   />
                 </div>
@@ -528,9 +531,9 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
                         style={{
                           width: '100%',
                           height: '100%',
-                          objectFit: 'cover',
                           display: 'block',
-                          filter: 'grayscale(8%)'
+                          filter: 'grayscale(8%)',
+                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
                         }}
                       />
                     </div>

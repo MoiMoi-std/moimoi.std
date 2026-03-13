@@ -1,6 +1,8 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
 export default function OceanGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -9,6 +11,7 @@ export default function OceanGeneralView({ wedding }: TemplateProps) {
     minutes: number
     seconds: number
   } | null>(null)
+  const viewport = useTemplateViewport()
 
   const { content, template } = wedding || {}
   const templateData = template as any
@@ -96,7 +99,10 @@ export default function OceanGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                backgroundPosition: (() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return adj ? `${adj.x}% ${adj.y}%` : 'center'
+                })(),
                 filter: 'brightness(0.4) saturate(0.7) hue-rotate(10deg)'
               }}
             />
@@ -439,7 +445,15 @@ export default function OceanGeneralView({ wedding }: TemplateProps) {
                       boxShadow: '0 4px 18px rgba(10,123,150,0.12)'
                     }}
                   >
-                    <img src={img} alt='' style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img
+                      src={img}
+                      alt=''
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                      }}
+                    />
                   </div>
                 ))}
               </div>

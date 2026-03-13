@@ -1,6 +1,8 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
 export default function RoyalGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -9,6 +11,7 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
     minutes: number
     seconds: number
   } | null>(null)
+  const viewport = useTemplateViewport()
 
   const { content, template } = wedding || {}
   const templateData = template as any
@@ -105,7 +108,10 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                backgroundPosition: (() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return adj ? `${adj.x}% ${adj.y}%` : 'center'
+                })(),
                 filter: 'brightness(0.38) saturate(0.6)'
               }}
             />
@@ -199,6 +205,22 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
             >
               The Wedding of
             </p>
+            {mergedContent.groom_role && (
+              <p
+                className='ry-up ry-d1'
+                style={{
+                  fontSize: 12,
+                  letterSpacing: '0.2em',
+                  color: gold,
+                  textTransform: 'uppercase',
+                  fontFamily: "'Cinzel',serif",
+                  marginBottom: 4,
+                  opacity: 0.8
+                }}
+              >
+                {mergedContent.groom_role}
+              </p>
+            )}
             <h1
               className='ry-up ry-shimmer ry-d2'
               style={{
@@ -229,6 +251,22 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
               </svg>
               <div style={{ width: 36, height: 1, background: `linear-gradient(to left, transparent, ${gold})` }} />
             </div>
+            {mergedContent.bride_role && (
+              <p
+                className='ry-up ry-d2'
+                style={{
+                  fontSize: 12,
+                  letterSpacing: '0.2em',
+                  color: gold,
+                  textTransform: 'uppercase',
+                  fontFamily: "'Cinzel',serif",
+                  marginBottom: 4,
+                  opacity: 0.8
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
             <h1
               className='ry-up ry-shimmer ry-d3'
               style={{
@@ -487,7 +525,15 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
                       boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
                     }}
                   >
-                    <img src={img} alt='' style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img
+                      src={img}
+                      alt=''
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                      }}
+                    />
                   </div>
                 ))}
               </div>

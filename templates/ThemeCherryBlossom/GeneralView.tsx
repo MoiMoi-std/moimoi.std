@@ -1,6 +1,8 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
 export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -9,6 +11,7 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
     minutes: number
     seconds: number
   } | null>(null)
+  const viewport = useTemplateViewport()
 
   const { content, template } = wedding || {}
   const templateData = template as any
@@ -231,7 +234,10 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center top'
+                backgroundPosition: (() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return adj ? `${adj.x}% ${adj.y}%` : 'center top'
+                })()
               }}
             />
           ) : (
@@ -789,7 +795,11 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
                     <img
                       src={img}
                       alt={`Ảnh cưới ${i + 1}`}
-                      style={{ width: '100%', display: 'block', objectFit: 'cover' }}
+                      style={{
+                        width: '100%',
+                        display: 'block',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                      }}
                     />
                   </div>
                 ))}

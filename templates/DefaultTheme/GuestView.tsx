@@ -569,7 +569,7 @@ export default function DefaultGuestView({ wedding, guestName = '', rsvpId }: Te
                           fontFamily: 'inherit'
                         }}
                       >
-                        ✅ Có, tôi sẽ đến
+                        Có, tôi sẽ đến
                       </button>
                       <button
                         type='button'
@@ -588,7 +588,7 @@ export default function DefaultGuestView({ wedding, guestName = '', rsvpId }: Te
                           fontFamily: 'inherit'
                         }}
                       >
-                        ❌ Xin lỗi, tôi bận
+                        Xin lỗi, tôi bận
                       </button>
                     </div>
                   </div>

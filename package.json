@@ -31,6 +31,7 @@
     "formidable": "^3.5.4",
     "framer-motion": "^12.25.0",
     "lucide-react": "^0.562.0",
+    "lunar-javascript": "^1.7.7",
     "next": "13.1.6",
     "next-cloudinary": "^6.17.5",
     "next-sitemap": "^4.2.3",

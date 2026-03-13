@@ -1,6 +1,8 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
 export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -9,6 +11,7 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
     minutes: number
     seconds: number
   } | null>(null)
+  const viewport = useTemplateViewport()
 
   const { content, template } = wedding || {}
   const templateData = template as any
@@ -101,7 +104,10 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                backgroundPosition: (() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return adj ? `${adj.x}% ${adj.y}%` : 'center'
+                })(),
                 filter: 'brightness(0.5) saturate(0.8) sepia(0.25)'
               }}
             />
@@ -469,7 +475,12 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
                     <img
                       src={img}
                       alt=''
-                      style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'sepia(0.12) saturate(1.1)' }}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        filter: 'sepia(0.12) saturate(1.1)',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                      }}
                     />
                   </div>
                 ))}
