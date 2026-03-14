@@ -1,8 +1,15 @@
+import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { TemplateProps } from '../TemplateRegistry'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { buildMapEmbedUrl, isShortMapUrl } from '../../lib/mapUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
 export default function NatureGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -11,6 +18,10 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
     minutes: number
     seconds: number
   } | null>(null)
+  const [guestWishes, setGuestWishes] = useState<any[]>([])
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [mapEmbedUrl, setMapEmbedUrl] = useState<string>('')
   const viewport = useTemplateViewport()
 
   const { content, template } = wedding || {}
@@ -45,6 +56,35 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
     return () => clearInterval(interval)
   }, [mergedContent.wedding_date, mergedContent.wedding_time])
 
+  useEffect(() => {
+    if (!wedding?.id) return
+    supabase
+      .from('rsvps')
+      .select('name, wishes, created_at')
+      .eq('wedding_id', wedding.id)
+      .not('wishes', 'is', null)
+      .order('created_at', { ascending: false })
+      .then(({ data }) => {
+        if (data) setGuestWishes(data)
+      })
+  }, [wedding?.id])
+
+  useEffect(() => {
+    const raw = (mergedContent.map_url as string | undefined) || ''
+    const address = (mergedContent.address as string | undefined) || ''
+    if (raw && isShortMapUrl(raw)) {
+      let cancelled = false
+      fetch(`/api/resolve-map-url?url=${encodeURIComponent(raw)}`)
+        .then(r => r.json())
+        .then(({ resolved }) => {
+          if (!cancelled) setMapEmbedUrl(buildMapEmbedUrl(resolved || '', address))
+        })
+        .catch(() => { if (!cancelled) setMapEmbedUrl(buildMapEmbedUrl('', address)) })
+      return () => { cancelled = true }
+    }
+    setMapEmbedUrl(buildMapEmbedUrl(raw, address))
+  }, [mergedContent.map_url, mergedContent.address])
+
   if (!wedding) {
     return (
       <div
@@ -67,7 +107,7 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
     )
   }
 
-  const albumImages: string[] = (mergedContent.images || []).filter(Boolean)
+  const albumImages: string[] = (mergedContent.images || []).filter(Boolean).slice(0, 20)
 
   return (
     <>
@@ -301,6 +341,21 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
             >
               {mergedContent.groom_name}
             </h1>
+            {mergedContent.groom_role && (
+              <p
+                className='nat-up nat-d1'
+                style={{
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: '0.4em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255,255,255,0.6)',
+                  marginTop: 6
+                }}
+              >
+                {mergedContent.groom_role}
+              </p>
+            )}
 
             <div
               className='nat-up nat-d2'
@@ -324,11 +379,26 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
                 color: '#fff',
                 lineHeight: 1.05,
                 textShadow: '0 4px 40px rgba(0,0,0,0.35)',
-                marginBottom: 36
+                marginBottom: mergedContent.bride_role ? 6 : 36
               }}
             >
               {mergedContent.bride_name}
             </h1>
+            {mergedContent.bride_role && (
+              <p
+                className='nat-up nat-d3'
+                style={{
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: '0.4em',
+                  textTransform: 'uppercase',
+                  color: 'rgba(255,255,255,0.6)',
+                  marginBottom: 30
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
 
             {mergedContent.wedding_date && (
               <p
@@ -632,44 +702,59 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
                   </div>
                 </div>
               ))}
+              {mergedContent.lunar_date && (
+                <div
+                  className='nat-card nat-up'
+                  style={{ padding: '28px 24px', display: 'flex', alignItems: 'flex-start', gap: 18 }}
+                >
+                  <div
+                    style={{
+                      width: 52,
+                      height: 52,
+                      borderRadius: 14,
+                      background: `${sage}10`,
+                      border: `1px solid ${sage}20`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      fontSize: 22
+                    }}
+                  >
+                    ☽
+                  </div>
+                  <div>
+                    <p
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 600,
+                        color: sage,
+                        letterSpacing: '0.2em',
+                        textTransform: 'uppercase',
+                        marginBottom: 8
+                      }}
+                    >
+                      ÂM LỊCH
+                    </p>
+                    <p style={{ fontSize: 16, fontWeight: 500, color: textDark, lineHeight: 1.6 }}>
+                      {mergedContent.lunar_date}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {mergedContent.map_url && (
-              <div style={{ textAlign: 'center', marginTop: 36 }}>
-                <a
-                  href={mergedContent.map_url}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='nat-btn'
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '14px 32px',
-                    background: sage,
-                    color: '#fff',
-                    borderRadius: 50,
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    fontSize: 15,
-                    boxShadow: `0 8px 28px ${sage}45`
-                  }}
-                >
-                  <svg
-                    width='16'
-                    height='16'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeWidth='2'
-                    strokeLinecap='round'
-                  >
-                    <polygon points='1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6' />
-                    <line x1='8' y1='2' x2='8' y2='18' />
-                    <line x1='16' y1='6' x2='16' y2='22' />
-                  </svg>
-                  Xem bản đồ
-                </a>
+            {mapEmbedUrl && (
+              <div style={{ marginTop: 36, borderRadius: 16, overflow: 'hidden', boxShadow: `0 4px 20px ${sage}25`, position: 'relative' }}>
+                <iframe
+                  title='wedding-venue-map'
+                  src={mapEmbedUrl}
+                  width='100%'
+                  height='300'
+                  style={{ border: 0, display: 'block' }}
+                  loading='lazy'
+                  allowFullScreen
+                />
               </div>
             )}
           </div>
@@ -705,21 +790,56 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
                   Album cưới
                 </h2>
               </div>
-              <div style={{ columns: '2 200px', gap: 12 }}>
-                {albumImages.map((img: string, i: number) => (
-                  <div key={i} className='nat-photo' style={{ marginBottom: 12, breakInside: 'avoid' }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={img}
-                      alt={`Ảnh cưới ${i + 1}`}
-                      style={{
-                        width: '100%',
-                        display: 'block',
-                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
-                      }}
-                    />
-                  </div>
-                ))}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                {albumImages.slice(0, 4).map((img: string, i: number) => {
+                  const isLastWithExtra = i === 3 && albumImages.length > 4
+                  return (
+                    <div
+                      key={i}
+                      className='nat-photo'
+                      style={{ position: 'relative', aspectRatio: '1 / 1', cursor: 'pointer' }}
+                      onClick={() => { setLightboxIndex(i); setLightboxOpen(true) }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img}
+                        alt={`Ảnh cưới ${i + 1}`}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        }}
+                      />
+                      {isLastWithExtra && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            background: 'rgba(0,0,0,0.52)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backdropFilter: 'blur(2px)'
+                          }}
+                        >
+                          <span
+                            style={{
+                              fontFamily: "'Lora', serif",
+                              fontSize: 38,
+                              fontWeight: 600,
+                              color: '#fff',
+                              letterSpacing: '-0.02em'
+                            }}
+                          >
+                            +{albumImages.length - 4}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </section>
@@ -839,6 +959,83 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
           </section>
         )}
 
+        {/* ══ Guestbook ══ */}
+        <section style={{ padding: '90px 20px' }}>
+          <div style={{ maxWidth: 720, margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 52 }}>
+              <p
+                style={{
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: '0.5em',
+                  textTransform: 'uppercase',
+                  color: sage,
+                  marginBottom: 12
+                }}
+              >
+                LỜI CHÚC
+              </p>
+              <h2
+                style={{
+                  fontFamily: "'Lora', serif",
+                  fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
+                  fontWeight: 600,
+                  color: textDark
+                }}
+              >
+                Sổ lưu bút
+              </h2>
+            </div>
+            {guestWishes.length === 0 ? (
+              <p
+                style={{
+                  textAlign: 'center',
+                  color: textMid,
+                  fontStyle: 'italic',
+                  padding: '40px 0',
+                  fontSize: 15,
+                  fontFamily: "'Lora', serif"
+                }}
+              >
+                Chưa có lời chúc nào. Hãy là người đầu tiên gửi lời chúc!
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {guestWishes.map((item, i) => (
+                  <div
+                    key={i}
+                    className='nat-card'
+                    style={{ padding: '22px 28px' }}
+                  >
+                    <p
+                      style={{
+                        fontFamily: "'Lora', serif",
+                        fontSize: 15,
+                        fontStyle: 'italic',
+                        color: textMid,
+                        lineHeight: 1.8,
+                        marginBottom: 12
+                      }}
+                    >
+                      &ldquo;{item.wishes}&rdquo;
+                    </p>
+                    <p
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color: sage,
+                        letterSpacing: '0.08em'
+                      }}
+                    >
+                      — {item.name || 'Ẩn danh'}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
         {/* ══ Footer ══ */}
         <footer
           style={{
@@ -900,6 +1097,122 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
           </p>
         </footer>
       </div>
+
+      {/* ══ Lightbox ══ */}
+      {lightboxOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: 'rgba(0,0,0,0.93)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onClick={() => setLightboxOpen(false)}
+        >
+          {/* Close */}
+          <button
+            onClick={() => setLightboxOpen(false)}
+            style={{
+              position: 'absolute',
+              top: 20,
+              right: 20,
+              width: 44,
+              height: 44,
+              borderRadius: '50%',
+              background: 'rgba(255,255,255,0.15)',
+              border: 'none',
+              color: '#fff',
+              fontSize: 22,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1
+            }}
+          >
+            ×
+          </button>
+          {/* Counter */}
+          <p
+            style={{
+              position: 'absolute',
+              top: 26,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              color: 'rgba(255,255,255,0.55)',
+              fontSize: 13,
+              fontFamily: "'DM Sans', sans-serif",
+              letterSpacing: '0.06em',
+              margin: 0
+            }}
+          >
+            {lightboxIndex + 1} / {albumImages.length}
+          </p>
+          {/* Prev */}
+          {lightboxIndex > 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => prev - 1) }}
+              style={{
+                position: 'absolute',
+                left: 16,
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                color: '#fff',
+                fontSize: 26,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              &#8249;
+            </button>
+          )}
+          {/* Image */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={albumImages[lightboxIndex]}
+            alt={`Ảnh cưới ${lightboxIndex + 1}`}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: '90vw',
+              maxHeight: '88vh',
+              objectFit: 'contain',
+              borderRadius: 10,
+              boxShadow: '0 24px 80px rgba(0,0,0,0.6)'
+            }}
+          />
+          {/* Next */}
+          {lightboxIndex < albumImages.length - 1 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setLightboxIndex(prev => prev + 1) }}
+              style={{
+                position: 'absolute',
+                right: 16,
+                width: 48,
+                height: 48,
+                borderRadius: '50%',
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                color: '#fff',
+                fontSize: 26,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              &#8250;
+            </button>
+          )}
+        </div>
+      )}
     </>
   )
 }

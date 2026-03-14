@@ -4,6 +4,7 @@ import Head from 'next/head'
 import { useEffect, useState } from 'react'
 import { WeddingCalendar } from '../../components/WeddingCalendar'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { buildMapEmbedUrl, isShortMapUrl } from '../../lib/mapUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 import { TemplateProps } from '../TemplateRegistry'
 
@@ -30,6 +31,8 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
+  const [mapEmbedUrl, setMapEmbedUrl] = useState<string>('')
+  const [allGuests, setAllGuests] = useState<{ id: number; guest_name: string; wishes: string | null }[]>([])
 
   const { content, template } = wedding || {}
   const viewport = useTemplateViewport()
@@ -60,6 +63,22 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
     'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=600&h=400&fit=crop'
   ]
   const albumImages = mergedContent.images?.length > 0 ? mergedContent.images : mockAlbumImages
+
+  useEffect(() => {
+    const raw = (mergedContent.map_url as string | undefined) || ''
+    const address = (mergedContent.address as string | undefined) || ''
+    if (raw && isShortMapUrl(raw)) {
+      let cancelled = false
+      fetch(`/api/resolve-map-url?url=${encodeURIComponent(raw)}`)
+        .then(r => r.json())
+        .then(({ resolved }) => {
+          if (!cancelled) setMapEmbedUrl(buildMapEmbedUrl(resolved || '', address))
+        })
+        .catch(() => { if (!cancelled) setMapEmbedUrl(buildMapEmbedUrl('', address)) })
+      return () => { cancelled = true }
+    }
+    setMapEmbedUrl(buildMapEmbedUrl(raw, address))
+  }, [mergedContent.map_url, mergedContent.address])
 
   let calYear = 0,
     calMonth = 0,
@@ -92,6 +111,15 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
     }
   }, [mergedContent.wedding_date, mergedContent.wedding_time])
 
+  useEffect(() => {
+    if (!wedding?.id) return
+    fetch(`/api/rsvps?weddingId=${wedding.id}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data)) setAllGuests(data)
+      })
+  }, [wedding?.id, submitted])
+
   // Pre-fill RSVP
   useEffect(() => {
     if (!rsvpId) return
@@ -109,6 +137,20 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
         if (data.party_size) setPartySize(data.party_size)
       })
   }, [rsvpId])
+
+  useEffect(() => {
+    if (!wedding?.id) return
+    supabase
+      .from('rsvps')
+      .select('id, guest_name, wishes')
+      .eq('wedding_id', String(wedding.id))
+      .order('created_at', { ascending: false })
+      .then(({ data, error }) => {
+        if (error) console.error('[Luxury Guestbook] fetch error:', error)
+        else console.log('[Luxury Guestbook] loaded', data?.length ?? 0, 'guests for wedding', wedding?.id)
+        if (data) setAllGuests(data)
+      })
+  }, [wedding?.id, submitted])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -518,11 +560,27 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
                 lineHeight: 1.1,
                 paddingTop: '0.15em',
                 paddingBottom: '0.15em',
-                marginBottom: 10
+                marginBottom: mergedContent.groom_role ? 4 : 10
               }}
             >
               {mergedContent.groom_name}
             </h1>
+            {mergedContent.groom_role && (
+              <p
+                className='lx-up'
+                style={{
+                  fontFamily: sectionFontFamily,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.3em',
+                  textTransform: 'uppercase',
+                  color: `${gold}70`,
+                  marginBottom: 6
+                }}
+              >
+                {mergedContent.groom_role}
+              </p>
+            )}
             <div
               className='lx-up'
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, margin: '10px 0' }}
@@ -540,11 +598,27 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
                 lineHeight: 1.1,
                 paddingTop: '0.15em',
                 paddingBottom: '0.15em',
-                marginBottom: 14
+                marginBottom: mergedContent.bride_role ? 4 : 14
               }}
             >
               {mergedContent.bride_name}
             </h1>
+            {mergedContent.bride_role && (
+              <p
+                className='lx-up'
+                style={{
+                  fontFamily: sectionFontFamily,
+                  fontSize: 10,
+                  fontWeight: 600,
+                  letterSpacing: '0.3em',
+                  textTransform: 'uppercase',
+                  color: `${gold}70`,
+                  marginBottom: 10
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
             {mergedContent.wedding_date && (
               <p
                 className='lx-up'
@@ -825,29 +899,18 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
                 <p style={{ color: '#aaa', fontSize: 16, lineHeight: 1.7, marginBottom: 16 }}>
                   {mergedContent.address || '—'}
                 </p>
-                {mergedContent.map_url && (
-                  <a
-                    href={mergedContent.map_url}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='btn-luxury'
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '12px 28px',
-                      background: `linear-gradient(135deg, ${goldDark}, ${gold})`,
-                      color: darkBg,
-                      borderRadius: 12,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      textDecoration: 'none',
-                      fontFamily: sectionFontFamily,
-                      letterSpacing: '0.08em'
-                    }}
-                  >
-                    <MapPin size={16} /> XEM BẢN ĐỒ
-                  </a>
+                {mapEmbedUrl && (
+                  <div style={{ marginTop: 20, borderRadius: 12, overflow: 'hidden', border: `1px solid ${gold}20`, position: 'relative' }}>
+                    <iframe
+                      title='wedding-venue-map'
+                      src={mapEmbedUrl}
+                      width='100%'
+                      height='260'
+                      style={{ border: 0, display: 'block' }}
+                      loading='lazy'
+                      allowFullScreen
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -1234,6 +1297,92 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
             )}
           </div>
         </section>
+
+        {/* ══ Sổ lưu bút ══ */}
+        {allGuests.length > 0 && (
+          <section style={{ padding: '80px 20px', position: 'relative' }}>
+            <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1 }}>
+              <div className='marble-divider' style={{ width: '60%' }} />
+            </div>
+            <div style={{ maxWidth: 640, margin: '0 auto' }}>
+              <div style={{ textAlign: 'center', marginBottom: 48 }}>
+                <div className='lx-pulse' style={{ marginBottom: 16 }}>
+                  <span className='diamond-accent' />
+                </div>
+                <p
+                  style={{
+                    fontFamily: sectionFontFamily,
+                    fontSize: 9,
+                    fontWeight: 700,
+                    color: gold,
+                    letterSpacing: '0.2em',
+                    textTransform: 'uppercase',
+                    marginBottom: 12
+                  }}
+                >
+                  GUESTBOOK
+                </p>
+                <h2
+                  className='gold-shimmer-text'
+                  style={{
+                    fontFamily: headingFontFamily,
+                    fontSize: 'clamp(1.4rem, 3vw, 1.9rem)',
+                    fontWeight: 700,
+                    letterSpacing: '0.06em'
+                  }}
+                >
+                  SỔ LƯU BÚT
+                </h2>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {allGuests.map((g) => (
+                  <div
+                    key={g.id}
+                    style={{
+                      background: darkCard,
+                      borderRadius: 14,
+                      padding: '18px 22px',
+                      borderLeft: `2px solid ${g.wishes ? gold : gold + '40'}`
+                    }}
+                  >
+                    {g.wishes ? (
+                      <>
+                        <p style={{ color: '#ccc', fontStyle: 'italic', fontSize: 14, lineHeight: 1.7, marginBottom: 10 }}>
+                          &ldquo;{g.wishes}&rdquo;
+                        </p>
+                        <p
+                          style={{
+                            fontFamily: sectionFontFamily,
+                            fontSize: 9,
+                            fontWeight: 700,
+                            color: gold,
+                            letterSpacing: '0.14em',
+                            textTransform: 'uppercase'
+                          }}
+                        >
+                          {g.guest_name}
+                        </p>
+                      </>
+                    ) : (
+                      <p
+                        style={{
+                          fontFamily: sectionFontFamily,
+                          fontSize: 9,
+                          fontWeight: 600,
+                          color: '#555',
+                          letterSpacing: '0.12em',
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        Đã tham gia · {g.guest_name}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ══ Footer ══ */}
         <footer style={{ padding: '60px 20px', textAlign: 'center', position: 'relative' }}>
