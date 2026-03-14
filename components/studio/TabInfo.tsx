@@ -58,7 +58,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
     })
   }, [content])
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
 
     if (name === 'wedding_date') {
@@ -315,15 +315,18 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
       </div>
 
       <div>
-        <label className='block text-sm font-medium text-gray-700 mb-1'>Link Google Maps</label>
-        <input
-          type='text'
+        <label className='block text-sm font-medium text-gray-700 mb-1'>Google Maps Embed</label>
+        <textarea
           name='map_url'
           value={formData.map_url}
           onChange={handleChange}
-          className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500'
-          placeholder='https://maps.google.com/...'
+          rows={3}
+          className='w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-pink-500 resize-none text-xs'
+          placeholder='Dán thẻ <iframe> hoặc link embed từ Google Maps (Share → Embed a map)'
         />
+        <p className='text-xs text-gray-400 mt-1'>
+          Vào Google Maps → Chia sẻ → Nhúng bản đồ → Sao chép thẻ &lt;iframe&gt; và dán vào đây
+        </p>
       </div>
     </div>
   )

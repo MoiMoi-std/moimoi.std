@@ -4,13 +4,6 @@ import { TemplateProps } from '../TemplateRegistry'
 import MusicPlayer from '@/components/MusicPlayer'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
-import { createClient } from '@supabase/supabase-js'
-import { useEffect } from 'react'
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
 
 // Mock data album ảnh cưới
 const mockAlbum = [
@@ -21,26 +14,19 @@ const mockAlbum = [
   'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=500&fit=crop' // để test vụ +1
 ]
 
+const mockGuestbook = [
+  { name: 'Test', time: '05:31:21 8/3/2026', message: 'Chúc hai bạn luôn tràn ngập yêu thương và hạnh phúc trong suốt quãng đời còn lại.' },
+  { name: 'Test', time: '05:31:16 8/3/2026', message: 'Hy vọng hai bạn luôn tìm thấy bình yên và hạnh phúc trong vòng tay của nhau.' },
+  { name: 'Test', time: '05:31:11 8/3/2026', message: 'Mong rằng cuộc sống hôn nhân sẽ là hành trình tuyệt vời nhất của hai bạn.' },
+  { name: 'binh', time: '20:07:36 1/3/2026', message: 'chúc bạn' },
+  { name: 'fe', time: '12:40:14 1/3/2026', message: 'Chúc mừng hạnh phúc!' }
+]
+
 export default function VintageGeneralView({ wedding, disableSplash, musicUrl }: TemplateProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showSplash, setShowSplash] = useState(!disableSplash)
   const [splashFading, setSplashFading] = useState(false)
-  const [guestWishes, setGuestWishes] = useState<any[]>([])
   const viewport = useTemplateViewport()
-
-  useEffect(() => {
-    if (wedding?.id) {
-      supabase
-        .from('rsvps')
-        .select('name, wishes, created_at')
-        .eq('wedding_id', wedding.id)
-        .not('wishes', 'is', null)
-        .order('created_at', { ascending: false })
-        .then(({ data }) => {
-          if (data) setGuestWishes(data)
-        })
-    }
-  }, [wedding?.id])
 
   const handleOpenInvitation = () => {
     setSplashFading(true)
@@ -101,15 +87,20 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
   // Xử lý mapUrl: Ưu tiên dùng dữ liệu map_url do user nhập, nếu không có thì fallback Google q
   let mapUrl = ''
-  if (mergedContent.map_url) {
-    if (mergedContent.map_url.includes('<iframe')) {
-      const srcMatch = mergedContent.map_url.match(/src="([^"]+)"/)
-      mapUrl = srcMatch ? srcMatch[1] : ''
-    } else {
-      mapUrl = mergedContent.map_url
+  if (mergedContent.map_url?.trim()) {
+    const raw = mergedContent.map_url.trim()
+    if (raw.includes('<iframe')) {
+      // User paste iframe HTML - extract src, decode &amp;
+      const srcMatch = raw.match(/src=["']([^"']+)["']/)
+      mapUrl = srcMatch ? srcMatch[1].replace(/&amp;/g, '&') : ''
+    } else if (raw.includes('google.com/maps/embed') || raw.includes('output=embed')) {
+      // Đã là embed URL hợp lệ - dùng trực tiếp
+      mapUrl = raw
     }
+    // Link chia sẻ thường (maps.app.goo.gl, google.com/maps/place...) không nhúng được iframe
+    // → bỏ qua, dùng fallback bên dưới
   }
-  if (!mapUrl) mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`
+  if (!mapUrl) mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=B&output=embed`
 
   const albumImages = (mergedContent.images?.length > 0 ? mergedContent.images : mockAlbum).slice(0, 15)
 
@@ -1053,51 +1044,31 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           {/* ═════════ GUESTBOOK LIST ═════════ */}
           <div
             style={{
-              padding: '24px 20px',
-              maxHeight: 450,
+              padding: '20px 20px',
+              maxHeight: 420,
               overflowY: 'auto',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
               ...creamPatternStyle
             }}
           >
-            {guestWishes.length === 0 && (
-              <p
-                style={{
-                  textAlign: 'center',
-                  color: '#888',
-                  fontStyle: 'italic',
-                  fontSize: '0.9rem',
-                  padding: '40px 0'
-                }}
-              >
-                Chưa có lời chúc nào. Hãy là người đầu tiên gửi lời chúc đến cô dâu, chú rể!
-              </p>
-            )}
-            {guestWishes.map((comment, i) => (
+            {mockGuestbook.map((comment, i) => (
               <div
                 key={i}
                 style={{
                   backgroundColor: '#fff',
-                  borderRadius: 12,
-                  padding: '16px 20px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                  borderLeft: `4px solid ${red}`,
-                  fontFamily: "'Playfair Display', serif"
+                  borderRadius: 10,
+                  padding: '14px 16px',
+                  marginBottom: 12,
+                  boxShadow: '0 10px 4px rgba(0,0,0,0.06)',
+                  borderLeft: `4px solid ${red}`
                 }}
               >
                 <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}
                 >
-                  <span style={{ fontWeight: 700, color: textDark, fontSize: '0.95rem' }}>{comment.name}</span>
-                  <span style={{ fontSize: '0.7rem', color: '#999', fontFamily: "'Lora', serif" }}>
-                    {new Date(comment.created_at).toLocaleDateString('vi-VN')}
-                  </span>
+                  <span style={{ fontWeight: 700, color: red, fontSize: '0.9rem' }}>{comment.name}</span>
+                  <span style={{ fontSize: '0.72rem', color: '#aaa' }}>{comment.time}</span>
                 </div>
-                <p style={{ fontSize: '0.95rem', color: '#444', lineHeight: 1.6, fontStyle: 'italic' }}>
-                  "{comment.wishes}"
-                </p>
+                <p style={{ fontSize: '0.82rem', color: '#555', lineHeight: 1.6, margin: 0 }}>{comment.message}</p>
               </div>
             ))}
           </div>
