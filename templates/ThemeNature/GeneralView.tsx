@@ -60,7 +60,7 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
     if (!wedding?.id) return
     supabase
       .from('rsvps')
-      .select('name, wishes, created_at')
+      .select('guest_name, wishes, created_at')
       .eq('wedding_id', wedding.id)
       .not('wishes', 'is', null)
       .order('created_at', { ascending: false })
@@ -1027,7 +1027,7 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
                         letterSpacing: '0.08em'
                       }}
                     >
-                      — {item.name || 'Ẩn danh'}
+                      — {item.guest_name || 'Ẩn danh'}
                     </p>
                   </div>
                 ))}
