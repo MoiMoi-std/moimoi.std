@@ -1,8 +1,15 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { TemplateProps } from '../TemplateRegistry'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
+import { useMapEmbed } from '../../lib/useMapEmbed'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
 export default function RoyalGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -12,10 +19,26 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
     seconds: number
   } | null>(null)
   const viewport = useTemplateViewport()
+  const [wishesList, setWishesList] = useState<any[]>([])
 
   const { content, template } = wedding || {}
+
+  useEffect(() => {
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
+    }
+  }, [wedding?.id])
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
 
   const navy = '#0f1b35'
   const navyMid = '#162548'
@@ -59,7 +82,8 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
       </div>
     )
 
-  const albumImages: string[] = mergedContent.images?.length > 0 ? mergedContent.images : []
+  const allAlbumImages: string[] = mergedContent.images?.length > 0 ? mergedContent.images : []
+  const albumImages = allAlbumImages.slice(0, 20)
 
   return (
     <>
@@ -108,9 +132,14 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: (() => {
+                ...(() => {
                   const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
-                  return adj ? `${adj.x}% ${adj.y}%` : 'center'
+                  return {
+                    backgroundPosition: adj ? `${adj.x}% ${adj.y}%` : 'center',
+                    ...(adj && adj.zoom !== 1
+                      ? { transform: `scale(${adj.zoom})`, transformOrigin: `${adj.x}% ${adj.y}%` }
+                      : {})
+                  }
                 })(),
                 filter: 'brightness(0.38) saturate(0.6)'
               }}
@@ -461,27 +490,28 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
                   <p style={{ fontSize: 15, color: parchment, lineHeight: 1.5 }}>{it.value}</p>
                 </div>
               ))}
-            {mergedContent.map_url && (
-              <a
-                href={mergedContent.map_url}
-                target='_blank'
-                rel='noopener noreferrer'
+            {mergedContent.address && (
+              <div
                 style={{
-                  display: 'block',
                   marginTop: 28,
-                  padding: '13px 24px',
-                  border: `1px solid ${gold}`,
-                  color: gold,
-                  textAlign: 'center',
-                  textDecoration: 'none',
-                  fontSize: 10,
-                  letterSpacing: '0.3em',
-                  textTransform: 'uppercase',
-                  fontFamily: "'Cinzel',serif"
+                  width: '100%',
+                  height: 250,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  border: `1px solid rgba(201,162,39,0.28)`
                 }}
               >
-                Xem bản đồ
-              </a>
+                <iframe
+                  width='100%'
+                  height='100%'
+                  style={{ border: 0 }}
+                  loading='lazy'
+                  allowFullScreen
+                  referrerPolicy='no-referrer-when-downgrade'
+                  src={mapEmbedSrc}
+                />
+              </div>
             )}
           </div>
         </section>
@@ -515,34 +545,56 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
                 </h2>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
-                {albumImages.slice(0, 4).map((img: string, i: number) => (
-                  <div
-                    key={i}
-                    style={{
-                      aspectRatio: '3/4',
-                      overflow: 'hidden',
-                      border: `3px solid ${parchment}`,
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
-                    }}
-                  >
-                    <img
-                      src={img}
-                      alt=''
+                {albumImages.slice(0, 4).map((img: string, i: number) => {
+                  const isLast = i === 3
+                  const extraCount = albumImages.length - 4
+                  return (
+                    <div
+                      key={i}
                       style={{
-                        width: '100%',
-                        height: '100%',
-                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        position: 'relative',
+                        aspectRatio: '3/4',
+                        overflow: 'hidden',
+                        border: `3px solid ${parchment}`,
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.15)'
                       }}
-                    />
-                  </div>
-                ))}
+                    >
+                      <img
+                        src={img}
+                        alt=''
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        }}
+                      />
+                      {isLast && extraCount > 0 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: parchment,
+                            fontSize: '1.5rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          +{extraCount}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </section>
         )}
 
         {/* ── GIFT ── */}
-        {(mergedContent.bank_name || mergedContent.account_number) && (
+        {(mergedContent.bank_name || mergedContent.account_number || mergedContent.qr_image) && (
           <section style={{ background: navy, padding: '72px 24px' }}>
             <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
               <p
@@ -578,34 +630,100 @@ export default function RoyalGeneralView({ wedding }: TemplateProps) {
                   background: 'rgba(201,162,39,0.04)'
                 }}
               >
-                {mergedContent.account_name && (
-                  <p style={{ fontSize: 17, color: gold, fontStyle: 'italic', marginBottom: 8 }}>
-                    {mergedContent.account_name}
-                  </p>
-                )}
-                {mergedContent.bank_name && (
-                  <p
-                    style={{
-                      fontSize: 10,
-                      letterSpacing: '0.25em',
-                      color: 'rgba(255,255,255,0.45)',
-                      textTransform: 'uppercase',
-                      marginBottom: 6,
-                      fontFamily: "'Cinzel',serif"
-                    }}
-                  >
-                    {mergedContent.bank_name}
-                  </p>
-                )}
-                {mergedContent.account_number && (
-                  <p style={{ fontSize: 22, color: parchment, letterSpacing: '0.12em', fontFamily: "'Cinzel',serif" }}>
-                    {mergedContent.account_number}
-                  </p>
+                {mergedContent.qr_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mergedContent.qr_image}
+                    alt='QR Tiền Mừng'
+                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
+                  />
+                ) : (
+                  mergedContent.account_number && (
+                    <p
+                      style={{ fontSize: 22, color: parchment, letterSpacing: '0.12em', fontFamily: "'Cinzel',serif" }}
+                    >
+                      {mergedContent.account_number}
+                    </p>
+                  )
                 )}
               </div>
             </div>
           </section>
         )}
+
+        {/* ── GUESTBOOK ── */}
+        <section style={{ background: parchmentDark, padding: '72px 24px' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
+            <p
+              style={{
+                fontSize: 9,
+                letterSpacing: '0.5em',
+                color: gold,
+                textTransform: 'uppercase',
+                fontFamily: "'Cinzel',serif",
+                marginBottom: 10
+              }}
+            >
+              Sổ Lưu Bút
+            </p>
+            <h2
+              style={{
+                fontSize: 'clamp(1.6rem,5vw,2.6rem)',
+                color: textDark,
+                fontWeight: 300,
+                fontStyle: 'italic',
+                marginBottom: 28
+              }}
+            >
+              Lời Chúc Trân Trọng
+            </h2>
+            <div
+              style={{
+                border: `1px solid rgba(201,162,39,0.28)`,
+                borderRadius: 4,
+                padding: '28px 20px',
+                background: parchment
+              }}
+            >
+              {wishesList.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {wishesList.map((w, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '16px',
+                        textAlign: 'left',
+                        background: parchmentDark,
+                        borderRadius: 4,
+                        borderLeft: `3px solid ${gold}`
+                      }}
+                    >
+                      <p
+                        style={{ fontStyle: 'italic', color: textMid, marginBottom: 8, fontSize: 14, lineHeight: 1.6 }}
+                      >
+                        "{w.wishes}"
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "'Cinzel',serif",
+                          color: textDark,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.1em'
+                        }}
+                      >
+                        - {w.guest_name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: textMid, fontStyle: 'italic' }}>Chưa có lời chúc nào.</p>
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* ── FOOTER ── */}
         <section style={{ background: navyMid, padding: '52px 24px', textAlign: 'center' }}>

@@ -1,8 +1,15 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { TemplateProps } from '../TemplateRegistry'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
+import { useMapEmbed } from '../../lib/useMapEmbed'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
 export default function MinimalistGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -12,10 +19,12 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
     seconds: number
   } | null>(null)
   const viewport = useTemplateViewport()
+  const [wishesList, setWishesList] = useState<any[]>([])
 
   const { content, template } = wedding || {}
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
 
   const ink = '#0d0d0d'
   const inkMid = '#4a4a4a'
@@ -24,6 +33,20 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
   const accent = mergedContent.primary_color || '#b8927a'
   const accentLight = '#ddbea9'
   const bg = '#fafafa'
+
+  useEffect(() => {
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
+    }
+  }, [wedding?.id])
 
   useEffect(() => {
     if (!mergedContent.wedding_date) return
@@ -70,7 +93,11 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
     )
   }
 
-  const albumImages: string[] = (mergedContent.images || []).filter(Boolean)
+  const allAlbumImages: string[] = (mergedContent.images || []).filter(Boolean)
+  const albumImages = allAlbumImages.slice(0, 20)
+
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
 
   return (
     <>
@@ -204,7 +231,15 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                ...(() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return {
+                    backgroundPosition: adj ? `${adj.x}% ${adj.y}%` : 'center',
+                    ...(adj && adj.zoom !== 1
+                      ? { transform: `scale(${adj.zoom})`, transformOrigin: `${adj.x}% ${adj.y}%` }
+                      : {})
+                  }
+                })(),
                 filter: 'brightness(0.72) saturate(0.85)'
               }}
             />
@@ -239,6 +274,21 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
           >
             <div className='m-accent-line m-up' style={{ width: 40, marginBottom: 28 }} />
 
+            {mergedContent.groom_role && (
+              <p
+                className='m-up'
+                style={{
+                  fontSize: 13,
+                  fontWeight: 300,
+                  fontStyle: 'italic',
+                  color: 'rgba(255,255,255,0.7)',
+                  letterSpacing: '0.1em',
+                  marginBottom: 8
+                }}
+              >
+                {mergedContent.groom_role}
+              </p>
+            )}
             <h1
               className='m-up m-d1'
               style={{
@@ -270,6 +320,22 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
               <div className='m-accent-line' style={{ width: 28 }} />
             </div>
 
+            {mergedContent.bride_role && (
+              <p
+                className='m-up m-d2'
+                style={{
+                  fontSize: 13,
+                  fontWeight: 300,
+                  fontStyle: 'italic',
+                  color: 'rgba(255,255,255,0.7)',
+                  letterSpacing: '0.1em',
+                  marginBottom: -20,
+                  zIndex: 2
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
             <h1
               className='m-up m-d3'
               style={{
@@ -426,11 +492,12 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
                         month: 'long',
                         day: 'numeric'
                       })
-                    : null
+                    : null,
+                  subValue: mergedContent.lunar_date ? `(Âm lịch: ${mergedContent.lunar_date})` : null
                 },
                 { label: 'TIME', value: mergedContent.wedding_time },
                 { label: 'VENUE', value: mergedContent.address }
-              ].map(({ label, value }) => (
+              ].map(({ label, value, subValue }) => (
                 <div key={label} className='m-up'>
                   <p
                     style={{
@@ -446,10 +513,36 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
                   </p>
                   <div className='m-accent-line' style={{ width: 20, marginBottom: 16 }} />
                   <p style={{ fontSize: 20, fontWeight: 300, color: ink, lineHeight: 1.65 }}>{value || '—'}</p>
+                  {subValue && (
+                    <p style={{ fontSize: 16, fontWeight: 300, color: inkLight, marginTop: 4 }}>{subValue}</p>
+                  )}
                 </div>
               ))}
             </div>
 
+            {mergedContent.address && (
+              <div
+                className='m-up'
+                style={{
+                  marginTop: 56,
+                  width: '100%',
+                  height: 350,
+                  border: `1px solid ${inkFaint}`,
+                  position: 'relative'
+                }}
+              >
+                <iframe
+                  title='Google Map'
+                  width='100%'
+                  height='100%'
+                  style={{ border: 0, display: 'block' }}
+                  loading='lazy'
+                  allowFullScreen
+                  referrerPolicy='no-referrer-when-downgrade'
+                  src={mapEmbedSrc}
+                />
+              </div>
+            )}
             {mergedContent.map_url && (
               <div style={{ marginTop: 56 }}>
                 <a
@@ -517,35 +610,126 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
                 <div
                   style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(260px,1fr))',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
                     gap: 12,
                     marginTop: 12
                   }}
                 >
-                  {albumImages.map((img: string, i: number) => (
-                    <div key={i} className='m-photo' style={{ height: 260 }}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={img}
-                        alt={`Ảnh cưới ${i + 1}`}
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          display: 'block',
-                          filter: 'grayscale(8%)',
-                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                  {albumImages.slice(0, 4).map((img: string, i: number) => {
+                    const isLast = i === 3
+                    const extra = albumImages.length - 4
+                    return (
+                      <div
+                        key={i}
+                        className='m-photo'
+                        style={{ height: 260, position: 'relative' }}
+                        onClick={() => {
+                          setLightboxIndex(i)
+                          setLightboxOpen(true)
                         }}
-                      />
-                    </div>
-                  ))}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={img}
+                          alt={`Ảnh cưới ${i + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'block',
+                            objectFit: 'cover',
+                            filter: 'grayscale(8%)',
+                            ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                          }}
+                        />
+                        {isLast && extra > 0 && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              inset: 0,
+                              background: 'rgba(0,0,0,0.5)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#fff',
+                              fontSize: '2rem',
+                              fontFamily: "'Cormorant Garamond', serif"
+                            }}
+                          >
+                            +{extra}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </div>
           </section>
         )}
 
+        {/* ══ Guestbook ══ */}
+        <section style={{ padding: '100px 44px', borderBottom: `1px solid ${inkFaint}` }}>
+          <div style={{ maxWidth: 820 }}>
+            <p
+              className='m-up'
+              style={{
+                fontSize: 9,
+                letterSpacing: '0.5em',
+                color: accent,
+                textTransform: 'uppercase',
+                marginBottom: 56
+              }}
+            >
+              GUESTBOOK
+            </p>
+            <h2
+              className='m-up'
+              style={{
+                fontSize: 'clamp(2rem, 5vw, 3rem)',
+                fontWeight: 400,
+                color: ink,
+                marginBottom: 40
+              }}
+            >
+              Sổ Lưu Bút
+            </h2>
+
+            {wishesList.length > 0 ? (
+              <div style={{ display: 'grid', gap: 24 }}>
+                {wishesList.map((w, idx) => (
+                  <div
+                    key={idx}
+                    className='m-up'
+                    style={{ padding: '24px', background: '#fff', border: `1px solid ${inkFaint}` }}
+                  >
+                    <p
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 300,
+                        color: inkMid,
+                        fontStyle: 'italic',
+                        lineHeight: 1.8,
+                        marginBottom: 16
+                      }}
+                    >
+                      "{w.wishes}"
+                    </p>
+                    <p style={{ fontSize: 13, letterSpacing: '0.1em', color: inkLight, textTransform: 'uppercase' }}>
+                      - {w.guest_name}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className='m-up' style={{ color: inkLight, fontStyle: 'italic', fontSize: 16, fontWeight: 300 }}>
+                Chưa có lời chúc nào.
+              </p>
+            )}
+          </div>
+        </section>
+
         {/* ══ Gift / Bank ══ */}
-        {mergedContent.account_number && (
+        {(mergedContent.account_number || mergedContent.qr_image) && (
           <section style={{ padding: '100px 44px', borderBottom: `1px solid ${inkFaint}` }}>
             <div style={{ maxWidth: 580 }}>
               <p
@@ -574,35 +758,27 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
                 Sự hiện diện của bạn là món quà quý giá nhất.
               </p>
               <div className='m-up m-d2' style={{ paddingTop: 36, borderTop: `1px solid ${inkFaint}` }}>
-                {mergedContent.bank_name && (
-                  <p
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 400,
-                      color: inkLight,
-                      letterSpacing: '0.18em',
-                      marginBottom: 12,
-                      textTransform: 'uppercase'
-                    }}
-                  >
-                    {mergedContent.bank_name}
-                  </p>
-                )}
-                <p
-                  style={{
-                    fontSize: 'clamp(2rem, 6vw, 3.2rem)',
-                    fontWeight: 200,
-                    color: ink,
-                    letterSpacing: '0.04em',
-                    marginBottom: 12
-                  }}
-                >
-                  {mergedContent.account_number}
-                </p>
-                {mergedContent.account_name && (
-                  <p style={{ fontSize: 15, fontWeight: 300, color: inkMid, fontStyle: 'italic' }}>
-                    {mergedContent.account_name}
-                  </p>
+                {mergedContent.qr_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mergedContent.qr_image}
+                    alt='QR Tiền Mừng'
+                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
+                  />
+                ) : (
+                  mergedContent.account_number && (
+                    <p
+                      style={{
+                        fontSize: 'clamp(2rem, 6vw, 3.2rem)',
+                        fontWeight: 200,
+                        color: ink,
+                        letterSpacing: '0.04em',
+                        marginBottom: 12
+                      }}
+                    >
+                      {mergedContent.account_number}
+                    </p>
+                  )
                 )}
               </div>
             </div>
@@ -631,6 +807,91 @@ export default function MinimalistGeneralView({ wedding }: TemplateProps) {
           </div>
         </footer>
       </div>
+
+      {lightboxOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.92)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            onClick={() => setLightboxOpen(false)}
+            style={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              background: 'rgba(255,255,255,0.15)',
+              border: 'none',
+              color: '#fff',
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              fontSize: '1.1rem',
+              cursor: 'pointer'
+            }}
+          >
+            ✕
+          </button>
+          {lightboxIndex > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightboxIndex(lightboxIndex - 1)
+              }}
+              style={{
+                position: 'absolute',
+                left: 16,
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                color: '#fff',
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                fontSize: '1.5rem',
+                cursor: 'pointer'
+              }}
+            >
+              ‹
+            </button>
+          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={albumImages[lightboxIndex]}
+            alt={`Photo ${lightboxIndex + 1}`}
+            style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain' }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          {lightboxIndex < albumImages.length - 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightboxIndex(lightboxIndex + 1)
+              }}
+              style={{
+                position: 'absolute',
+                right: 16,
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                color: '#fff',
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                fontSize: '1.5rem',
+                cursor: 'pointer'
+              }}
+            >
+              ›
+            </button>
+          )}
+        </div>
+      )}
     </>
   )
 }

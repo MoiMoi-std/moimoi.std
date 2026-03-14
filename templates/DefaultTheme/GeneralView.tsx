@@ -6,6 +6,7 @@ import { WeddingCalendar } from '../../components/WeddingCalendar'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 import { TemplateProps } from '../TemplateRegistry'
+import { useMapEmbed } from '../../lib/useMapEmbed'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -22,14 +23,8 @@ export default function DefaultGeneralView({ wedding, guestName = '', rsvpId }: 
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
 
-  // RSVP state
-  const [wish, setWish] = useState('')
-  const [phone, setPhone] = useState('')
-  const [isAttending, setIsAttending] = useState<boolean | null>(null)
-  const [partySize, setPartySize] = useState(1)
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [submitError, setSubmitError] = useState('')
+  // Guestbook state
+  const [wishesList, setWishesList] = useState<any[]>([])
 
   const { content, template } = wedding || {}
 
@@ -40,6 +35,7 @@ export default function DefaultGeneralView({ wedding, guestName = '', rsvpId }: 
     ...(templateData?.default_content || {}),
     ...content
   }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
 
   const primaryColor = mergedContent.primary_color || '#d97706'
   const fontFamily = mergedContent.font_family || 'Cormorant Garamond, serif'
@@ -60,7 +56,8 @@ export default function DefaultGeneralView({ wedding, guestName = '', rsvpId }: 
     'https://images.unsplash.com/photo-1484863137850-59afcfe05386?w=600&h=400&fit=crop',
     'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=600&h=400&fit=crop'
   ]
-  const albumImages = mergedContent.images?.length > 0 ? mergedContent.images : mockAlbumImages
+  const allAlbumImages = mergedContent.images?.length > 0 ? mergedContent.images : mockAlbumImages
+  const albumImages = allAlbumImages.slice(0, 20)
 
   let calYear = 0,
     calMonth = 0,
@@ -94,48 +91,20 @@ export default function DefaultGeneralView({ wedding, guestName = '', rsvpId }: 
     }
   }, [mergedContent.wedding_date, mergedContent.wedding_time])
 
-  // Pre-fill RSVP nếu có rsvpId
+  // Fetch Wishes
   useEffect(() => {
-    if (!rsvpId) return
-    supabase
-      .from('rsvps')
-      .select('wishes, phone, is_attending, party_size')
-      .eq('id', rsvpId)
-      .single()
-      .then(({ data }) => {
-        if (!data) return
-        if (data.wishes) setWish(data.wishes)
-        if (data.phone) setPhone(data.phone)
-        if (data.is_attending != null) setIsAttending(data.is_attending)
-        if (data.party_size) setPartySize(data.party_size)
-      })
-  }, [rsvpId])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setSubmitError('')
-    try {
-      if (rsvpId) {
-        const { error } = await supabase
-          .from('rsvps')
-          .update({
-            phone: phone.trim() || null,
-            is_attending: isAttending,
-            party_size: isAttending ? partySize : 1,
-            wishes: wish.trim() || null
-          })
-          .eq('id', rsvpId)
-        if (error) throw error
-      }
-      setSubmitted(true)
-    } catch (err: any) {
-      console.error('RSVP error:', err)
-      setSubmitError('Có lỗi xảy ra, vui lòng thử lại!')
-    } finally {
-      setLoading(false)
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
     }
-  }
+  }, [wedding?.id])
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -255,11 +224,27 @@ export default function DefaultGeneralView({ wedding, guestName = '', rsvpId }: 
                 textShadow: '0 2px 12px rgba(0,0,0,0.5)'
               }}
             >
+              {mergedContent.groom_role && (
+                <span
+                  className='block text-white/80 text-sm tracking-widest uppercase mb-1'
+                  style={{ fontFamily: sectionFontFamily }}
+                >
+                  {mergedContent.groom_role}
+                </span>
+              )}
               {mergedContent.groom_name}
               <span className='block text-white/70 my-2' style={{ fontSize: 'clamp(1rem, 4vw, 1.4rem)' }}>
                 &amp;
               </span>
               {mergedContent.bride_name}
+              {mergedContent.bride_role && (
+                <span
+                  className='block text-white/80 text-sm tracking-widest uppercase mt-2'
+                  style={{ fontFamily: sectionFontFamily }}
+                >
+                  {mergedContent.bride_role}
+                </span>
+              )}
             </h1>
             {mergedContent.wedding_date && (
               <p className='text-white/75 text-sm font-light tracking-widest mt-1'>
@@ -413,6 +398,12 @@ export default function DefaultGeneralView({ wedding, guestName = '', rsvpId }: 
                   <Clock size={18} />
                   <span>Lúc {mergedContent.wedding_time || '00:00'}</span>
                 </div>
+                {mergedContent.lunar_date && (
+                  <div className='flex items-center gap-2 text-gray-500 mt-2'>
+                    <Calendar size={18} />
+                    <span>Âm lịch: {mergedContent.lunar_date}</span>
+                  </div>
+                )}
               </div>
 
               <div
@@ -428,17 +419,28 @@ export default function DefaultGeneralView({ wedding, guestName = '', rsvpId }: 
                   </h3>
                 </div>
                 <p className='text-gray-600 text-lg mb-4'>{mergedContent.address}</p>
-                {mergedContent.map_url && (
-                  <a
-                    href={mergedContent.map_url}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-medium transition-all hover:scale-105'
-                    style={{ backgroundColor: primaryColor }}
+                {mergedContent.address && (
+                  <div
+                    style={{
+                      marginTop: 24,
+                      width: '100%',
+                      height: 250,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      position: 'relative',
+                      border: `1px solid ${primaryColor}40`
+                    }}
                   >
-                    <MapPin size={18} />
-                    Xem Bản Đồ
-                  </a>
+                    <iframe
+                      width='100%'
+                      height='100%'
+                      style={{ border: 0 }}
+                      loading='lazy'
+                      allowFullScreen
+                      referrerPolicy='no-referrer-when-downgrade'
+                      src={mapEmbedSrc}
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -507,7 +509,7 @@ export default function DefaultGeneralView({ wedding, guestName = '', rsvpId }: 
                 className='text-4xl md:text-5xl font-bold mb-4'
                 style={{ color: primaryColor, fontFamily: sectionFontFamily }}
               >
-                Xác Nhận Tham Dự
+                Sổ Lưu Bút
               </h2>
               <div className='w-20 h-1 mx-auto rounded-full' style={{ backgroundColor: primaryColor }}></div>
               {guestName && (
@@ -517,271 +519,35 @@ export default function DefaultGeneralView({ wedding, guestName = '', rsvpId }: 
               )}
             </div>
 
-            {!submitted ? (
-              <div
-                style={{
-                  background: 'rgba(255,255,255,.92)',
-                  backdropFilter: 'blur(16px)',
-                  borderRadius: '20px',
-                  padding: '28px 24px',
-                  border: `1px solid ${primaryColor}20`,
-                  boxShadow: '0 4px 24px rgba(0,0,0,.05)'
-                }}
-              >
-                <p
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: '700',
-                    color: primaryColor,
-                    letterSpacing: '0.14em',
-                    textTransform: 'uppercase',
-                    textAlign: 'center',
-                    marginBottom: '4px'
-                  }}
-                >
-                  💌 Xác nhận tham dự
-                </p>
-                <p style={{ textAlign: 'center', color: '#9ca3af', fontSize: '13px', marginBottom: '24px' }}>
-                  Vui lòng điền thông tin để chúng tôi chuẩn bị tốt hơn
-                </p>
-
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                  {/* Tham dự? */}
-                  <div>
-                    <label style={labelStyle}>Bạn có tham dự không? *</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <button
-                        type='button'
-                        className='btn-attend'
-                        onClick={() => setIsAttending(true)}
-                        style={{
-                          padding: '13px 8px',
-                          borderRadius: '12px',
-                          border: isAttending === true ? '2px solid #22c55e' : '1.5px solid #e5e7eb',
-                          background: isAttending === true ? '#f0fdf4' : '#fafafa',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          color: isAttending === true ? '#15803d' : '#6b7280',
-                          transition: 'all .2s',
-                          fontFamily: 'inherit'
-                        }}
-                      >
-                        Có, tôi sẽ đến
-                      </button>
-                      <button
-                        type='button'
-                        className='btn-decline'
-                        onClick={() => setIsAttending(false)}
-                        style={{
-                          padding: '13px 8px',
-                          borderRadius: '12px',
-                          border: isAttending === false ? '2px solid #ef4444' : '1.5px solid #e5e7eb',
-                          background: isAttending === false ? '#fef2f2' : '#fafafa',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          color: isAttending === false ? '#dc2626' : '#6b7280',
-                          transition: 'all .2s',
-                          fontFamily: 'inherit'
-                        }}
-                      >
-                        Xin lỗi, tôi bận
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Số điện thoại */}
-                  <div>
-                    <label style={labelStyle}>
-                      Số điện thoại&nbsp;
-                      <span
-                        style={{
-                          color: '#9ca3af',
-                          fontSize: '12px',
-                          fontWeight: '400',
-                          textTransform: 'none',
-                          letterSpacing: 0
-                        }}
-                      >
-                        (tùy chọn)
-                      </span>
-                    </label>
-                    <input
-                      type='tel'
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder='0901 234 567'
-                      style={inputStyle}
-                    />
-                  </div>
-
-                  {/* Số người */}
-                  <div>
-                    <label style={labelStyle}>Số người tham dự</label>
-                    <div style={{ display: 'flex' }}>
-                      {[1, 2, 3, 4, 5].map((n, i) => (
-                        <button
-                          key={n}
-                          type='button'
-                          onClick={() => setPartySize(n)}
-                          style={{
-                            flex: 1,
-                            padding: '12px 4px',
-                            border: '1.5px solid',
-                            borderColor: partySize === n ? primaryColor : '#e5e7eb',
-                            borderRight: i < 4 ? 'none' : '1.5px solid',
-                            borderRightColor: partySize === n ? primaryColor : '#e5e7eb',
-                            borderRadius: i === 0 ? '10px 0 0 10px' : i === 4 ? '0 10px 10px 0' : '0',
-                            background: partySize === n ? primaryColor : '#fafafa',
-                            color: partySize === n ? '#fff' : '#6b7280',
-                            fontWeight: '700',
-                            fontSize: '15px',
-                            cursor: 'pointer',
-                            transition: 'all .18s',
-                            fontFamily: 'inherit'
-                          }}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
-                    <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '5px' }}>người tham dự</p>
-                  </div>
-
-                  {/* Lời chúc */}
-                  <div>
-                    <label style={labelStyle}>
-                      Lời chúc&nbsp;
-                      <span
-                        style={{
-                          color: '#9ca3af',
-                          fontSize: '12px',
-                          fontWeight: '400',
-                          textTransform: 'none',
-                          letterSpacing: 0
-                        }}
-                      >
-                        (tùy chọn)
-                      </span>
-                    </label>
-                    <textarea
-                      value={wish}
-                      onChange={(e) => setWish(e.target.value)}
-                      placeholder='Chúc hai bạn trăm năm hạnh phúc, vạn sự như ý...'
-                      rows={4}
-                      style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.65 }}
-                    />
-                  </div>
-
-                  {/* Submit */}
-                  <button
-                    type='submit'
-                    className='btn-submit'
-                    disabled={loading || isAttending === null}
-                    style={{
-                      width: '100%',
-                      padding: '16px',
-                      background:
-                        isAttending === null || loading
-                          ? '#e5e7eb'
-                          : `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 100%)`,
-                      color: isAttending === null || loading ? '#9ca3af' : '#fff',
-                      border: 'none',
-                      borderRadius: '14px',
-                      fontSize: '16px',
-                      fontWeight: '700',
-                      cursor: loading || isAttending === null ? 'not-allowed' : 'pointer',
-                      letterSpacing: '0.03em',
-                      transition: 'all .25s',
-                      boxShadow: isAttending !== null && !loading ? `0 6px 22px ${primaryColor}45` : 'none',
-                      fontFamily: 'inherit'
-                    }}
-                  >
-                    {loading ? '⏳ Đang gửi...' : '💌 Gửi xác nhận'}
-                  </button>
-
-                  {submitError && (
+            <div
+              style={{
+                background: 'rgba(255,255,255,.92)',
+                backdropFilter: 'blur(16px)',
+                borderRadius: '20px',
+                padding: '28px 24px',
+                border: `1px solid ${primaryColor}20`,
+                boxShadow: '0 4px 24px rgba(0,0,0,.05)'
+              }}
+            >
+              {wishesList.length > 0 ? (
+                <div className='flex flex-col gap-4'>
+                  {wishesList.map((w, idx) => (
                     <div
-                      style={{
-                        padding: '12px 16px',
-                        background: '#fef2f2',
-                        border: '1px solid #fecaca',
-                        borderRadius: '10px',
-                        color: '#dc2626',
-                        fontSize: '14px',
-                        textAlign: 'center',
-                        fontWeight: '500'
-                      }}
+                      key={idx}
+                      className='p-6 text-left rounded-xl'
+                      style={{ background: `${primaryColor}08`, borderLeft: `3px solid ${primaryColor}` }}
                     >
-                      ❌ {submitError}
+                      <p className='italic text-gray-600 mb-2 leading-relaxed'>"{w.wishes}"</p>
+                      <p className='font-bold text-sm tracking-widest uppercase' style={{ color: primaryColor }}>
+                        - {w.guest_name}
+                      </p>
                     </div>
-                  )}
-                </form>
-              </div>
-            ) : (
-              <div
-                style={{
-                  background: 'rgba(255,255,255,.95)',
-                  borderRadius: '24px',
-                  padding: '52px 28px',
-                  textAlign: 'center',
-                  boxShadow: '0 10px 48px rgba(0,0,0,.08)',
-                  border: `1px solid ${primaryColor}10`
-                }}
-              >
-                <div className='float' style={{ fontSize: '4rem', marginBottom: '22px' }}>
-                  {isAttending ? '🎊' : '💝'}
+                  ))}
                 </div>
-                <h3
-                  style={{
-                    fontFamily: headingFontFamily,
-                    fontSize: '1.55rem',
-                    fontWeight: '700',
-                    color: isAttending ? '#15803d' : primaryColor,
-                    marginBottom: '12px',
-                    lineHeight: 1.3
-                  }}
-                >
-                  {isAttending ? 'Hẹn gặp bạn tại đám cưới!' : 'Cảm ơn bạn đã phản hồi!'}
-                </h3>
-                <p
-                  style={{ color: '#6b7280', fontSize: '15px', lineHeight: 1.75, maxWidth: '300px', margin: '0 auto' }}
-                >
-                  {isAttending
-                    ? `Chúng tôi rất vui được đón tiếp${guestName ? ` ${guestName}` : ''}. Hẹn gặp trong ngày vui! 🥂`
-                    : 'Rất tiếc khi bạn không thể tham dự. Mong có dịp gặp nhau trong tương lai! 💕'}
-                </p>
-                {wish && (
-                  <div
-                    style={{
-                      marginTop: '28px',
-                      padding: '16px 20px',
-                      background: `${primaryColor}08`,
-                      borderRadius: '14px',
-                      borderLeft: `3px solid ${primaryColor}`,
-                      textAlign: 'left'
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontSize: '10px',
-                        fontWeight: '700',
-                        color: primaryColor,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em',
-                        marginBottom: '8px'
-                      }}
-                    >
-                      Lời chúc của bạn
-                    </p>
-                    <p style={{ color: '#374151', fontStyle: 'italic', fontSize: '14px', lineHeight: 1.7 }}>
-                      &ldquo;{wish}&rdquo;
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
+              ) : (
+                <p className='text-gray-500 italic text-center'>Chưa có lời chúc nào.</p>
+              )}
+            </div>
           </div>
         </section>
 

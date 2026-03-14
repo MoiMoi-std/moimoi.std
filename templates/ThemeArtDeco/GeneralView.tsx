@@ -1,8 +1,15 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { TemplateProps } from '../TemplateRegistry'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
+import { useMapEmbed } from '../../lib/useMapEmbed'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
 export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -12,10 +19,26 @@ export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
     seconds: number
   } | null>(null)
   const viewport = useTemplateViewport()
+  const [wishesList, setWishesList] = useState<any[]>([])
 
   const { content, template } = wedding || {}
+
+  useEffect(() => {
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
+    }
+  }, [wedding?.id])
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
 
   const black = '#0e0e18'
   const darkCard = '#16162a'
@@ -57,7 +80,8 @@ export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
       </div>
     )
 
-  const albumImages: string[] = mergedContent.images?.length > 0 ? mergedContent.images : []
+  const allAlbumImages: string[] = mergedContent.images?.length > 0 ? mergedContent.images : []
+  const albumImages = allAlbumImages.slice(0, 20)
 
   return (
     <>
@@ -102,9 +126,14 @@ export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: (() => {
+                ...(() => {
                   const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
-                  return adj ? `${adj.x}% ${adj.y}%` : 'center'
+                  return {
+                    backgroundPosition: adj ? `${adj.x}% ${adj.y}%` : 'center',
+                    ...(adj && adj.zoom !== 1
+                      ? { transform: `scale(${adj.zoom})`, transformOrigin: `${adj.x}% ${adj.y}%` }
+                      : {})
+                  }
                 })(),
                 filter: 'brightness(0.28) saturate(0.4) contrast(1.1)'
               }}
@@ -183,6 +212,21 @@ export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
             >
               Wedding Invitation
             </p>
+            {mergedContent.groom_role && (
+              <p
+                className='ad-up ad-d1'
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.4em',
+                  color: `rgba(212,172,78,0.8)`,
+                  textTransform: 'uppercase',
+                  fontFamily: "'Cinzel', serif",
+                  marginBottom: 8
+                }}
+              >
+                {mergedContent.groom_role}
+              </p>
+            )}
             <h1
               className='ad-up ad-shimmer ad-d2'
               style={{
@@ -208,6 +252,21 @@ export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
               </svg>
               <div style={{ width: 28, height: 1, background: `rgba(212,172,78,0.4)` }} />
             </div>
+            {mergedContent.bride_role && (
+              <p
+                className='ad-up ad-d2'
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.4em',
+                  color: `rgba(212,172,78,0.8)`,
+                  textTransform: 'uppercase',
+                  fontFamily: "'Cinzel', serif",
+                  marginBottom: 8
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
             <h1
               className='ad-up ad-shimmer ad-d3'
               style={{
@@ -411,26 +470,28 @@ export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
                   <p style={{ fontSize: 15, color: textLight, lineHeight: 1.5, letterSpacing: '0.02em' }}>{it.value}</p>
                 </div>
               ))}
-            {mergedContent.map_url && (
-              <a
-                href={mergedContent.map_url}
-                target='_blank'
-                rel='noopener noreferrer'
+            {mergedContent.address && (
+              <div
                 style={{
-                  display: 'inline-block',
                   marginTop: 28,
-                  padding: '12px 32px',
-                  border: `1px solid ${gold}`,
-                  color: gold,
-                  textDecoration: 'none',
-                  fontSize: 9,
-                  letterSpacing: '0.45em',
-                  textTransform: 'uppercase',
-                  fontFamily: "'Cinzel', serif"
+                  width: '100%',
+                  height: 250,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  border: `1px solid rgba(212,172,78,0.25)`
                 }}
               >
-                Xem bản đồ
-              </a>
+                <iframe
+                  width='100%'
+                  height='100%'
+                  style={{ border: 0 }}
+                  loading='lazy'
+                  allowFullScreen
+                  referrerPolicy='no-referrer-when-downgrade'
+                  src={mapEmbedSrc}
+                />
+              </div>
             )}
           </div>
         </section>
@@ -464,30 +525,56 @@ export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
                 </h2>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
-                {albumImages.slice(0, 4).map((img: string, i: number) => (
-                  <div
-                    key={i}
-                    style={{ aspectRatio: '3/4', overflow: 'hidden', border: `1px solid rgba(212,172,78,0.2)` }}
-                  >
-                    <img
-                      src={img}
-                      alt=''
+                {albumImages.slice(0, 4).map((img: string, i: number) => {
+                  const isLast = i === 3
+                  const extraCount = albumImages.length - 4
+                  return (
+                    <div
+                      key={i}
                       style={{
-                        width: '100%',
-                        height: '100%',
-                        filter: 'sepia(0.15) contrast(1.1)',
-                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        position: 'relative',
+                        aspectRatio: '3/4',
+                        overflow: 'hidden',
+                        border: `1px solid rgba(212,172,78,0.2)`
                       }}
-                    />
-                  </div>
-                ))}
+                    >
+                      <img
+                        src={img}
+                        alt=''
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          filter: 'sepia(0.15) contrast(1.1)',
+                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        }}
+                      />
+                      {isLast && extraCount > 0 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.6)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: gold,
+                            fontSize: '1.5rem',
+                            fontFamily: "'Cinzel', serif"
+                          }}
+                        >
+                          +{extraCount}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </section>
         )}
 
         {/* ── GIFT ── */}
-        {(mergedContent.bank_name || mergedContent.account_number) && (
+        {(mergedContent.bank_name || mergedContent.account_number || mergedContent.qr_image) && (
           <section style={{ background: darkCard, padding: '72px 24px' }}>
             <div style={{ maxWidth: 420, margin: '0 auto', textAlign: 'center' }}>
               <p
@@ -524,42 +611,107 @@ export default function ArtDecoGeneralView({ wedding }: TemplateProps) {
                     opacity: 0.4
                   }}
                 />
-                {mergedContent.account_name && (
-                  <p
-                    style={{
-                      fontSize: 18,
-                      fontFamily: "'Cinzel Decorative', cursive",
-                      color: gold,
-                      fontWeight: 400,
-                      marginBottom: 10
-                    }}
-                  >
-                    {mergedContent.account_name}
-                  </p>
-                )}
-                {mergedContent.bank_name && (
-                  <p
-                    style={{
-                      fontSize: 9,
-                      letterSpacing: '0.4em',
-                      color: 'rgba(240,232,212,0.45)',
-                      textTransform: 'uppercase',
-                      fontFamily: "'Cinzel', serif",
-                      marginBottom: 6
-                    }}
-                  >
-                    {mergedContent.bank_name}
-                  </p>
-                )}
-                {mergedContent.account_number && (
-                  <p style={{ fontSize: 22, color: textLight, letterSpacing: '0.12em', fontFamily: "'Cinzel', serif" }}>
-                    {mergedContent.account_number}
-                  </p>
+                {mergedContent.qr_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mergedContent.qr_image}
+                    alt='QR Tiền Mừng'
+                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
+                  />
+                ) : (
+                  mergedContent.account_number && (
+                    <p
+                      style={{ fontSize: 22, color: textLight, letterSpacing: '0.12em', fontFamily: "'Cinzel', serif" }}
+                    >
+                      {mergedContent.account_number}
+                    </p>
+                  )
                 )}
               </div>
             </div>
           </section>
         )}
+
+        {/* ── GUESTBOOK ── */}
+        <section style={{ background: black, padding: '72px 24px' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
+            <p
+              style={{
+                fontSize: 8,
+                letterSpacing: '0.55em',
+                color: gold,
+                textTransform: 'uppercase',
+                fontFamily: "'Cinzel', serif",
+                marginBottom: 14
+              }}
+            >
+              Sổ Lưu Bút
+            </p>
+            <h2
+              style={{
+                fontSize: 'clamp(1.4rem,4vw,2.2rem)',
+                fontFamily: "'Cinzel Decorative', cursive",
+                color: textLight,
+                marginBottom: 28
+              }}
+            >
+              Lời Chúc Trân Trọng
+            </h2>
+            <div style={{ border: `1px solid rgba(212,172,78,0.25)`, padding: '28px 20px', position: 'relative' }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: -1,
+                  left: '20%',
+                  right: '20%',
+                  height: 1,
+                  background: `linear-gradient(to right, transparent, ${gold}, transparent)`,
+                  opacity: 0.4
+                }}
+              />
+              {wishesList.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {wishesList.map((w, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '16px',
+                        textAlign: 'left',
+                        background: 'rgba(212,172,78,0.05)',
+                        borderLeft: `2px solid ${gold}`
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontStyle: 'italic',
+                          color: 'rgba(240,232,212,0.7)',
+                          marginBottom: 8,
+                          fontSize: 13,
+                          lineHeight: 1.6
+                        }}
+                      >
+                        "{w.wishes}"
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "'Cinzel', serif",
+                          color: gold,
+                          fontSize: 10,
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        - {w.guest_name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: 'rgba(240,232,212,0.5)', fontStyle: 'italic' }}>Chưa có lời chúc nào.</p>
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* ── FOOTER ── */}
         <section

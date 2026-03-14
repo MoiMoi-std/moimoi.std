@@ -1,8 +1,15 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { TemplateProps } from '../TemplateRegistry'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
+import { useMapEmbed } from '../../lib/useMapEmbed'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
 export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -12,10 +19,26 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
     seconds: number
   } | null>(null)
   const viewport = useTemplateViewport()
+  const [wishesList, setWishesList] = useState<any[]>([])
 
   const { content, template } = wedding || {}
+
+  useEffect(() => {
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
+    }
+  }, [wedding?.id])
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
 
   const amber = mergedContent.primary_color || '#c96a2a'
   const amberLight = '#e8925a'
@@ -58,7 +81,8 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
       </div>
     )
 
-  const albumImages: string[] = mergedContent.images?.length > 0 ? mergedContent.images : []
+  const allAlbumImages: string[] = mergedContent.images?.length > 0 ? mergedContent.images : []
+  const albumImages = allAlbumImages.slice(0, 20)
 
   return (
     <>
@@ -104,9 +128,14 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: (() => {
+                ...(() => {
                   const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
-                  return adj ? `${adj.x}% ${adj.y}%` : 'center'
+                  return {
+                    backgroundPosition: adj ? `${adj.x}% ${adj.y}%` : 'center',
+                    ...(adj && adj.zoom !== 1
+                      ? { transform: `scale(${adj.zoom})`, transformOrigin: `${adj.x}% ${adj.y}%` }
+                      : {})
+                  }
                 })(),
                 filter: 'brightness(0.5) saturate(0.8) sepia(0.25)'
               }}
@@ -185,6 +214,20 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
             >
               The Wedding of
             </p>
+            {mergedContent.groom_role && (
+              <p
+                className='gh-up gh-d1'
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.4em',
+                  color: gold,
+                  textTransform: 'uppercase',
+                  marginBottom: 8
+                }}
+              >
+                {mergedContent.groom_role}
+              </p>
+            )}
             <h1
               className='gh-up gh-glow gh-d2'
               style={{
@@ -231,6 +274,21 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
                 }}
               />
             </div>
+            {mergedContent.bride_role && (
+              <p
+                className='gh-up gh-d2'
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.4em',
+                  color: gold,
+                  textTransform: 'uppercase',
+                  marginBottom: 8,
+                  marginTop: 8
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
             <h1
               className='gh-up gh-glow gh-d3'
               style={{
@@ -410,26 +468,28 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
                   <p style={{ fontSize: 15, color: textDark, lineHeight: 1.5 }}>{it.value}</p>
                 </div>
               ))}
-            {mergedContent.map_url && (
-              <a
-                href={mergedContent.map_url}
-                target='_blank'
-                rel='noopener noreferrer'
+            {mergedContent.address && (
+              <div
                 style={{
-                  display: 'inline-block',
                   marginTop: 28,
-                  padding: '12px 32px',
-                  background: `linear-gradient(135deg, ${amber}, ${amberLight})`,
-                  color: '#fff',
-                  textDecoration: 'none',
-                  fontSize: 10,
-                  letterSpacing: '0.3em',
-                  textTransform: 'uppercase',
-                  borderRadius: 24
+                  width: '100%',
+                  height: 250,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  border: `1px solid rgba(201,106,42,0.12)`
                 }}
               >
-                Xem bản đồ
-              </a>
+                <iframe
+                  width='100%'
+                  height='100%'
+                  style={{ border: 0 }}
+                  loading='lazy'
+                  allowFullScreen
+                  referrerPolicy='no-referrer-when-downgrade'
+                  src={mapEmbedSrc}
+                />
+              </div>
             )}
           </div>
         </section>
@@ -462,35 +522,57 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
                 </h2>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                {albumImages.slice(0, 4).map((img: string, i: number) => (
-                  <div
-                    key={i}
-                    style={{
-                      aspectRatio: '1',
-                      overflow: 'hidden',
-                      borderRadius: 8,
-                      boxShadow: `0 8px 24px rgba(201,106,42,0.2)`
-                    }}
-                  >
-                    <img
-                      src={img}
-                      alt=''
+                {albumImages.slice(0, 4).map((img: string, i: number) => {
+                  const isLast = i === 3
+                  const extraCount = albumImages.length - 4
+                  return (
+                    <div
+                      key={i}
                       style={{
-                        width: '100%',
-                        height: '100%',
-                        filter: 'sepia(0.12) saturate(1.1)',
-                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        position: 'relative',
+                        aspectRatio: '1',
+                        overflow: 'hidden',
+                        borderRadius: 8,
+                        boxShadow: `0 8px 24px rgba(201,106,42,0.2)`
                       }}
-                    />
-                  </div>
-                ))}
+                    >
+                      <img
+                        src={img}
+                        alt=''
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          filter: 'sepia(0.12) saturate(1.1)',
+                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        }}
+                      />
+                      {isLast && extraCount > 0 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: '1.5rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          +{extraCount}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </section>
         )}
 
         {/* ── GIFT ── */}
-        {(mergedContent.bank_name || mergedContent.account_number) && (
+        {(mergedContent.bank_name || mergedContent.account_number || mergedContent.qr_image) && (
           <section style={{ background: `linear-gradient(135deg, ${amber}22, ${gold}18)`, padding: '72px 24px' }}>
             <div style={{ maxWidth: 420, margin: '0 auto', textAlign: 'center' }}>
               <p
@@ -524,48 +606,103 @@ export default function GoldenHourGeneralView({ wedding }: TemplateProps) {
                   marginTop: 24
                 }}
               >
-                {mergedContent.account_name && (
-                  <p
-                    style={{
-                      fontSize: 18,
-                      fontFamily: "'Libre Baskerville', serif",
-                      fontStyle: 'italic',
-                      color: amber,
-                      marginBottom: 8
-                    }}
-                  >
-                    {mergedContent.account_name}
-                  </p>
-                )}
-                {mergedContent.bank_name && (
-                  <p
-                    style={{
-                      fontSize: 10,
-                      letterSpacing: '0.25em',
-                      color: textMid,
-                      textTransform: 'uppercase',
-                      marginBottom: 6
-                    }}
-                  >
-                    {mergedContent.bank_name}
-                  </p>
-                )}
-                {mergedContent.account_number && (
-                  <p
-                    style={{
-                      fontSize: 22,
-                      color: textDark,
-                      letterSpacing: '0.1em',
-                      fontFamily: "'Libre Baskerville', serif"
-                    }}
-                  >
-                    {mergedContent.account_number}
-                  </p>
+                {mergedContent.qr_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mergedContent.qr_image}
+                    alt='QR Tiền Mừng'
+                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
+                  />
+                ) : (
+                  mergedContent.account_number && (
+                    <p
+                      style={{
+                        fontSize: 22,
+                        color: textDark,
+                        letterSpacing: '0.1em',
+                        fontFamily: "'Libre Baskerville', serif"
+                      }}
+                    >
+                      {mergedContent.account_number}
+                    </p>
+                  )
                 )}
               </div>
             </div>
           </section>
         )}
+
+        {/* ── GUESTBOOK ── */}
+        <section style={{ background: creamDark, padding: '72px 24px' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
+            <p
+              style={{
+                fontSize: 9,
+                letterSpacing: '0.4em',
+                color: amber,
+                textTransform: 'uppercase',
+                marginBottom: 10
+              }}
+            >
+              Sổ Lưu Bút
+            </p>
+            <h2
+              style={{
+                fontSize: 'clamp(1.6rem,5vw,2.4rem)',
+                fontFamily: "'Libre Baskerville', serif",
+                fontStyle: 'italic',
+                color: textDark,
+                marginBottom: 28
+              }}
+            >
+              Lời Chúc Trân Trọng
+            </h2>
+            <div
+              style={{
+                border: `1px solid rgba(201,106,42,0.22)`,
+                borderRadius: 12,
+                padding: '28px 20px',
+                background: 'rgba(255,248,240,0.8)'
+              }}
+            >
+              {wishesList.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {wishesList.map((w, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '16px',
+                        textAlign: 'left',
+                        background: creamDark,
+                        borderRadius: 8,
+                        borderLeft: `3px solid ${amber}`
+                      }}
+                    >
+                      <p
+                        style={{ fontStyle: 'italic', color: textMid, marginBottom: 8, fontSize: 14, lineHeight: 1.6 }}
+                      >
+                        "{w.wishes}"
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "'Lato', sans-serif",
+                          color: textDark,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        - {w.guest_name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: textMid, fontStyle: 'italic' }}>Chưa có lời chúc nào.</p>
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* ── FOOTER ── */}
         <section

@@ -15,10 +15,13 @@ const DEMO_WEDDING = {
   updated_at: new Date().toISOString(),
   content: {
     groom_name: 'Minh Tuấn',
+    groom_role: 'Chú rể',
     bride_name: 'Thu Hiền',
+    bride_role: 'Cô dâu',
     wedding_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 60 days from now
     wedding_time: '18:00',
     event_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN'),
+    lunar_date: 'Ngày 12 tháng 4 năm Bính Ngọ',
     address: 'Trung Tâm Tiệc Cưới Grand Palace, 142 Công Hòa, Q.Tân Bình, TP.HCM',
     map_url: 'https://maps.google.com',
     cover_image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80',

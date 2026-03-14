@@ -1,43 +1,77 @@
-import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
+import RSVPForm from '@/components/guest/RSVPForm'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
+import { useMapEmbed } from '../../lib/useMapEmbed'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
-export default function CherryBlossomGuestView({ wedding, guestName = '', rsvpId }: TemplateProps) {
-  const [wish, setWish] = useState('')
-  const [phone, setPhone] = useState('')
-  const [isAttending, setIsAttending] = useState<boolean | null>(null)
-  const [partySize, setPartySize] = useState(1)
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [submitError, setSubmitError] = useState('')
+export default function CherryBlossomGuestView({ wedding, guestName, rsvpId }: TemplateProps) {
+  const [timeRemaining, setTimeRemaining] = useState<{
+    days: number
+    hours: number
+    minutes: number
+    seconds: number
+  } | null>(null)
+  const viewport = useTemplateViewport()
+  const [wishesList, setWishesList] = useState<any[]>([])
+
+  const { content, template } = wedding || {}
 
   useEffect(() => {
-    if (!rsvpId) return
-    supabase
-      .from('rsvps')
-      .select('wishes, phone, is_attending, party_size')
-      .eq('id', rsvpId)
-      .single()
-      .then(({ data }) => {
-        if (!data) return
-        if (data.wishes) setWish(data.wishes)
-        if (data.phone) setPhone(data.phone)
-        if (data.is_attending != null) setIsAttending(data.is_attending)
-        if (data.party_size) setPartySize(data.party_size)
-      })
-  }, [rsvpId])
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
+    }
+  }, [wedding?.id])
+  const templateData = template as any
+  const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
+  const fontFamily = mergedContent.font_family || ''
+  const sectionFontFamily = mergedContent.section_font_family || fontFamily
 
-  const pink = '#d4507a'
-  const pinkDark = '#a83258'
-  const pinkLight = '#f9a8c9'
-  const textDark = '#2d1020'
-  const textMid = '#8a5065'
+  const pink = mergedContent.primary_color || '#d4507a'
+  const pinkDeep = '#a83258'
+  const pinkLight = '#f0a0be'
+  const pinkBg = '#fff8fb'
+  const pinkCard = 'rgba(255,255,255,0.92)'
+  const purple = '#9b5de5'
+  const blush = '#fce4ec'
+  const textDark = '#2d1322'
+  const textMid = '#8b4d6a'
+
+  useEffect(() => {
+    if (!mergedContent.wedding_date) return
+    const interval = setInterval(() => {
+      const weddingDate = new Date(`${mergedContent.wedding_date}T${mergedContent.wedding_time || '00:00'}`)
+      const now = new Date()
+      const diff = weddingDate.getTime() - now.getTime()
+      if (diff > 0) {
+        setTimeRemaining({
+          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((diff % (1000 * 60)) / 1000)
+        })
+      } else {
+        setTimeRemaining(null)
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [mergedContent.wedding_date, mergedContent.wedding_time])
 
   if (!wedding) {
     return (
@@ -47,98 +81,26 @@ export default function CherryBlossomGuestView({ wedding, guestName = '', rsvpId
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: '#fff5f9'
+          background: pinkBg
         }}
       >
         <div style={{ textAlign: 'center', padding: 40 }}>
-          <div
-            style={{
-              width: 48,
-              height: 48,
-              marginBottom: 12,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
-            <div
-              style={{
-                width: 24,
-                height: 32,
-                borderRadius: '50% 0 50% 0',
-                background: '#d4507a',
-                opacity: 0.6,
-                transform: 'rotate(-15deg)'
-              }}
-            />
-          </div>
-          <h1 style={{ color: pink, fontFamily: "'Quicksand', sans-serif" }}>Không tìm thấy thiệp mời</h1>
-          <p style={{ color: textMid, marginTop: 8 }}>Link mời có thể đã hết hạn hoặc không hợp lệ.</p>
+          <h1 style={{ color: pink, fontFamily: "'Quicksand', sans-serif" }}>Không tìm thấy thiệp cưới</h1>
         </div>
       </div>
     )
   }
 
-  const { content, template } = wedding
-  const templateData = template as any
-  const mergedContent = { ...(templateData?.default_content || {}), ...content }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setSubmitError('')
-    try {
-      if (rsvpId) {
-        const { error } = await supabase
-          .from('rsvps')
-          .update({
-            phone: phone.trim() || null,
-            is_attending: isAttending,
-            party_size: isAttending ? partySize : 1,
-            wishes: wish.trim() || null
-          })
-          .eq('id', rsvpId)
-        if (error) throw error
-      }
-      setSubmitted(true)
-    } catch (err: any) {
-      console.error('RSVP error:', err)
-      setSubmitError('Có lỗi xảy ra, vui lòng thử lại!')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '13px 16px',
-    border: `1.5px solid ${pink}35`,
-    borderRadius: 16,
-    fontSize: 15,
-    outline: 'none',
-    background: 'rgba(255,255,255,0.9)',
-    boxSizing: 'border-box',
-    fontFamily: "'Quicksand', sans-serif",
-    color: textDark,
-    transition: 'border-color 0.25s, box-shadow 0.25s'
-  }
-
-  const labelStyle: React.CSSProperties = {
-    display: 'block',
-    marginBottom: 7,
-    fontWeight: 700,
-    fontSize: 11,
-    color: pink,
-    letterSpacing: '0.16em',
-    textTransform: 'uppercase',
-    fontFamily: "'Quicksand', sans-serif"
-  }
+  const allAlbumImages: string[] = (mergedContent.images || []).filter(Boolean)
+  const albumImages = allAlbumImages.slice(0, 20)
 
   return (
     <>
       <Head>
-        <title>Thiệp mời — {guestName}</title>
-        <meta name='viewport' content='width=device-width, initial-scale=1' />
+        <title>
+          {mergedContent.groom_name} &amp; {mergedContent.bride_name} — Cherry Blossom Wedding
+        </title>
+        <meta name='description' content={`Thiệp cưới — ${mergedContent.groom_name} và ${mergedContent.bride_name}`} />
         <link rel='preconnect' href='https://fonts.googleapis.com' />
         <link rel='preconnect' href='https://fonts.gstatic.com' crossOrigin='anonymous' />
         <link
@@ -147,59 +109,92 @@ export default function CherryBlossomGuestView({ wedding, guestName = '', rsvpId
         />
         <style>{`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-          body { background: #fff5f9; -webkit-font-smoothing: antialiased; }
-
-          input:focus, textarea:focus {
-            border-color: ${pink} !important;
-            box-shadow: 0 0 0 3px ${pink}22 !important;
-          }
+          body { background: ${pinkBg}; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+          html { scroll-behavior: smooth; }
 
           @keyframes cbFadeUp {
-            from { opacity: 0; transform: translateY(28px); }
+            from { opacity: 0; transform: translateY(40px); }
             to   { opacity: 1; transform: translateY(0); }
           }
+          @keyframes cbHeroZoom {
+            from { transform: scale(1.07); }
+            to   { transform: scale(1); }
+          }
           @keyframes cbPetalFall {
-            0%   { transform: translateY(-5vh) translateX(0) rotate(0deg); opacity: 0.7; }
-            100% { transform: translateY(110vh) translateX(40px) rotate(540deg); opacity: 0; }
+            0%   { transform: translateY(-60px) translateX(0px) rotate(0deg) scale(1); opacity: 0.85; }
+            20%  { opacity: 0.9; }
+            80%  { opacity: 0.65; }
+            100% { transform: translateY(110vh) translateX(80px) rotate(600deg) scale(0.7); opacity: 0; }
           }
           @keyframes cbFloat {
-            0%, 100% { transform: translateY(0); }
-            50%       { transform: translateY(-10px); }
+            0%, 100% { transform: translateY(0px) rotate(-2deg); }
+            50%       { transform: translateY(-14px) rotate(2deg); }
           }
-          @keyframes cbGlow {
-            0%, 100% { box-shadow: 0 4px 20px ${pink}14; }
-            50%       { box-shadow: 0 8px 36px ${pink}30; }
+          @keyframes cbShimmer {
+            0%   { background-position: -200% center; }
+            100% { background-position: 200% center; }
+          }
+          @keyframes cbPuls {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50%       { opacity: 1; transform: scale(1.08); }
+          }
+          @keyframes cbScrollPulse {
+            0%   { opacity: 1; transform: scaleY(1); }
+            100% { opacity: 0; transform: scaleY(0); transform-origin: top; }
           }
 
-          .c-fade { animation: cbFadeUp 0.75s cubic-bezier(.16,1,.3,1) both; }
-          .c-fade:nth-child(2) { animation-delay: .1s; }
-          .c-fade:nth-child(3) { animation-delay: .2s; }
-          .c-fade:nth-child(4) { animation-delay: .3s; }
-          .c-float { animation: cbFloat 5s ease-in-out infinite; display: inline-block; }
+          .cb-up   { animation: cbFadeUp 0.9s cubic-bezier(.16,1,.3,1) both; }
+          .cb-zoom { animation: cbHeroZoom 2s cubic-bezier(.16,1,.3,1) both; }
+          .cb-d1   { animation-delay: 0.15s; }
+          .cb-d2   { animation-delay: 0.3s; }
+          .cb-d3   { animation-delay: 0.45s; }
+          .cb-d4   { animation-delay: 0.6s; }
+          .cb-d5   { animation-delay: 0.75s; }
+          .cb-float { animation: cbFloat 6s ease-in-out infinite; }
+          .cb-pulse { animation: cbPuls 3s ease-in-out infinite; }
 
-          .c-petal {
+          .cb-petal {
             position: absolute;
-            font-size: 1.1rem;
+            width: 14px;
+            height: 20px;
+            border-radius: 50% 0 50% 0;
             animation: cbPetalFall linear infinite;
-            opacity: 0.5;
             pointer-events: none;
             user-select: none;
           }
 
-          .c-card {
-            background: rgba(255,255,255,0.9);
-            backdrop-filter: blur(16px);
-            border: 1.5px solid ${pink}20;
+          .cb-card {
+            background: ${pinkCard};
+            backdrop-filter: blur(18px);
+            border: 1px solid ${pink}18;
             border-radius: 24px;
-            box-shadow: 0 6px 28px ${pink}0e;
-            animation: cbGlow 5s ease-in-out infinite;
+            box-shadow: 0 4px 28px ${pink}0d, 0 1px 0 rgba(255,255,255,0.9) inset;
+            transition: transform 0.45s cubic-bezier(.16,1,.3,1), box-shadow 0.45s;
+          }
+          .cb-card:hover { transform: translateY(-6px); box-shadow: 0 18px 52px ${pink}18; }
+
+          .cb-photo {
+            overflow: hidden;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px ${pink}1a;
+            transition: transform 0.5s cubic-bezier(.16,1,.3,1), box-shadow 0.5s;
+            cursor: pointer;
+          }
+          .cb-photo:hover { transform: scale(1.025); box-shadow: 0 16px 48px ${pink}28; }
+
+          .cb-names {
+            background: linear-gradient(135deg, #fff 0%, ${pinkLight} 40%, ${purple} 80%, #fff 100%);
+            background-size: 250% 250%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: cbShimmer 8s linear infinite;
           }
 
-          .btn-cb-yes:hover  { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,197,94,0.25); }
-          .btn-cb-no:hover   { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(239,68,68,0.2); }
-          .btn-cb-sub:not(:disabled):hover {
-            transform: translateY(-3px);
-            box-shadow: 0 14px 40px ${pink}50;
+          .cb-scroll-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: rgba(255,255,255,0.8); margin: 0 auto;
+            animation: cbScrollPulse 1.8s ease-in-out infinite;
           }
         `}</style>
       </Head>
@@ -207,494 +202,944 @@ export default function CherryBlossomGuestView({ wedding, guestName = '', rsvpId
       <div
         style={{
           minHeight: '100vh',
-          background: `linear-gradient(165deg, #fff5f9 0%, #fce4ec 55%, #f3e5f5 100%)`,
+          background: pinkBg,
           fontFamily: "'Quicksand', sans-serif",
-          color: textDark
+          color: textDark,
+          overflowX: 'hidden'
         }}
       >
         {/* ══ Hero ══ */}
-        <div style={{ position: 'relative', overflow: 'hidden', height: 380 }}>
+        <section
+          style={{
+            position: 'relative',
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden'
+          }}
+        >
           {mergedContent.cover_image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={mergedContent.cover_image}
-              alt=''
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }}
+            <div
+              className='cb-zoom'
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage: `url(${mergedContent.cover_image})`,
+                backgroundSize: 'cover',
+                ...(() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return {
+                    backgroundPosition: adj ? `${adj.x}% ${adj.y}%` : 'center top',
+                    ...(adj && adj.zoom !== 1
+                      ? { transform: `scale(${adj.zoom})`, transformOrigin: `${adj.x}% ${adj.y}%` }
+                      : {})
+                  }
+                })()
+              }}
             />
           ) : (
-            <div style={{ position: 'absolute', inset: 0, background: pinkDark, zIndex: 0 }} />
+            <div
+              style={{
+                position: 'absolute',
+                inset: 0,
+                background: `linear-gradient(160deg, #fce4ec 0%, #f48fb1 40%, ${purple}60 100%)`
+              }}
+            />
           )}
-          {/* Romantic dark overlay */}
+
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: 'linear-gradient(to bottom, rgba(90,20,45,0.22) 0%, rgba(30,5,18,0.78) 100%)',
-              zIndex: 1
+              background: mergedContent.cover_image
+                ? `linear-gradient(to bottom, rgba(90,20,45,0.28) 0%, rgba(60,10,30,0.52) 50%, rgba(30,5,18,0.78) 100%)`
+                : `linear-gradient(to bottom, rgba(180,60,100,0.15) 0%, rgba(80,20,50,0.4) 100%)`
             }}
           />
-          {/* CSS petal shapes in corners */}
+
+          <div
+            style={{
+              position: 'absolute',
+              width: 600,
+              height: 600,
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${pink}18, transparent 65%)`,
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%,-50%)',
+              filter: 'blur(80px)',
+              pointerEvents: 'none'
+            }}
+          />
+
           {[
-            { top: 12, left: 12 },
-            { top: 12, right: 12 },
-            { bottom: 12, left: 12 },
-            { bottom: 12, right: 12 }
-          ].map((pos, i) => (
+            { left: '6%', delay: '0s', dur: '9s', color: `${pink}cc`, rot: '20deg' },
+            { left: '18%', delay: '2.5s', dur: '12s', color: `${pinkLight}bb`, rot: '-15deg' },
+            { left: '33%', delay: '5s', dur: '10s', color: `${pink}aa`, rot: '35deg' },
+            { left: '52%', delay: '1s', dur: '14s', color: `${purple}99`, rot: '-30deg' },
+            { left: '68%', delay: '3.5s', dur: '11s', color: `${pinkLight}cc`, rot: '10deg' },
+            { left: '80%', delay: '6s', dur: '9.5s', color: `${pink}bb`, rot: '50deg' },
+            { left: '92%', delay: '0.8s', dur: '13s', color: `${pinkLight}aa`, rot: '-45deg' }
+          ].map((p, i) => (
             <div
               key={i}
+              className='cb-petal'
               style={{
-                position: 'absolute',
-                zIndex: 2,
-                width: 22,
-                height: 28,
-                opacity: 0.28,
-                background: '#fff',
-                clipPath: 'ellipse(40% 50% at 50% 50%)',
-                transform: `rotate(${i * 90}deg)`,
-                ...pos
+                left: p.left,
+                top: 0,
+                background: p.color,
+                transform: `rotate(${p.rot})`,
+                animationDelay: p.delay,
+                animationDuration: p.dur
               }}
             />
           ))}
-          {/* Text content */}
+
           <div
-            style={{
-              position: 'relative',
-              zIndex: 2,
-              height: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '0 24px',
-              textAlign: 'center'
-            }}
+            style={{ textAlign: 'center', maxWidth: 720, padding: '80px 28px 100px', position: 'relative', zIndex: 1 }}
           >
             <p
+              className='cb-up'
               style={{
-                fontSize: 9,
+                fontSize: 10,
                 fontWeight: 700,
-                color: 'rgba(255,255,255,0.65)',
-                letterSpacing: '0.38em',
+                letterSpacing: '0.55em',
                 textTransform: 'uppercase',
-                marginBottom: 20
+                color: 'rgba(255,255,255,0.65)',
+                marginBottom: 40
               }}
             >
-              TRÂN TRỌNG KÍNH MỜI
+              SAKURA WEDDING
             </p>
+
             <h1
+              className='cb-names cb-up cb-d1'
               style={{
                 fontFamily: "'Noto Serif JP', serif",
-                fontSize: 'clamp(2rem, 7vw, 3.2rem)',
+                fontSize: 'clamp(3rem, 10vw, 6.5rem)',
                 fontWeight: 700,
-                color: '#fff',
-                lineHeight: 1.15,
-                marginBottom: 14,
-                textShadow: '0 3px 32px rgba(0,0,0,0.55)'
+                lineHeight: 1.05,
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em'
               }}
             >
-              {guestName}
+              {mergedContent.groom_name}
             </h1>
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.72)', marginBottom: 10 }}>
-              tới tham dự lễ thành hôn của
+
+            <div
+              className='cb-up cb-d2'
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, margin: '22px 0' }}
+            >
+              <div style={{ flex: 1, maxWidth: 80, height: 1, background: 'rgba(255,255,255,0.35)' }} />
+              <div
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: '50% 0 50% 0',
+                  background: 'rgba(255,255,255,0.85)',
+                  transform: 'rotate(45deg)'
+                }}
+              />
+              <div style={{ width: 12, height: 12, borderRadius: '50%', background: 'rgba(255,255,255,0.6)' }} />
+              <div
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: '0 50% 0 50%',
+                  background: 'rgba(255,255,255,0.85)',
+                  transform: 'rotate(45deg)'
+                }}
+              />
+              <div style={{ flex: 1, maxWidth: 80, height: 1, background: 'rgba(255,255,255,0.35)' }} />
+            </div>
+
+            {mergedContent.bride_role && (
+              <p
+                className='cb-up cb-d3'
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.55em',
+                  textTransform: 'uppercase',
+                  color: pinkLight,
+                  marginBottom: 8
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
+            <h1
+              className='cb-names cb-up cb-d3'
+              style={{
+                fontFamily: "'Noto Serif JP', serif",
+                fontSize: 'clamp(3rem, 10vw, 6.5rem)',
+                fontWeight: 700,
+                lineHeight: 1.05,
+                paddingTop: '0.15em',
+                paddingBottom: '0.15em',
+                marginBottom: 36
+              }}
+            >
+              {mergedContent.bride_name}
+            </h1>
+
+            {mergedContent.wedding_date && (
+              <p
+                className='cb-up cb-d4'
+                style={{
+                  fontFamily: "'Noto Serif JP', serif",
+                  fontSize: 16,
+                  fontStyle: 'italic',
+                  color: 'rgba(255,255,255,0.82)',
+                  letterSpacing: '0.05em',
+                  marginBottom: 10
+                }}
+              >
+                {new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            )}
+            {mergedContent.address && (
+              <p
+                className='cb-up cb-d5'
+                style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', letterSpacing: '0.04em', marginBottom: 16 }}
+              >
+                {mergedContent.address}
+              </p>
+            )}
+
+            {guestName && (
+              <div
+                className='cb-up cb-d5'
+                style={{
+                  marginTop: 20,
+                  padding: '14px 28px',
+                  border: `1px solid rgba(255,255,255,0.25)`,
+                  display: 'inline-block',
+                  borderRadius: 12,
+                  background: 'rgba(255,255,255,0.08)',
+                  backdropFilter: 'blur(8px)'
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 9,
+                    letterSpacing: '0.45em',
+                    color: pinkLight,
+                    textTransform: 'uppercase',
+                    fontFamily: "'Quicksand', sans-serif",
+                    fontWeight: 700,
+                    marginBottom: 4
+                  }}
+                >
+                  Kính gửi
+                </p>
+                <p style={{ fontFamily: "'Noto Serif JP', serif", fontSize: 16, color: '#fff', fontWeight: 600 }}>
+                  {guestName}
+                </p>
+              </div>
+            )}
+
+            <div
+              className='cb-up cb-d5'
+              style={{ marginTop: 64, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}
+            >
+              <div
+                style={{
+                  width: 1,
+                  height: 48,
+                  background: 'linear-gradient(to bottom, rgba(255,255,255,0.55), transparent)'
+                }}
+              />
+              <div className='cb-scroll-dot' />
+            </div>
+          </div>
+        </section>
+
+        {/* ══ Quote ══ */}
+        <section style={{ padding: '80px 24px', background: `linear-gradient(135deg, ${pinkBg} 0%, ${blush} 100%)` }}>
+          <div style={{ maxWidth: 620, margin: '0 auto', textAlign: 'center' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 32 }}>
+              {[20, 30, 20].map((deg, i) => (
+                <div
+                  key={i}
+                  style={{
+                    width: 12,
+                    height: 18,
+                    borderRadius: '50% 0 50% 0',
+                    background: `${pink}55`,
+                    transform: `rotate(${i * 30 - 30}deg)`
+                  }}
+                />
+              ))}
+            </div>
+            <p
+              style={{
+                fontFamily: "'Noto Serif JP', serif",
+                fontSize: 'clamp(0.95rem, 3vw, 1.2rem)',
+                fontStyle: 'italic',
+                fontWeight: 300,
+                color: textMid,
+                lineHeight: 2.1
+              }}
+            >
+              Hai gia đình trân trọng kính mời quý vị đến chung vui
+              <br />
+              trong ngày lễ thành hôn của
             </p>
             <p
               style={{
                 fontFamily: "'Noto Serif JP', serif",
-                fontSize: 'clamp(1rem, 3vw, 1.3rem)',
-                fontWeight: 600,
-                color: 'rgba(255,255,255,0.92)',
-                letterSpacing: '0.04em'
+                fontSize: 'clamp(1.2rem, 4vw, 1.6rem)',
+                fontWeight: 500,
+                color: pinkDeep,
+                marginTop: 14,
+                letterSpacing: '0.03em'
               }}
             >
               {mergedContent.groom_name} &amp; {mergedContent.bride_name}
             </p>
-            <div style={{ margin: '20px auto 0', width: 56, height: 1, background: `rgba(255,200,220,0.5)` }} />
-          </div>
-        </div>
-
-        {/* ══ Cards ══ */}
-        <div
-          style={{
-            maxWidth: 540,
-            margin: '0 auto',
-            padding: '0 16px 72px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16
-          }}
-        >
-          {/* Event info */}
-          <div className='c-fade c-card' style={{ padding: '26px 22px' }}>
-            <p
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                color: pink,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                textAlign: 'center',
-                marginBottom: 18
-              }}
-            >
-              Thông tin sự kiện
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {(
-                [
-                  {
-                    icon: (
-                      <svg
-                        width='18'
-                        height='18'
-                        viewBox='0 0 24 24'
-                        fill='none'
-                        stroke='currentColor'
-                        strokeWidth='1.5'
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                      >
-                        <rect x='3' y='4' width='18' height='18' rx='2' />
-                        <line x1='16' y1='2' x2='16' y2='6' />
-                        <line x1='8' y1='2' x2='8' y2='6' />
-                        <line x1='3' y1='10' x2='21' y2='10' />
-                      </svg>
-                    ),
-                    label: 'Ngày cưới',
-                    value: mergedContent.event_date
-                  },
-                  {
-                    icon: (
-                      <svg
-                        width='18'
-                        height='18'
-                        viewBox='0 0 24 24'
-                        fill='none'
-                        stroke='currentColor'
-                        strokeWidth='1.5'
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                      >
-                        <circle cx='12' cy='12' r='10' />
-                        <polyline points='12 6 12 12 16 14' />
-                      </svg>
-                    ),
-                    label: 'Giờ',
-                    value: mergedContent.wedding_time
-                  },
-                  {
-                    icon: (
-                      <svg
-                        width='18'
-                        height='18'
-                        viewBox='0 0 24 24'
-                        fill='none'
-                        stroke='currentColor'
-                        strokeWidth='1.5'
-                        strokeLinecap='round'
-                        strokeLinejoin='round'
-                      >
-                        <path d='M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z' />
-                        <circle cx='12' cy='10' r='3' />
-                      </svg>
-                    ),
-                    label: 'Địa điểm',
-                    value: mergedContent.address
-                  }
-                ] as { icon: React.ReactNode; label: string; value: string }[]
-              ).map(({ icon, label, value }) => (
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 28 }}>
+              {[20, 30, 20].map((deg, i) => (
                 <div
-                  key={label}
+                  key={i}
                   style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: 12,
-                    padding: '12px 14px',
-                    background: `${pink}0c`,
-                    borderRadius: 14,
-                    border: `1px solid ${pink}18`
+                    width: 12,
+                    height: 18,
+                    borderRadius: '0 50% 0 50%',
+                    background: `${pink}55`,
+                    transform: `rotate(${i * 30 - 30 + 180}deg)`
                   }}
-                >
-                  <span style={{ flexShrink: 0, lineHeight: 1, color: pink, marginTop: 1 }}>{icon}</span>
-                  <div>
-                    <span
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        color: pink,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.14em',
-                        display: 'block',
-                        marginBottom: 3
-                      }}
-                    >
-                      {label}
-                    </span>
-                    <span style={{ fontSize: 15, color: textDark, fontWeight: 600, lineHeight: 1.4 }}>
-                      {value || '—'}
-                    </span>
-                  </div>
-                </div>
+                />
               ))}
             </div>
           </div>
+        </section>
 
-          {/* RSVP Form */}
-          {!submitted ? (
-            <div className='c-fade c-card' style={{ padding: '28px 22px' }}>
+        {/* ══ Countdown ══ */}
+        {timeRemaining && (
+          <section
+            style={{
+              padding: '80px 20px',
+              background: `linear-gradient(135deg, ${pinkDeep} 0%, #7b1840 100%)`,
+              position: 'relative',
+              overflow: 'hidden'
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                bottom: -30,
+                right: -30,
+                width: 200,
+                height: 200,
+                borderRadius: '50% 0 50% 0',
+                background: 'rgba(255,255,255,0.04)',
+                pointerEvents: 'none'
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                top: -40,
+                left: -40,
+                width: 240,
+                height: 240,
+                borderRadius: '0 50% 0 50%',
+                background: 'rgba(255,255,255,0.03)',
+                pointerEvents: 'none'
+              }}
+            />
+            <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center', position: 'relative', zIndex: 1 }}>
               <p
                 style={{
                   fontSize: 10,
                   fontWeight: 700,
-                  color: pink,
-                  letterSpacing: '0.2em',
+                  letterSpacing: '0.5em',
                   textTransform: 'uppercase',
-                  textAlign: 'center',
-                  marginBottom: 4
+                  color: 'rgba(255,255,255,0.45)',
+                  marginBottom: 48
                 }}
               >
-                Xác nhận tham dự
+                ĐẾM NGƯỢC
               </p>
-              <p style={{ textAlign: 'center', color: textMid, fontSize: 13, marginBottom: 24 }}>
-                Vui lòng điền thông tin để chúng tôi chuẩn bị đón tiếp
-              </p>
-
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                {/* Tham dự? */}
-                <div>
-                  <label style={labelStyle}>Bạn có tham dự không? *</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                    <button
-                      type='button'
-                      className='btn-cb-yes'
-                      onClick={() => setIsAttending(true)}
-                      style={{
-                        padding: '13px 8px',
-                        borderRadius: 16,
-                        border: isAttending === true ? `2px solid #22c55e` : `1.5px solid ${pink}28`,
-                        background: isAttending === true ? '#f0fdf4' : 'rgba(255,255,255,0.7)',
-                        cursor: 'pointer',
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: isAttending === true ? '#15803d' : textMid,
-                        transition: 'all .2s',
-                        fontFamily: "'Quicksand', sans-serif"
-                      }}
-                    >
-                      Có, tôi sẽ đến
-                    </button>
-                    <button
-                      type='button'
-                      className='btn-cb-no'
-                      onClick={() => setIsAttending(false)}
-                      style={{
-                        padding: '13px 8px',
-                        borderRadius: 16,
-                        border: isAttending === false ? `2px solid #ef4444` : `1.5px solid ${pink}28`,
-                        background: isAttending === false ? '#fef2f2' : 'rgba(255,255,255,0.7)',
-                        cursor: 'pointer',
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: isAttending === false ? '#dc2626' : textMid,
-                        transition: 'all .2s',
-                        fontFamily: "'Quicksand', sans-serif"
-                      }}
-                    >
-                      Xin lỗi, tôi bận
-                    </button>
-                  </div>
-                </div>
-
-                {/* Điện thoại */}
-                <div>
-                  <label style={labelStyle}>
-                    Số điện thoại{' '}
-                    <span
-                      style={{
-                        color: '#c9a0b4',
-                        fontSize: 11,
-                        fontWeight: 500,
-                        textTransform: 'none',
-                        letterSpacing: 0
-                      }}
-                    >
-                      (tùy chọn)
-                    </span>
-                  </label>
-                  <input
-                    type='tel'
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder='0901 234 567'
-                    style={inputStyle}
-                  />
-                </div>
-
-                {/* Số người */}
-                <div>
-                  <label style={labelStyle}>Số người tham dự</label>
-                  <div style={{ display: 'flex' }}>
-                    {[1, 2, 3, 4, 5].map((n, i) => (
-                      <button
-                        key={n}
-                        type='button'
-                        onClick={() => setPartySize(n)}
-                        style={{
-                          flex: 1,
-                          padding: '12px 4px',
-                          border: '1.5px solid',
-                          borderColor: partySize === n ? pink : `${pink}28`,
-                          borderRight: i < 4 ? 'none' : '1.5px solid',
-                          borderRightColor: partySize === n ? pink : `${pink}28`,
-                          borderRadius: i === 0 ? '14px 0 0 14px' : i === 4 ? '0 14px 14px 0' : '0',
-                          background:
-                            partySize === n ? `linear-gradient(135deg, ${pinkDark}, ${pink})` : 'rgba(255,255,255,0.7)',
-                          color: partySize === n ? '#fff' : textMid,
-                          fontWeight: 700,
-                          fontSize: 15,
-                          cursor: 'pointer',
-                          transition: 'all .2s',
-                          fontFamily: "'Quicksand', sans-serif",
-                          boxShadow: partySize === n ? `0 4px 16px ${pink}35` : 'none'
-                        }}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                  </div>
-                  <p style={{ fontSize: 12, color: '#c9a0b4', marginTop: 5 }}>người tham dự</p>
-                </div>
-
-                {/* Lời chúc */}
-                <div>
-                  <label style={labelStyle}>
-                    Lời chúc{' '}
-                    <span
-                      style={{
-                        color: '#c9a0b4',
-                        fontSize: 11,
-                        fontWeight: 500,
-                        textTransform: 'none',
-                        letterSpacing: 0
-                      }}
-                    >
-                      (tùy chọn)
-                    </span>
-                  </label>
-                  <textarea
-                    value={wish}
-                    onChange={(e) => setWish(e.target.value)}
-                    placeholder='Chúc hai bạn trăm năm hạnh phúc, ngọt ngào như hoa anh đào...'
-                    rows={4}
-                    style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.65 }}
-                  />
-                </div>
-
-                {/* Submit */}
-                <button
-                  type='submit'
-                  className='btn-cb-sub'
-                  disabled={loading || isAttending === null}
-                  style={{
-                    width: '100%',
-                    padding: 16,
-                    background:
-                      isAttending === null || loading
-                        ? '#f0d5e0'
-                        : `linear-gradient(135deg, ${pinkDark}, ${pink}, ${pinkLight})`,
-                    color: isAttending === null || loading ? '#c9a0b4' : '#fff',
-                    border: 'none',
-                    borderRadius: 18,
-                    fontSize: 15,
-                    fontWeight: 700,
-                    cursor: loading || isAttending === null ? 'not-allowed' : 'pointer',
-                    letterSpacing: '0.05em',
-                    transition: 'all .3s',
-                    boxShadow: isAttending !== null && !loading ? `0 8px 30px ${pink}45` : 'none',
-                    fontFamily: "'Quicksand', sans-serif"
-                  }}
-                >
-                  {loading ? 'Đang gửi...' : 'Gửi xác nhận'}
-                </button>
-
-                {submitError && (
-                  <div
-                    style={{
-                      padding: '12px 16px',
-                      background: '#fef2f2',
-                      border: '1px solid #fecaca',
-                      borderRadius: 14,
-                      color: '#dc2626',
-                      fontSize: 14,
-                      textAlign: 'center'
-                    }}
-                  >
-                    {submitError}
-                  </div>
-                )}
-              </form>
-            </div>
-          ) : (
-            /* ══ Success ══ */
-            <div className='c-fade c-card' style={{ padding: '52px 28px', textAlign: 'center' }}>
-              <svg
-                style={{ color: pinkDark, marginBottom: 20, opacity: 0.7 }}
-                width='44'
-                height='44'
-                viewBox='0 0 48 48'
-                fill='currentColor'
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(4, 1fr)',
+                  gap: 1,
+                  background: 'rgba(255,255,255,0.08)',
+                  borderRadius: 20,
+                  overflow: 'hidden'
+                }}
               >
-                <ellipse cx='24' cy='24' rx='10' ry='22' />
-                <ellipse cx='24' cy='24' rx='22' ry='10' />
-              </svg>
-              <h3
+                {[
+                  { label: 'Ngày', value: timeRemaining.days },
+                  { label: 'Giờ', value: timeRemaining.hours },
+                  { label: 'Phút', value: timeRemaining.minutes },
+                  { label: 'Giây', value: timeRemaining.seconds }
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    style={{ padding: '32px 8px', textAlign: 'center', background: 'rgba(0,0,0,0.25)' }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: "'Noto Serif JP', serif",
+                        fontSize: 'clamp(2.5rem, 7vw, 4rem)',
+                        fontWeight: 700,
+                        letterSpacing: '-0.02em',
+                        color: '#fff',
+                        lineHeight: 1,
+                        marginBottom: 10
+                      }}
+                    >
+                      {String(item.value).padStart(2, '0')}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 700,
+                        letterSpacing: '0.22em',
+                        color: 'rgba(255,255,255,0.45)',
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      {item.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ══ Event Details ══ */}
+        <section style={{ padding: '90px 20px', background: pinkBg }}>
+          <div style={{ maxWidth: 820, margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 56 }}>
+              <p
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.5em',
+                  textTransform: 'uppercase',
+                  color: pink,
+                  marginBottom: 14
+                }}
+              >
+                THÔNG TIN LỄ CƯỚI
+              </p>
+              <h2
                 style={{
                   fontFamily: "'Noto Serif JP', serif",
-                  fontSize: '1.5rem',
+                  fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
                   fontWeight: 700,
-                  color: pink,
-                  marginBottom: 12,
-                  lineHeight: 1.3
+                  color: textDark
                 }}
               >
-                {isAttending ? 'Hẹn gặp bạn tại đám cưới!' : 'Cảm ơn bạn đã phản hồi!'}
-              </h3>
-              <p style={{ color: textMid, fontSize: 15, lineHeight: 1.75, maxWidth: 300, margin: '0 auto' }}>
-                {isAttending
-                  ? `Chúng tôi rất vui được đón tiếp ${guestName}. Hẹn gặp trong ngày vui!`
-                  : 'Rất tiếc khi bạn không thể tham dự. Mong có dịp gặp nhau trong tương lai!'}
-              </p>
-              {wish && (
-                <div
+                Ngày trọng đại
+              </h2>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 16 }}>
+              {[
+                {
+                  icon: (
+                    <svg
+                      width='22'
+                      height='22'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke={pink}
+                      strokeWidth='1.5'
+                      strokeLinecap='round'
+                    >
+                      <rect x='3' y='4' width='18' height='18' rx='2' />
+                      <path d='M16 2v4M8 2v4M3 10h18' />
+                    </svg>
+                  ),
+                  title: 'Ngày cưới',
+                  value: mergedContent.wedding_date
+                    ? new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })
+                    : null
+                },
+                {
+                  icon: (
+                    <svg
+                      width='22'
+                      height='22'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke={pink}
+                      strokeWidth='1.5'
+                      strokeLinecap='round'
+                    >
+                      <circle cx='12' cy='12' r='9' />
+                      <path d='M12 7v5l3 3' />
+                    </svg>
+                  ),
+                  title: 'Giờ tổ chức',
+                  value: mergedContent.wedding_time
+                },
+                {
+                  icon: (
+                    <svg
+                      width='22'
+                      height='22'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke={pink}
+                      strokeWidth='1.5'
+                      strokeLinecap='round'
+                    >
+                      <path d='M12 22s-8-6.5-8-12a8 8 0 0116 0c0 5.5-8 12-8 12Z' />
+                      <circle cx='12' cy='10' r='2.5' />
+                    </svg>
+                  ),
+                  title: 'Địa điểm',
+                  value: mergedContent.address
+                },
+                {
+                  icon: (
+                    <svg
+                      width='22'
+                      height='22'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke={pink}
+                      strokeWidth='1.5'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                    >
+                      <rect width='18' height='18' x='3' y='4' rx='2' ry='2' />
+                      <line x1='16' x2='16' y1='2' y2='6' />
+                      <line x1='8' x2='8' y1='2' y2='6' />
+                      <line x1='3' x2='21' y1='10' y2='10' />
+                      <path d='m9 16 2 2 4-4' />
+                    </svg>
+                  ),
+                  title: 'Lịch âm',
+                  value: mergedContent.lunar_date
+                }
+              ]
+                .filter((it) => it.value)
+                .map(({ icon, title, value }) => (
+                  <div
+                    key={title}
+                    className='cb-card cb-up'
+                    style={{ padding: '28px 24px', display: 'flex', alignItems: 'flex-start', gap: 18 }}
+                  >
+                    <div
+                      style={{
+                        width: 52,
+                        height: 52,
+                        borderRadius: 16,
+                        background: `${pink}10`,
+                        border: `1px solid ${pink}20`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}
+                    >
+                      {icon}
+                    </div>
+                    <div>
+                      <p
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: pink,
+                          letterSpacing: '0.2em',
+                          textTransform: 'uppercase',
+                          marginBottom: 8
+                        }}
+                      >
+                        {title}
+                      </p>
+                      <p style={{ fontSize: 16, fontWeight: 600, color: textDark, lineHeight: 1.6 }}>{value || '—'}</p>
+                    </div>
+                  </div>
+                ))}
+            </div>
+
+            {mergedContent.address && (
+              <div
+                style={{
+                  marginTop: 28,
+                  width: '100%',
+                  height: 250,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  border: `1px solid ${pink}20`,
+                  boxShadow: `0 8px 28px ${pink}1a`
+                }}
+              >
+                <iframe
+                  width='100%'
+                  height='100%'
+                  style={{ border: 0 }}
+                  loading='lazy'
+                  allowFullScreen
+                  referrerPolicy='no-referrer-when-downgrade'
+                  src={mapEmbedSrc}
+                />
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ══ Album ══ */}
+        {albumImages.length > 0 && (
+          <section style={{ padding: '90px 20px', background: `linear-gradient(135deg, ${pinkBg} 0%, ${blush} 100%)` }}>
+            <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+              <div style={{ textAlign: 'center', marginBottom: 52 }}>
+                <p
                   style={{
-                    marginTop: 28,
-                    padding: '14px 20px',
-                    background: `${pink}0d`,
-                    borderRadius: 16,
-                    borderLeft: `3px solid ${pink}`,
-                    textAlign: 'left'
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.5em',
+                    textTransform: 'uppercase',
+                    color: pink,
+                    marginBottom: 12
                   }}
                 >
-                  <p
+                  KHOẢNH KHẮC
+                </p>
+                <h2
+                  style={{
+                    fontFamily: "'Noto Serif JP', serif",
+                    fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
+                    fontWeight: 700,
+                    color: textDark
+                  }}
+                >
+                  Album cưới
+                </h2>
+              </div>
+              <div style={{ columns: '2 200px', gap: 12 }}>
+                {albumImages.slice(0, 4).map((img: string, i: number) => {
+                  const isLast = i === 3
+                  const extraCount = albumImages.length - 4
+                  return (
+                    <div
+                      key={i}
+                      className='cb-photo'
+                      style={{ position: 'relative', marginBottom: 12, breakInside: 'avoid' }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img}
+                        alt={`Ảnh cưới ${i + 1}`}
+                        style={{
+                          width: '100%',
+                          display: 'block',
+                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        }}
+                      />
+                      {isLast && extraCount > 0 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: '1.5rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          +{extraCount}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ══ Gift ══ */}
+        {(mergedContent.account_number || mergedContent.qr_image) && (
+          <section style={{ padding: '90px 20px', background: pinkBg }}>
+            <div style={{ maxWidth: 560, margin: '0 auto' }}>
+              <div style={{ textAlign: 'center', marginBottom: 48 }}>
+                <p
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.5em',
+                    textTransform: 'uppercase',
+                    color: pink,
+                    marginBottom: 12
+                  }}
+                >
+                  MỪNG CƯỚI
+                </p>
+                <h2
+                  style={{
+                    fontFamily: "'Noto Serif JP', serif",
+                    fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
+                    fontWeight: 700,
+                    color: textDark,
+                    marginBottom: 16
+                  }}
+                >
+                  Tấm lòng thơm thảo
+                </h2>
+                <p
+                  style={{
+                    color: textMid,
+                    fontSize: 15,
+                    lineHeight: 1.85,
+                    fontStyle: 'italic',
+                    fontFamily: "'Noto Serif JP', serif"
+                  }}
+                >
+                  Sự hiện diện của bạn là món quà quý giá nhất.
+                  <br />
+                  Nếu muốn gửi tặng thêm, xin trân trọng cảm ơn!
+                </p>
+              </div>
+              <div className='cb-card' style={{ padding: '36px 32px' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    marginBottom: 24,
+                    paddingBottom: 20,
+                    borderBottom: `1px solid ${pink}15`
+                  }}
+                >
+                  <div
                     style={{
-                      fontSize: 9,
-                      fontWeight: 700,
-                      color: pink,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.14em',
-                      marginBottom: 8
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      background: `${pink}10`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
                     }}
                   >
-                    Lời chúc của bạn
-                  </p>
-                  <p style={{ color: textMid, fontStyle: 'italic', fontSize: 14, lineHeight: 1.7 }}>
-                    &ldquo;{wish}&rdquo;
+                    <svg
+                      width='20'
+                      height='20'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke={pink}
+                      strokeWidth='1.5'
+                      strokeLinecap='round'
+                    >
+                      <rect x='2' y='5' width='20' height='14' rx='2' />
+                      <path d='M2 10h20' />
+                    </svg>
+                  </div>
+                  <p
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: textMid,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    Thông tin tài khoản
                   </p>
                 </div>
-              )}
-              <div style={{ marginTop: 28, fontSize: '0.1rem' }}></div>
+                {mergedContent.qr_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mergedContent.qr_image}
+                    alt='QR Tiền Mừng'
+                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
+                  />
+                ) : (
+                  mergedContent.account_number && (
+                    <p
+                      style={{
+                        fontFamily: "'Noto Serif JP', serif",
+                        fontSize: 'clamp(1.5rem, 5vw, 2.1rem)',
+                        fontWeight: 700,
+                        color: pinkDeep,
+                        letterSpacing: '0.06em',
+                        marginBottom: 8
+                      }}
+                    >
+                      {mergedContent.account_number}
+                    </p>
+                  )
+                )}
+              </div>
             </div>
-          )}
-        </div>
+          </section>
+        )}
+
+        {/* ══ Guestbook ══ */}
+        <section style={{ padding: '90px 20px', background: `linear-gradient(135deg, ${pinkBg} 0%, ${blush} 100%)` }}>
+          <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
+            <p
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.5em',
+                textTransform: 'uppercase',
+                color: pink,
+                marginBottom: 12
+              }}
+            >
+              SỔ LƯU BÚT
+            </p>
+            <h2
+              style={{
+                fontFamily: "'Noto Serif JP', serif",
+                fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
+                fontWeight: 700,
+                color: textDark,
+                marginBottom: 32
+              }}
+            >
+              Lời Chúc Trân Trọng
+            </h2>
+            <div className='cb-card' style={{ padding: '36px 32px' }}>
+              {wishesList.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {wishesList.map((w, idx) => (
+                    <div
+                      key={idx}
+                      style={{ padding: '16px', textAlign: 'left', background: `${pink}10`, borderRadius: 12 }}
+                    >
+                      <p
+                        style={{ fontStyle: 'italic', color: textMid, marginBottom: 8, fontSize: 14, lineHeight: 1.6 }}
+                      >
+                        "{w.wishes}"
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "'Quicksand', sans-serif",
+                          color: textDark,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        - {w.guest_name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: textMid, fontStyle: 'italic' }}>Chưa có lời chúc nào.</p>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ── RSVP ── */}
+        <section style={{ padding: '60px 20px 80px', background: 'transparent' }}>
+          <div style={{ maxWidth: 520, margin: '0 auto' }}>
+            <RSVPForm
+              weddingId={wedding?.id}
+              rsvpId={rsvpId}
+              guestName={guestName}
+              primaryColor={mergedContent.primary_color}
+              fontFamily={fontFamily}
+              sectionFontFamily={sectionFontFamily}
+            />
+          </div>
+        </section>
+
+        {/* ══ Footer ══ */}
+        <footer
+          style={{
+            padding: '72px 24px 80px',
+            textAlign: 'center',
+            background: `linear-gradient(135deg, ${pinkDeep} 0%, #8b1a45 100%)`,
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <div
+            style={{
+              position: 'absolute',
+              bottom: -30,
+              right: -20,
+              width: 180,
+              height: 180,
+              borderRadius: '50% 0 50% 0',
+              background: 'rgba(255,255,255,0.04)',
+              pointerEvents: 'none'
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: -40,
+              left: -30,
+              width: 200,
+              height: 200,
+              borderRadius: '0 50% 0 50%',
+              background: 'rgba(255,255,255,0.03)',
+              pointerEvents: 'none'
+            }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 24, position: 'relative' }}>
+            {[0, 72, 144, 216, 288].map((deg) => (
+              <div
+                key={deg}
+                style={{
+                  width: 10,
+                  height: 15,
+                  borderRadius: '50% 0 50% 0',
+                  background: 'rgba(255,255,255,0.55)',
+                  transform: `rotate(${deg}deg)`
+                }}
+              />
+            ))}
+          </div>
+          <p
+            style={{
+              fontFamily: "'Noto Serif JP', serif",
+              fontSize: 22,
+              fontWeight: 700,
+              color: '#fff',
+              fontStyle: 'italic',
+              marginBottom: 8,
+              position: 'relative'
+            }}
+          >
+            {mergedContent.groom_name} &amp; {mergedContent.bride_name}
+          </p>
+          <p
+            style={{
+              fontSize: 10,
+              color: 'rgba(255,255,255,0.35)',
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              position: 'relative'
+            }}
+          >
+            MoiMoi Studio
+          </p>
+        </footer>
       </div>
     </>
   )
