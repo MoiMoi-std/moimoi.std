@@ -19,9 +19,6 @@ const mockAlbum = [
 
 export default function VintageGuestView({ wedding, guestName = '', rsvpId }: TemplateProps) {
   const [wish, setWish] = useState('')
-  const [phone, setPhone] = useState('')
-  const [isAttending, setIsAttending] = useState<boolean | null>(null)
-  const [partySize, setPartySize] = useState(1)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
@@ -33,15 +30,12 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
     if (!rsvpId) return
     supabase
       .from('rsvps')
-      .select('wishes, phone, is_attending, party_size')
+      .select('wishes')
       .eq('id', rsvpId)
       .single()
       .then(({ data }) => {
         if (!data) return
         if (data.wishes) setWish(data.wishes)
-        if (data.phone) setPhone(data.phone)
-        if (data.is_attending != null) setIsAttending(data.is_attending)
-        if (data.party_size) setPartySize(data.party_size)
       })
   }, [rsvpId])
 
@@ -84,6 +78,8 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
   const brideImage =
     mergedContent.bride_image ||
     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face'
+  const groomRole = mergedContent.groom_role || 'Trưởng nam'
+  const brideRole = mergedContent.bride_role || 'Trưởng nữ'
   const groomParents = mergedContent.groom_parents || 'Nguyễn Văn Tuấn\nTrần Thị Mai'
   const brideParents = mergedContent.bride_parents || 'Lê Văn Hùng\nHồ Thị Lan'
   const groomAddress =
@@ -94,7 +90,19 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
   const eventDate = mergedContent.event_date || '01/02/2026'
   const lunarDate = mergedContent.lunar_date || '14/12 Ất Tỵ'
   const address = mergedContent.address || 'Queen Plaza Kỳ Hòa, 16A Lê Hồng Phong, Phường 12, Quận 10, TP. Hồ Chí Minh'
-  const albumImages = mergedContent.album_images?.length > 0 ? mergedContent.album_images : mockAlbum
+
+  let mapUrl = ''
+  if (mergedContent.map_url) {
+    if (mergedContent.map_url.includes('<iframe')) {
+      const srcMatch = mergedContent.map_url.match(/src="([^"]+)"/)
+      mapUrl = srcMatch ? srcMatch[1] : ''
+    } else {
+      mapUrl = mergedContent.map_url
+    }
+  }
+  if (!mapUrl) mapUrl = `https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`
+
+  const albumImages = (mergedContent.album_images?.length > 0 ? mergedContent.album_images : mockAlbum).slice(0, 15)
 
   const formatParents = (text: string) => {
     const lines = text.split('\n')
@@ -124,9 +132,6 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
         const { error } = await supabase
           .from('rsvps')
           .update({
-            phone: phone.trim() || null,
-            is_attending: isAttending,
-            party_size: isAttending ? partySize : 1,
             wishes: wish.trim() || null
           })
           .eq('id', rsvpId)
@@ -496,7 +501,7 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                     marginBottom: 2
                   }}
                 >
-                  {mergedContent.groom_role || ''}
+                  {groomRole}
                 </p>
                 <h3
                   style={{
@@ -556,7 +561,7 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                     marginBottom: 2
                   }}
                 >
-                  {mergedContent.bride_role || ''}
+                  {brideRole}
                 </p>
                 <h3
                   style={{
@@ -704,7 +709,7 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                 marginBottom: 20
               }}
             >
-              {mergedContent.groom_role || ''}
+              {groomRole}
             </p>
 
             <p
@@ -741,7 +746,7 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                 marginBottom: 32
               }}
             >
-              {mergedContent.bride_role || ''}
+              {brideRole}
             </p>
 
             <p
@@ -1043,7 +1048,15 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
             >
               {address}
             </p>
-            <div style={{ width: '100%', borderRadius: 8, overflow: 'hidden', marginBottom: 0 }}>
+            <div
+              style={{
+                width: '100%',
+                borderRadius: 12,
+                overflow: 'hidden',
+                marginBottom: 0,
+                boxShadow: '0 8px 16px rgba(0,0,0,0.08)'
+              }}
+            >
               <iframe
                 title='wedding-venue-map'
                 width='100%'
@@ -1052,12 +1065,12 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                 loading='lazy'
                 allowFullScreen
                 referrerPolicy='no-referrer-when-downgrade'
-                src={`https://www.google.com/maps?q=${encodeURIComponent(address)}&output=embed`}
+                src={mapUrl}
               />
             </div>
           </div>
 
-          {/* ═════════ XAC NHAN THAM DU BANNER ═════════ */}
+          {/* ═════════ GUESTBOOK FORM BANNER ═════════ */}
           <div
             style={{
               width: '100%',
@@ -1079,13 +1092,12 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                 textTransform: 'uppercase'
               }}
             >
-              Xác Nhận Tham Dự
+              Gửi Lời Chúc
             </p>
           </div>
 
-          {/* ═════════ RSVP FORM ═════════ */}
           <div style={{ padding: '36px 40px 52px', ...creamPatternStyle }}>
-            {/* Lời chào – same style as wedding announcement */}
+            {/* Lời chào */}
             <div style={{ textAlign: 'center', marginBottom: 32 }}>
               <p
                 style={{
@@ -1097,7 +1109,7 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                   marginBottom: 6
                 }}
               >
-                Kính mời
+                Yêu thương trao gửi
               </p>
               <h3
                 style={{
@@ -1119,7 +1131,7 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                   letterSpacing: 1
                 }}
               >
-                vinh dự được đón tiếp tại lễ thành hôn của gia đình chúng tôi
+                cảm ơn sự hiện diện và những lời chúc tốt đẹp của quý khách
               </p>
               <div style={{ width: 48, height: 1, backgroundColor: red, margin: '16px auto 0', opacity: 0.5 }} />
             </div>
@@ -1130,120 +1142,23 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                 style={{ maxWidth: 480, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}
               >
                 <div>
-                  <p
-                    style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      color: textDark,
-                      letterSpacing: 3,
-                      textTransform: 'uppercase',
-                      textAlign: 'center',
-                      marginBottom: 12
-                    }}
-                  >
-                    Xin quý khách vui lòng xác nhận
-                  </p>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <button
-                      type='button'
-                      className='btn-attend'
-                      onClick={() => setIsAttending(true)}
-                      style={{
-                        padding: '14px 8px',
-                        borderRadius: 4,
-                        border: isAttending === true ? `2px solid ${red}` : `1px solid ${red}50`,
-                        background: isAttending === true ? `rgba(214,131,138,0.12)` : 'rgba(255,255,255,0.7)',
-                        cursor: 'pointer',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        color: isAttending === true ? red : textDark,
-                        transition: 'all .2s',
-                        fontFamily: "'Lora', serif"
-                      }}
-                    >
-                      ✦ Hân hạnh tham dự
-                    </button>
-                    <button
-                      type='button'
-                      className='btn-decline'
-                      onClick={() => setIsAttending(false)}
-                      style={{
-                        padding: '14px 8px',
-                        borderRadius: 4,
-                        border: isAttending === false ? '2px solid #9e8a82' : `1px solid ${red}50`,
-                        background: isAttending === false ? 'rgba(158,138,130,0.08)' : 'rgba(255,255,255,0.7)',
-                        cursor: 'pointer',
-                        fontSize: '0.85rem',
-                        fontWeight: 600,
-                        color: isAttending === false ? '#7a6a64' : textDark,
-                        transition: 'all .2s',
-                        fontFamily: "'Lora', serif"
-                      }}
-                    >
-                      ◦ Thành thật xin lỗi
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={labelStyle}>Số điện thoại</label>
-                  <input
-                    type='tel'
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder='0901 234 567 (không bắt buộc)'
-                    style={inputStyle}
-                  />
-                </div>
-
-                {isAttending !== false && (
-                  <div>
-                    <label style={labelStyle}>Số lượng khách tham dự</label>
-                    <div style={{ display: 'flex' }}>
-                      {[1, 2, 3, 4, 5].map((n, i) => (
-                        <button
-                          key={n}
-                          type='button'
-                          onClick={() => setPartySize(n)}
-                          style={{
-                            flex: 1,
-                            padding: '11px 4px',
-                            border: `1px solid ${partySize === n ? red : red + '40'}`,
-                            borderRight: i < 4 ? 'none' : `1px solid ${partySize === n ? red : red + '40'}`,
-                            borderRadius: i === 0 ? '4px 0 0 4px' : i === 4 ? '0 4px 4px 0' : '0',
-                            background: partySize === n ? red : 'rgba(255,255,255,0.7)',
-                            color: partySize === n ? '#fff' : textDark,
-                            fontWeight: 700,
-                            fontSize: 14,
-                            cursor: 'pointer',
-                            fontFamily: "'Lora', serif"
-                          }}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div>
                   <label style={labelStyle}>Lời chúc mừng</label>
                   <textarea
                     value={wish}
                     onChange={(e) => setWish(e.target.value)}
                     placeholder='Kính chúc đôi uyên ương trăm năm hạnh phúc...'
-                    rows={3}
+                    rows={4}
                     style={{ ...inputStyle, resize: 'vertical' }}
                   />
                 </div>
 
                 <button
                   type='submit'
-                  disabled={loading || isAttending === null}
+                  disabled={loading || !wish.trim()}
                   style={{
                     width: '100%',
                     padding: '14px',
-                    backgroundColor: isAttending === null || loading ? '#ccc' : red,
+                    backgroundColor: loading || !wish.trim() ? '#ccc' : red,
                     color: '#fff',
                     border: 'none',
                     borderRadius: 4,
@@ -1251,11 +1166,11 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
                     fontWeight: 700,
                     letterSpacing: 3,
                     textTransform: 'uppercase',
-                    cursor: loading || isAttending === null ? 'not-allowed' : 'pointer',
+                    cursor: loading || !wish.trim() ? 'not-allowed' : 'pointer',
                     fontFamily: "'Playfair Display', serif"
                   }}
                 >
-                  {loading ? 'Đang gửi...' : isAttending === false ? 'Gửi phản hồi' : 'Xác nhận tham dự'}
+                  {loading ? 'Đang gửi...' : 'Gửi lời chúc'}
                 </button>
 
                 {submitError && (
@@ -1264,22 +1179,20 @@ export default function VintageGuestView({ wedding, guestName = '', rsvpId }: Te
               </form>
             ) : (
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <div style={{ fontSize: '3rem', marginBottom: 16 }}>{isAttending ? '🎊' : '💝'}</div>
+                <div style={{ fontSize: '3rem', marginBottom: 16 }}>💌</div>
                 <h3
                   style={{
                     fontFamily: "'Playfair Display', serif",
                     fontSize: '1.4rem',
                     fontWeight: 400,
-                    color: isAttending ? red : '#7a6a64',
+                    color: red,
                     marginBottom: 10
                   }}
                 >
-                  {isAttending ? 'Hân hạnh được đón tiếp quý khách!' : 'Trân trọng sự phản hồi của quý khách!'}
+                  Cảm ơn lời chúc của bạn!
                 </h3>
                 <p style={{ color: textDark, fontSize: '0.85rem', fontStyle: 'italic' }}>
-                  {isAttending
-                    ? `Chúng tôi sẽ sắp xếp chỗ ngồi dành riêng cho ${formattedName}.`
-                    : 'Chúc quý khách nhiều sức khỏe và hạnh phúc.'}
+                  Những lời yêu thương đã được gửi đến cô dâu và chú rể.
                 </p>
               </div>
             )}

@@ -6,7 +6,7 @@ import { useToast } from '@/components/ui/ToastProvider'
 import { dataService, Template } from '@/lib/data-service'
 import { isPlanExpired } from '@/lib/plan-store'
 import { useWedding } from '@/lib/useWedding'
-import { Check, Eye, LayoutTemplate, Search, Sparkles } from 'lucide-react'
+import { Check, Eye, LayoutTemplate, Search, Sparkles, Monitor, Smartphone } from 'lucide-react'
 import { useRouter } from 'next/router'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -59,6 +59,7 @@ export default function TemplatesPage() {
   const [loadingTemplates, setLoadingTemplates] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [viewMode, setViewMode] = useState<'desktop' | 'mobile'>('desktop')
   const itemsPerPage = 9
   const { toast, success, error } = useToast()
 
@@ -317,6 +318,22 @@ export default function TemplatesPage() {
             <span className='font-semibold'>{effectivePackageName}</span>
           </div>
         )}
+        <div className='flex items-center bg-gray-100 p-1 rounded-xl ml-auto'>
+          <button
+            onClick={() => setViewMode('desktop')}
+            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'desktop' ? 'bg-white shadow-sm text-pink-600' : 'text-gray-400 hover:text-gray-600'}`}
+            title='Xem giao diện Máy tính'
+          >
+            <Monitor size={18} />
+          </button>
+          <button
+            onClick={() => setViewMode('mobile')}
+            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'mobile' ? 'bg-white shadow-sm text-pink-600' : 'text-gray-400 hover:text-gray-600'}`}
+            title='Xem giao diện Điện thoại'
+          >
+            <Smartphone size={18} />
+          </button>
+        </div>
       </div>
 
       <div className='mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
@@ -336,6 +353,7 @@ export default function TemplatesPage() {
                 <LazyIframePreview
                   src={`/studio/templates/preview/${encodeURIComponent((template as any).repo_branch)}`}
                   title={`Preview ${template.name}`}
+                  viewMode={viewMode}
                 />
               ) : (
                 <div className='aspect-[4/3] bg-gray-100 rounded-t-3xl flex items-center justify-center text-gray-400 text-sm'>

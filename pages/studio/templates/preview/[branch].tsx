@@ -1,5 +1,6 @@
 import { getTemplate } from '@/templates/TemplateRegistry'
 import { GetStaticPaths, GetStaticProps } from 'next'
+import { useWedding } from '@/lib/useWedding'
 
 // Demo wedding data used for previewing any template
 const DEMO_WEDDING = {
@@ -51,10 +52,22 @@ interface Props {
 
 export default function TemplatePreviewPage({ branch }: Props) {
   const { GeneralView } = getTemplate(branch)
+  const { wedding } = useWedding()
+
+  // Lọc lấy các trường có dữ liệu thật của user
+  const userContent = wedding?.content || {}
+  const validUserContent: any = {}
+  Object.keys(userContent).forEach((k) => {
+    if (userContent[k]) validUserContent[k] = userContent[k]
+  })
 
   // Pass demo data with the correct branch on the template object
   const demoWedding = {
     ...DEMO_WEDDING,
+    content: {
+      ...DEMO_WEDDING.content,
+      ...validUserContent
+    },
     template: {
       ...DEMO_WEDDING.template,
       repo_branch: branch

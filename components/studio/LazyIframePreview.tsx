@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 interface LazyIframePreviewProps {
   src: string
   title: string
+  viewMode?: 'desktop' | 'mobile'
 }
 
 /**
@@ -11,7 +12,7 @@ interface LazyIframePreviewProps {
  *  - Shows a shimmer skeleton while the iframe is still loading.
  *  - Disables pointer events on the iframe so the parent card stays clickable.
  */
-export default function LazyIframePreview({ src, title }: LazyIframePreviewProps) {
+export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: LazyIframePreviewProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
   const [loaded, setLoaded] = useState(false)
@@ -50,15 +51,19 @@ export default function LazyIframePreview({ src, title }: LazyIframePreviewProps
             importance='low'
             onLoad={() => setLoaded(true)}
             style={{
-              width: '1280px',
-              height: '960px',
-              transform: 'scale(0.25)',
+              width: viewMode === 'mobile' ? '375px' : '1280px',
+              height: viewMode === 'mobile' ? '812px' : '960px',
+              transform: viewMode === 'mobile' ? 'scale(0.32)' : 'scale(0.25)',
               transformOrigin: 'top left',
-              border: 'none',
+              border: viewMode === 'mobile' ? '12px solid #222' : 'none',
+              borderRadius: viewMode === 'mobile' ? '36px' : '0',
               pointerEvents: 'none',
               position: 'absolute',
-              top: 0,
-              left: 0,
+              top: viewMode === 'mobile' ? '50%' : 0,
+              left: viewMode === 'mobile' ? '50%' : 0,
+              marginLeft: viewMode === 'mobile' ? '-60px' : 0, // 375 * 0.32 / 2
+              marginTop: viewMode === 'mobile' ? '-130px' : 0, // 812 * 0.32 / 2
+              backgroundColor: '#fff',
               opacity: loaded ? 1 : 0,
               transition: 'opacity 0.3s ease'
             }}
