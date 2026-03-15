@@ -15,9 +15,21 @@ const mockAlbum = [
 ]
 
 const mockGuestbook = [
-  { name: 'Test', time: '05:31:21 8/3/2026', message: 'Chúc hai bạn luôn tràn ngập yêu thương và hạnh phúc trong suốt quãng đời còn lại.' },
-  { name: 'Test', time: '05:31:16 8/3/2026', message: 'Hy vọng hai bạn luôn tìm thấy bình yên và hạnh phúc trong vòng tay của nhau.' },
-  { name: 'Test', time: '05:31:11 8/3/2026', message: 'Mong rằng cuộc sống hôn nhân sẽ là hành trình tuyệt vời nhất của hai bạn.' },
+  {
+    name: 'Test',
+    time: '05:31:21 8/3/2026',
+    message: 'Chúc hai bạn luôn tràn ngập yêu thương và hạnh phúc trong suốt quãng đời còn lại.'
+  },
+  {
+    name: 'Test',
+    time: '05:31:16 8/3/2026',
+    message: 'Hy vọng hai bạn luôn tìm thấy bình yên và hạnh phúc trong vòng tay của nhau.'
+  },
+  {
+    name: 'Test',
+    time: '05:31:11 8/3/2026',
+    message: 'Mong rằng cuộc sống hôn nhân sẽ là hành trình tuyệt vời nhất của hai bạn.'
+  },
   { name: 'binh', time: '20:07:36 1/3/2026', message: 'chúc bạn' },
   { name: 'fe', time: '12:40:14 1/3/2026', message: 'Chúc mừng hạnh phúc!' }
 ]
@@ -100,7 +112,8 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
     // Link chia sẻ thường (maps.app.goo.gl, google.com/maps/place...) không nhúng được iframe
     // → bỏ qua, dùng fallback bên dưới
   }
-  if (!mapUrl) mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=B&output=embed`
+  if (!mapUrl)
+    mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=B&output=embed`
 
   const albumImages = (mergedContent.images?.length > 0 ? mergedContent.images : mockAlbum).slice(0, 15)
 

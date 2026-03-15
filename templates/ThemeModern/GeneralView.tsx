@@ -47,7 +47,8 @@ const mockGuestbook = [
   {
     guest_name: 'Quốc Dửng',
     created_at: '20:07:36 1/3/2026',
-    wishes: 'Chúc em hạnh phúc viên mãn, anh xin làm khách mời danh dự của tuổi trẻ. Kiếp sau anh canh giờ tỏ tình sớm hơn!',
+    wishes:
+      'Chúc em hạnh phúc viên mãn, anh xin làm khách mời danh dự của tuổi trẻ. Kiếp sau anh canh giờ tỏ tình sớm hơn!',
     is_attending: true,
     party_size: 1,
     phone: ''
@@ -110,13 +111,7 @@ function parseWeddingDate(rawDate: string) {
   }
 }
 
-export default function ModernGeneralView({
-  wedding,
-  disableSplash,
-  musicUrl,
-  guestName = '',
-  rsvpId
-}: TemplateProps) {
+export default function ModernGeneralView({ wedding, disableSplash, musicUrl, guestName = '', rsvpId }: TemplateProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showGiftQr, setShowGiftQr] = useState(false)
   const [showSplash, setShowSplash] = useState(!disableSplash)
@@ -170,9 +165,7 @@ export default function ModernGeneralView({
   const partyTime = mergedContent.party_time || weddingTime
   const weddingDateRaw = mergedContent.wedding_date || mergedContent.event_date || '01/02/2026'
   const lunarDate = mergedContent.lunar_date || '14/12 Ất Tỵ'
-  const address =
-    mergedContent.address ||
-    'Queen Plaza Kỳ Hòa, 16A Lê Hồng Phong, Phường 12, Quận 10, TP. Hồ Chí Minh'
+  const address = mergedContent.address || 'Queen Plaza Kỳ Hòa, 16A Lê Hồng Phong, Phường 12, Quận 10, TP. Hồ Chí Minh'
 
   const { day, month, year, dayName } = useMemo(() => parseWeddingDate(weddingDateRaw), [weddingDateRaw])
 
@@ -190,7 +183,8 @@ export default function ModernGeneralView({
     // Link chia sẻ thường (maps.app.goo.gl, google.com/maps/place...) không nhúng được iframe
     // → bỏ qua, dùng fallback bên dưới
   }
-  if (!mapUrl) mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=B&output=embed`
+  if (!mapUrl)
+    mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=B&output=embed`
 
   const albumImages = (mergedContent.images?.length > 0 ? mergedContent.images : mockAlbum).slice(0, 15)
 
@@ -203,8 +197,7 @@ export default function ModernGeneralView({
     if (!wedding?.id) return
 
     const weddingId = String(wedding.id)
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(weddingId)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(weddingId)
 
     if (!isUuid) {
       console.log('[ThemeModern][Guestbook] Skip RSVP fetch for non-UUID wedding id', { weddingId })
@@ -219,23 +212,26 @@ export default function ModernGeneralView({
       .select('guest_name, wishes, created_at, is_attending, party_size, phone')
       .eq('wedding_id', weddingId)
       .order('created_at', { ascending: false })
-      .then(({ data, error }) => {
-        console.log('[ThemeModern][Guestbook] Fetch RSVP result', {
-          weddingId,
-          count: data?.length || 0,
-          data,
-          error
-        })
+      .then(
+        ({ data, error }) => {
+          console.log('[ThemeModern][Guestbook] Fetch RSVP result', {
+            weddingId,
+            count: data?.length || 0,
+            data,
+            error
+          })
 
-        if (error) {
-          console.error('[ThemeModern][Guestbook] Fetch RSVP error', error)
-          return
+          if (error) {
+            console.error('[ThemeModern][Guestbook] Fetch RSVP error', error)
+            return
+          }
+
+          if (data) setGuestWishes(data)
+        },
+        (err: unknown) => {
+          console.error('[ThemeModern][Guestbook] Unexpected fetch exception', err)
         }
-
-        if (data) setGuestWishes(data)
-      }, (err: unknown) => {
-        console.error('[ThemeModern][Guestbook] Unexpected fetch exception', err)
-      })
+      )
   }, [wedding?.id])
 
   useEffect(() => {
@@ -501,7 +497,9 @@ export default function ModernGeneralView({
               <div
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 30 }}
               >
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>{dayName}</span>
+                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+                  {dayName}
+                </span>
                 <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
                 <span
                   style={{
@@ -692,7 +690,7 @@ export default function ModernGeneralView({
                 <span style={{ fontSize: '2.4rem', color: textDark, lineHeight: 1 }}>囍</span>
               </div>
 
-              <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop:150 }}>
+              <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
                 <div
                   className='modern-avatar'
                   style={{
@@ -750,7 +748,7 @@ export default function ModernGeneralView({
                 fontSize: '0.85rem',
                 fontWeight: 700,
                 letterSpacing: 4,
-                  color: textDark,
+                color: textDark,
                 textTransform: 'uppercase'
               }}
             >
@@ -782,7 +780,9 @@ export default function ModernGeneralView({
               >
                 {formatParents(groomParents)}
               </div>
-              <p style={{ fontSize: '0.72rem', color: textDark, lineHeight: 1.5, marginTop: 8, whiteSpace: 'pre-line' }}>
+              <p
+                style={{ fontSize: '0.72rem', color: textDark, lineHeight: 1.5, marginTop: 8, whiteSpace: 'pre-line' }}
+              >
                 {groomAddress}
               </p>
             </div>
@@ -805,7 +805,9 @@ export default function ModernGeneralView({
               >
                 {formatParents(brideParents)}
               </div>
-              <p style={{ fontSize: '0.72rem', color: textDark, lineHeight: 1.5, marginTop: 8, whiteSpace: 'pre-line' }}>
+              <p
+                style={{ fontSize: '0.72rem', color: textDark, lineHeight: 1.5, marginTop: 8, whiteSpace: 'pre-line' }}
+              >
                 {brideAddress}
               </p>
             </div>
@@ -922,7 +924,9 @@ export default function ModernGeneralView({
             >
               Tư Gia
             </p>
-            <p style={{ fontSize: '0.8rem', color: textDark, letterSpacing: 1, marginBottom: 20 }}>Vào lúc {weddingTime}</p>
+            <p style={{ fontSize: '0.8rem', color: textDark, letterSpacing: 1, marginBottom: 20 }}>
+              Vào lúc {weddingTime}
+            </p>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 12 }}>
               <span style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>{dayName}</span>
@@ -939,7 +943,9 @@ export default function ModernGeneralView({
                 {day}
               </span>
               <div style={{ width: 1, height: 28, backgroundColor: '#c8b6a6' }} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>THÁNG {month}</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+                THÁNG {month}
+              </span>
             </div>
 
             <p
@@ -1129,9 +1135,13 @@ export default function ModernGeneralView({
             >
               {year}
             </p>
-            <p style={{ fontSize: '0.9rem', color: textDark, fontStyle: 'italic', marginBottom: 16 }}>(Tức ngày {lunarDate})</p>
+            <p style={{ fontSize: '0.9rem', color: textDark, fontStyle: 'italic', marginBottom: 16 }}>
+              (Tức ngày {lunarDate})
+            </p>
 
-            <p style={{ fontSize: '0.8rem', color: textDark, textTransform: 'uppercase', marginBottom: 4 }}>KHAI TIỆC</p>
+            <p style={{ fontSize: '0.8rem', color: textDark, textTransform: 'uppercase', marginBottom: 4 }}>
+              KHAI TIỆC
+            </p>
             <p
               style={{
                 fontSize: '1.2rem',
@@ -1268,7 +1278,9 @@ export default function ModernGeneralView({
                   fontFamily: "'Playfair Display', serif"
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}
+                >
                   <span style={{ fontWeight: 700, color: textDark, fontSize: '0.95rem' }}>
                     {comment.guest_name || 'Khách mời'}
                   </span>
@@ -1332,8 +1344,7 @@ export default function ModernGeneralView({
                 padding: '30px 18px 44px',
                 textAlign: 'center',
                 backgroundColor: creamLight,
-                backgroundImage:
-                  `radial-gradient(circle at 12% 18%, ${textDark}14 0, transparent 120px), radial-gradient(circle at 78% 20%, ${textDark}0f 0, transparent 160px), radial-gradient(circle at 84% 75%, ${textDark}0a 0, transparent 190px)`
+                backgroundImage: `radial-gradient(circle at 12% 18%, ${textDark}14 0, transparent 120px), radial-gradient(circle at 78% 20%, ${textDark}0f 0, transparent 160px), radial-gradient(circle at 84% 75%, ${textDark}0a 0, transparent 190px)`
               }}
             >
               <p
