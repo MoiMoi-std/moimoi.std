@@ -1,8 +1,15 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { TemplateProps } from '../TemplateRegistry'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
+import { useMapEmbed } from '../../lib/useMapEmbed'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
 export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -12,10 +19,26 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
     seconds: number
   } | null>(null)
   const viewport = useTemplateViewport()
+  const [wishesList, setWishesList] = useState<any[]>([])
 
   const { content, template } = wedding || {}
+
+  useEffect(() => {
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
+    }
+  }, [wedding?.id])
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
 
   const pink = mergedContent.primary_color || '#d4507a'
   const pinkDeep = '#a83258'
@@ -86,7 +109,8 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
     )
   }
 
-  const albumImages: string[] = (mergedContent.images || []).filter(Boolean)
+  const allAlbumImages: string[] = (mergedContent.images || []).filter(Boolean)
+  const albumImages = allAlbumImages.slice(0, 20)
 
   return (
     <>
@@ -234,9 +258,14 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: (() => {
+                ...(() => {
                   const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
-                  return adj ? `${adj.x}% ${adj.y}%` : 'center top'
+                  return {
+                    backgroundPosition: adj ? `${adj.x}% ${adj.y}%` : 'center top',
+                    ...(adj && adj.zoom !== 1
+                      ? { transform: `scale(${adj.zoom})`, transformOrigin: `${adj.x}% ${adj.y}%` }
+                      : {})
+                  }
                 })()
               }}
             />
@@ -368,6 +397,21 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
               <div style={{ flex: 1, maxWidth: 80, height: 1, background: 'rgba(255,255,255,0.35)' }} />
             </div>
 
+            {mergedContent.bride_role && (
+              <p
+                className='cb-up cb-d3'
+                style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: '0.55em',
+                  textTransform: 'uppercase',
+                  color: pinkLight,
+                  marginBottom: 8
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
             <h1
               className='cb-names cb-up cb-d3'
               style={{
@@ -678,83 +722,93 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
                   ),
                   title: 'Địa điểm',
                   value: mergedContent.address
+                },
+                {
+                  icon: (
+                    <svg
+                      width='22'
+                      height='22'
+                      viewBox='0 0 24 24'
+                      fill='none'
+                      stroke={pink}
+                      strokeWidth='1.5'
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                    >
+                      <rect width='18' height='18' x='3' y='4' rx='2' ry='2' />
+                      <line x1='16' x2='16' y1='2' y2='6' />
+                      <line x1='8' x2='8' y1='2' y2='6' />
+                      <line x1='3' x2='21' y1='10' y2='10' />
+                      <path d='m9 16 2 2 4-4' />
+                    </svg>
+                  ),
+                  title: 'Lịch âm',
+                  value: mergedContent.lunar_date
                 }
-              ].map(({ icon, title, value }) => (
-                <div
-                  key={title}
-                  className='cb-card cb-up'
-                  style={{ padding: '28px 24px', display: 'flex', alignItems: 'flex-start', gap: 18 }}
-                >
+              ]
+                .filter((it) => it.value)
+                .map(({ icon, title, value }) => (
                   <div
-                    style={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: 16,
-                      background: `${pink}10`,
-                      border: `1px solid ${pink}20`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0
-                    }}
+                    key={title}
+                    className='cb-card cb-up'
+                    style={{ padding: '28px 24px', display: 'flex', alignItems: 'flex-start', gap: 18 }}
                   >
-                    {icon}
-                  </div>
-                  <div>
-                    <p
+                    <div
                       style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: pink,
-                        letterSpacing: '0.2em',
-                        textTransform: 'uppercase',
-                        marginBottom: 8
+                        width: 52,
+                        height: 52,
+                        borderRadius: 16,
+                        background: `${pink}10`,
+                        border: `1px solid ${pink}20`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
                       }}
                     >
-                      {title}
-                    </p>
-                    <p style={{ fontSize: 16, fontWeight: 600, color: textDark, lineHeight: 1.6 }}>{value || '—'}</p>
+                      {icon}
+                    </div>
+                    <div>
+                      <p
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: pink,
+                          letterSpacing: '0.2em',
+                          textTransform: 'uppercase',
+                          marginBottom: 8
+                        }}
+                      >
+                        {title}
+                      </p>
+                      <p style={{ fontSize: 16, fontWeight: 600, color: textDark, lineHeight: 1.6 }}>{value || '—'}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
             </div>
 
-            {mergedContent.map_url && (
-              <div style={{ textAlign: 'center', marginTop: 36 }}>
-                <a
-                  href={mergedContent.map_url}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='cb-btn'
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '14px 32px',
-                    background: `linear-gradient(135deg, ${pink}, ${pinkLight})`,
-                    color: '#fff',
-                    borderRadius: 50,
-                    textDecoration: 'none',
-                    fontWeight: 700,
-                    fontSize: 15,
-                    boxShadow: `0 8px 28px ${pink}45`
-                  }}
-                >
-                  <svg
-                    width='16'
-                    height='16'
-                    viewBox='0 0 24 24'
-                    fill='none'
-                    stroke='currentColor'
-                    strokeWidth='2'
-                    strokeLinecap='round'
-                  >
-                    <polygon points='1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6' />
-                    <line x1='8' y1='2' x2='8' y2='18' />
-                    <line x1='16' y1='6' x2='16' y2='22' />
-                  </svg>
-                  Xem bản đồ
-                </a>
+            {mergedContent.address && (
+              <div
+                style={{
+                  marginTop: 28,
+                  width: '100%',
+                  height: 250,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  border: `1px solid ${pink}20`,
+                  boxShadow: `0 8px 28px ${pink}1a`
+                }}
+              >
+                <iframe
+                  width='100%'
+                  height='100%'
+                  style={{ border: 0 }}
+                  loading='lazy'
+                  allowFullScreen
+                  referrerPolicy='no-referrer-when-downgrade'
+                  src={mapEmbedSrc}
+                />
               </div>
             )}
           </div>
@@ -789,27 +843,52 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
                 </h2>
               </div>
               <div style={{ columns: '2 200px', gap: 12 }}>
-                {albumImages.map((img: string, i: number) => (
-                  <div key={i} className='cb-photo' style={{ marginBottom: 12, breakInside: 'avoid' }}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={img}
-                      alt={`Ảnh cưới ${i + 1}`}
-                      style={{
-                        width: '100%',
-                        display: 'block',
-                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
-                      }}
-                    />
-                  </div>
-                ))}
+                {albumImages.slice(0, 4).map((img: string, i: number) => {
+                  const isLast = i === 3
+                  const extraCount = albumImages.length - 4
+                  return (
+                    <div
+                      key={i}
+                      className='cb-photo'
+                      style={{ position: 'relative', marginBottom: 12, breakInside: 'avoid' }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img}
+                        alt={`Ảnh cưới ${i + 1}`}
+                        style={{
+                          width: '100%',
+                          display: 'block',
+                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        }}
+                      />
+                      {isLast && extraCount > 0 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: '1.5rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          +{extraCount}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </section>
         )}
 
         {/* ══ Gift / Bank ══ */}
-        {mergedContent.account_number && (
+        {(mergedContent.account_number || mergedContent.qr_image) && (
           <section style={{ padding: '90px 20px', background: pinkBg }}>
             <div style={{ maxWidth: 560, margin: '0 auto' }}>
               <div style={{ textAlign: 'center', marginBottom: 48 }}>
@@ -897,28 +976,94 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
                     Thông tin tài khoản
                   </p>
                 </div>
-                {mergedContent.bank_name && (
-                  <p style={{ fontSize: 13, color: textMid, marginBottom: 8 }}>{mergedContent.bank_name}</p>
-                )}
-                <p
-                  style={{
-                    fontFamily: "'Noto Serif JP', serif",
-                    fontSize: 'clamp(1.5rem, 5vw, 2.1rem)',
-                    fontWeight: 700,
-                    color: pinkDeep,
-                    letterSpacing: '0.06em',
-                    marginBottom: 8
-                  }}
-                >
-                  {mergedContent.account_number}
-                </p>
-                {mergedContent.account_name && (
-                  <p style={{ fontSize: 14, color: textMid, fontStyle: 'italic' }}>{mergedContent.account_name}</p>
+                {mergedContent.qr_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mergedContent.qr_image}
+                    alt='QR Tiền Mừng'
+                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
+                  />
+                ) : (
+                  mergedContent.account_number && (
+                    <p
+                      style={{
+                        fontFamily: "'Noto Serif JP', serif",
+                        fontSize: 'clamp(1.5rem, 5vw, 2.1rem)',
+                        fontWeight: 700,
+                        color: pinkDeep,
+                        letterSpacing: '0.06em',
+                        marginBottom: 8
+                      }}
+                    >
+                      {mergedContent.account_number}
+                    </p>
+                  )
                 )}
               </div>
             </div>
           </section>
         )}
+
+        {/* ══ GUESTBOOK ══ */}
+        <section style={{ padding: '90px 20px', background: `linear-gradient(135deg, ${pinkBg} 0%, ${blush} 100%)` }}>
+          <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
+            <p
+              style={{
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '0.5em',
+                textTransform: 'uppercase',
+                color: pink,
+                marginBottom: 12
+              }}
+            >
+              SỔ LƯU BÚT
+            </p>
+            <h2
+              style={{
+                fontFamily: "'Noto Serif JP', serif",
+                fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
+                fontWeight: 700,
+                color: textDark,
+                marginBottom: 32
+              }}
+            >
+              Lời Chúc Trân Trọng
+            </h2>
+            <div className='cb-card' style={{ padding: '36px 32px' }}>
+              {wishesList.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {wishesList.map((w, idx) => (
+                    <div
+                      key={idx}
+                      style={{ padding: '16px', textAlign: 'left', background: `${pink}10`, borderRadius: 12 }}
+                    >
+                      <p
+                        style={{ fontStyle: 'italic', color: textMid, marginBottom: 8, fontSize: 14, lineHeight: 1.6 }}
+                      >
+                        "{w.wishes}"
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "'Quicksand', sans-serif",
+                          color: textDark,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          letterSpacing: '0.05em',
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        - {w.guest_name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: textMid, fontStyle: 'italic' }}>Chưa có lời chúc nào.</p>
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* ══ Footer ══ */}
         <footer

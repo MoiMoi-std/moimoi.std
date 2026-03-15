@@ -1,23 +1,90 @@
 import Head from 'next/head'
+import { useEffect, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
+import { useMapEmbed } from '../../lib/useMapEmbed'
 import RSVPForm from '@/components/guest/RSVPForm'
-import Wishes from '@/components/guest/Wishes'
-import MoneyGift from '@/components/guest/MoneyGift'
 
-export default function PastelGuestView({ wedding, rsvpId, guestName }: TemplateProps) {
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
+
+export default function PastelGuestView({ wedding, guestName, rsvpId }: TemplateProps) {
+  const [timeRemaining, setTimeRemaining] = useState<{
+    days: number
+    hours: number
+    minutes: number
+    seconds: number
+  } | null>(null)
+  const [tick, setTick] = useState(0)
+  const viewport = useTemplateViewport()
+  const [wishesList, setWishesList] = useState<any[]>([])
+
   const { content, template } = wedding || {}
+
+  useEffect(() => {
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
+    }
+  }, [wedding?.id])
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
+  const fontFamily = mergedContent.font_family || ''
+  const sectionFontFamily = mergedContent.section_font_family || fontFamily
 
   const blush = '#f7c5d0'
   const sky = '#c0d8f4'
   const mint = '#baf0d8'
   const lavender = '#d8c0f4'
+  const peach = '#f9d8a0'
   const white = '#fdfaff'
   const softWhite = '#f5f0fa'
   const accent1 = mergedContent.primary_color || '#e890b0'
+  const accent2 = '#70a8e0'
   const textDark = '#2a1a30'
   const textMid = '#7060a0'
+
+  const bubbles = [
+    { x: 10, y: 12, r: 40, color: blush, delay: 0 },
+    { x: 80, y: 8, r: 60, color: sky, delay: 1 },
+    { x: 50, y: 60, r: 50, color: lavender, delay: 0.5 },
+    { x: 20, y: 72, r: 45, color: mint, delay: 1.5 },
+    { x: 85, y: 65, r: 55, color: peach, delay: 0.8 }
+  ]
+
+  useEffect(() => {
+    if (!mergedContent.wedding_date) return
+    const interval = setInterval(() => {
+      const d = new Date(`${mergedContent.wedding_date}T${mergedContent.wedding_time || '00:00'}`)
+      const diff = d.getTime() - Date.now()
+      if (diff > 0) {
+        setTimeRemaining({
+          days: Math.floor(diff / 86400000),
+          hours: Math.floor((diff % 86400000) / 3600000),
+          minutes: Math.floor((diff % 3600000) / 60000),
+          seconds: Math.floor((diff % 60000) / 1000)
+        })
+      } else setTimeRemaining(null)
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [mergedContent.wedding_date, mergedContent.wedding_time])
+
+  useEffect(() => {
+    const a = setInterval(() => setTick((t) => t + 1), 3000)
+    return () => clearInterval(a)
+  }, [])
 
   if (!wedding)
     return (
@@ -34,6 +101,9 @@ export default function PastelGuestView({ wedding, rsvpId, guestName }: Template
       </div>
     )
 
+  const allAlbumImages: string[] = mergedContent.images?.length > 0 ? mergedContent.images : []
+  const albumImages = allAlbumImages.slice(0, 20)
+
   return (
     <>
       <Head>
@@ -42,33 +112,62 @@ export default function PastelGuestView({ wedding, rsvpId, guestName }: Template
           rel='stylesheet'
         />
         <style>{`
-          @keyframes psBlob{0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%}50%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%}}
+          @keyframes psFade { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+          @keyframes psFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+          @keyframes psDrift { 0%{transform:translateY(-20px) scale(0.8);opacity:0} 30%{opacity:0.7} 80%{opacity:0.5} 100%{transform:translateY(-80px) scale(1.2);opacity:0} }
+          @keyframes psBlob { 0%,100%{border-radius:60% 40% 30% 70%/60% 30% 70% 40%} 33%{border-radius:30% 60% 70% 40%/50% 60% 30% 60%} 66%{border-radius:40% 70% 30% 60%/40% 50% 60% 50%} }
+          @keyframes psPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.04)} }
+          .ps-up{animation:psFade .8s ease forwards;opacity:0}
+          .ps-d1{animation-delay:.2s} .ps-d2{animation-delay:.5s} .ps-d3{animation-delay:.8s} .ps-d4{animation-delay:1.1s}
           .ps-blob{animation:psBlob 8s ease-in-out infinite}
+          .ps-float{animation:psFloat 3.5s ease-in-out infinite}
+          .ps-pulse{animation:psPulse 2.5s ease-in-out infinite}
           *{box-sizing:border-box;margin:0;padding:0}
         `}</style>
       </Head>
       <div style={{ background: white, fontFamily: "'Poppins', sans-serif", color: textDark, overflowX: 'hidden' }}>
-        {/* Hero */}
+        {/* ── HERO ── */}
         <section
           style={{
             position: 'relative',
-            minHeight: '55vh',
+            minHeight: '100vh',
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'center',
-            textAlign: 'center',
             overflow: 'hidden',
-            padding: '60px 24px'
+            textAlign: 'center'
           }}
         >
+          {/* Watercolor blob background */}
           <div
             style={{
               position: 'absolute',
               inset: 0,
-              background: `linear-gradient(135deg, rgba(247,197,208,0.55) 0%, rgba(192,216,244,0.45) 30%, rgba(216,192,244,0.45) 60%, rgba(186,240,216,0.5) 100%)`
+              background: `linear-gradient(135deg, rgba(247,197,208,0.45) 0%, rgba(192,216,244,0.35) 30%, rgba(216,192,244,0.35) 60%, rgba(186,240,216,0.4) 100%)`
             }}
           />
+
+          {/* Blobs */}
+          {bubbles.map((b, i) => (
+            <div
+              key={i}
+              className='ps-blob'
+              style={{
+                position: 'absolute',
+                left: `${b.x}%`,
+                top: `${b.y}%`,
+                width: b.r * 2,
+                height: b.r * 2,
+                background: b.color,
+                opacity: 0.22,
+                filter: 'blur(30px)',
+                animationDelay: `${b.delay}s`
+              }}
+            />
+          ))}
+
+          {/* Cover image with soft overlay */}
           {mergedContent.cover_image && (
             <div
               style={{
@@ -76,120 +175,324 @@ export default function PastelGuestView({ wedding, rsvpId, guestName }: Template
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                opacity: 0.2,
-                filter: 'saturate(0.7)'
+                ...(() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return {
+                    backgroundPosition: adj ? `${adj.x}% ${adj.y}%` : 'center',
+                    ...(adj && adj.zoom !== 1
+                      ? { transform: `scale(${adj.zoom})`, transformOrigin: `${adj.x}% ${adj.y}%` }
+                      : {})
+                  }
+                })(),
+                opacity: 0.18,
+                filter: 'saturate(0.7) brightness(1.2)'
               }}
             />
           )}
-          {/* Blobs */}
-          <div
-            className='ps-blob'
-            style={{
-              position: 'absolute',
-              top: '5%',
-              left: '5%',
-              width: 80,
-              height: 80,
-              background: blush,
-              opacity: 0.3,
-              filter: 'blur(20px)'
-            }}
-          />
-          <div
-            className='ps-blob'
-            style={{
-              position: 'absolute',
-              bottom: '10%',
-              right: '8%',
-              width: 90,
-              height: 70,
-              background: sky,
-              opacity: 0.25,
-              filter: 'blur(20px)',
-              animationDelay: '2s'
-            }}
-          />
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 14 }}>
-              {[blush, sky, lavender, mint].map((c, i) => (
-                <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: c }} />
-              ))}
+
+          <div style={{ position: 'relative', zIndex: 2, padding: '60px 28px' }}>
+            {/* Floating hearts ornament */}
+            <div className='ps-up ps-d1 ps-float' style={{ marginBottom: 16 }}>
+              <svg width='80' height='28' viewBox='0 0 80 28' fill='none'>
+                {[10, 26, 40, 54, 70].map((cx, i) => (
+                  <path
+                    key={i}
+                    d={`M${cx} ${14 - 4} C${cx - 3} ${14 - 7} ${cx - 6} ${14 - 4} ${cx} ${14 + 2} C${cx + 6} ${14 - 4} ${cx + 3} ${14 - 7} ${cx} ${14 - 4}`}
+                    fill={[blush, sky, lavender, mint, peach][i]}
+                    opacity={0.8}
+                  />
+                ))}
+              </svg>
             </div>
+
             <p
+              className='ps-up ps-d1'
               style={{
                 fontSize: 9,
                 letterSpacing: '0.4em',
                 color: accent1,
                 textTransform: 'uppercase',
-                marginBottom: 12,
+                marginBottom: 18,
                 fontWeight: 400
               }}
             >
-              Trân trọng kính mời
+              A love story
             </p>
+            {mergedContent.groom_role && (
+              <p
+                className='ps-up ps-d1'
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.4em',
+                  color: accent1,
+                  textTransform: 'uppercase',
+                  marginBottom: 6,
+                  fontWeight: 400
+                }}
+              >
+                {mergedContent.groom_role}
+              </p>
+            )}
             <h1
+              className='ps-up ps-d2'
               style={{
-                fontSize: 'clamp(2.2rem,8vw,5rem)',
+                fontSize: 'clamp(2.8rem,11vw,7.5rem)',
                 fontFamily: "'Dancing Script', cursive",
                 fontWeight: 600,
                 color: textDark,
                 lineHeight: 1.15,
-                marginBottom: 12
+                marginBottom: 8
               }}
             >
-              {mergedContent.groom_name} & {mergedContent.bride_name}
+              {mergedContent.groom_name || 'Chú Rể'}
             </h1>
+
+            {/* Sparkle divider */}
+            <div
+              className='ps-up ps-d2'
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, margin: '14px 0' }}
+            >
+              <div
+                style={{
+                  flex: 1,
+                  maxWidth: 40,
+                  height: 1,
+                  background: `linear-gradient(to right, transparent, ${accent1})`
+                }}
+              />
+              <svg width='20' height='20' viewBox='0 0 20 20'>
+                <path d='M10 2 L11 9 L18 10 L11 11 L10 18 L9 11 L2 10 L9 9 Z' fill={accent1} opacity='0.7' />
+              </svg>
+              <div
+                style={{
+                  flex: 1,
+                  maxWidth: 40,
+                  height: 1,
+                  background: `linear-gradient(to left, transparent, ${accent1})`
+                }}
+              />
+            </div>
+
+            {mergedContent.bride_role && (
+              <p
+                className='ps-up ps-d2'
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.4em',
+                  color: accent1,
+                  textTransform: 'uppercase',
+                  marginBottom: 6,
+                  marginTop: 8,
+                  fontWeight: 400
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
+            <h1
+              className='ps-up ps-d3'
+              style={{
+                fontSize: 'clamp(2.8rem,11vw,7.5rem)',
+                fontFamily: "'Dancing Script', cursive",
+                fontWeight: 600,
+                color: textDark,
+                lineHeight: 1.15,
+                marginBottom: 24
+              }}
+            >
+              {mergedContent.bride_name || 'Cô Dâu'}
+            </h1>
+
+            {/* Rainbow dots divider */}
+            <div
+              className='ps-up ps-d3'
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginBottom: 18 }}
+            >
+              {[blush, peach, mint, sky, lavender].map((c, i) => (
+                <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: c, opacity: 0.8 }} />
+              ))}
+            </div>
+
             {mergedContent.wedding_date && (
-              <p style={{ fontSize: 13, color: textMid, letterSpacing: '0.05em', fontWeight: 300 }}>
+              <p
+                className='ps-up ps-d4'
+                style={{ fontSize: 13, color: textMid, letterSpacing: '0.05em', fontWeight: 300 }}
+              >
                 {new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
+                  weekday: 'long',
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
                 })}
               </p>
             )}
+            {guestName && (
+              <div
+                style={{
+                  marginTop: 22,
+                  padding: '12px 28px',
+                  border: `1px solid rgba(232,144,176,0.35)`,
+                  display: 'inline-block'
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 9,
+                    letterSpacing: '0.4em',
+                    color: textMid,
+                    textTransform: 'uppercase',
+                    fontFamily: "'Poppins', sans-serif",
+                    marginBottom: 4
+                  }}
+                >
+                  Kính gửi
+                </p>
+                <p
+                  style={{
+                    fontSize: 'clamp(1rem,3.5vw,1.6rem)',
+                    fontFamily: "'Dancing Script', cursive",
+                    color: accent1
+                  }}
+                >
+                  {guestName}
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Guest name */}
-        {guestName && (
-          <section
-            style={{
-              background: softWhite,
-              padding: '26px 24px',
-              textAlign: 'center',
-              borderBottom: `2px solid ${blush}`
-            }}
-          >
+        {/* ── COUNTDOWN ── */}
+        {timeRemaining && (
+          <section style={{ background: softWhite, padding: '60px 24px', textAlign: 'center' }}>
             <p
               style={{
-                fontSize: 10,
-                letterSpacing: '0.3em',
-                color: textMid,
+                fontSize: 9,
+                letterSpacing: '0.4em',
+                color: accent1,
                 textTransform: 'uppercase',
-                marginBottom: 5,
+                marginBottom: 28,
                 fontWeight: 400
               }}
             >
-              Kính gửi
+              Đếm ngược ngày vui
             </p>
-            <p
-              style={{
-                fontSize: 'clamp(1.3rem,5vw,2rem)',
-                fontFamily: "'Dancing Script', cursive",
-                fontWeight: 600,
-                color: textDark
-              }}
-            >
-              {guestName}
-            </p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, maxWidth: 360, margin: '0 auto' }}>
+              {[
+                { v: timeRemaining.days, l: 'Ngày', c: blush },
+                { v: timeRemaining.hours, l: 'Giờ', c: sky },
+                { v: timeRemaining.minutes, l: 'Phút', c: lavender },
+                { v: timeRemaining.seconds, l: 'Giây', c: mint }
+              ].map((it, i) => (
+                <div key={i} style={{ flex: 1 }}>
+                  <div
+                    className='ps-pulse'
+                    style={{
+                      background: it.c,
+                      borderRadius: 12,
+                      padding: '14px 4px',
+                      marginBottom: 8,
+                      opacity: 0.85,
+                      animationDelay: `${i * 0.3}s`
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: 'clamp(1.8rem,6vw,3rem)',
+                        fontFamily: "'Dancing Script', cursive",
+                        color: textDark,
+                        lineHeight: 1
+                      }}
+                    >
+                      {String(it.v).padStart(2, '0')}
+                    </span>
+                  </div>
+                  <p style={{ fontSize: 9, letterSpacing: '0.2em', color: textMid, textTransform: 'uppercase' }}>
+                    {it.l}
+                  </p>
+                </div>
+              ))}
+            </div>
           </section>
         )}
 
-        {/* Event details */}
-        <section style={{ background: white, padding: '40px 24px' }}>
-          <div style={{ maxWidth: 460, margin: '0 auto' }}>
+        {/* ── STORY ── */}
+        <section style={{ background: white, padding: '72px 24px' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
+            {/* Watercolor blob accent */}
+            <div style={{ position: 'relative', marginBottom: 24 }}>
+              <div
+                className='ps-blob'
+                style={{
+                  width: 80,
+                  height: 50,
+                  background: blush,
+                  borderRadius: '60% 40% 30% 70% / 60% 30% 70% 40%',
+                  margin: '0 auto',
+                  opacity: 0.4,
+                  filter: 'blur(4px)'
+                }}
+              />
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%,-50%)',
+                  display: 'flex',
+                  gap: 6
+                }}
+              >
+                {[blush, sky, lavender].map((c, i) => (
+                  <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: c, opacity: 0.8 }} />
+                ))}
+              </div>
+            </div>
+            <h2
+              style={{
+                fontSize: 'clamp(1.8rem,6vw,3rem)',
+                fontFamily: "'Dancing Script', cursive",
+                fontWeight: 600,
+                color: textDark,
+                marginBottom: 18
+              }}
+            >
+              {mergedContent.groom_name} & {mergedContent.bride_name}
+            </h2>
+            <p style={{ fontSize: 14, lineHeight: 1.9, color: textMid, fontWeight: 300 }}>
+              {mergedContent.intro_text ||
+                'Trong vườn sắc màu của tình yêu, chúng tôi tìm thấy nhau — nhẹ nhàng như những cánh hoa, rực rỡ như muôn màu sắc bên nhau. Hãy đến chung vui với chúng tôi nhé!'}
+            </p>
+          </div>
+        </section>
+
+        {/* ── EVENT DETAILS ── */}
+        <section style={{ background: softWhite, padding: '72px 24px' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto' }}>
+            <div style={{ textAlign: 'center', marginBottom: 40 }}>
+              <p
+                style={{
+                  fontSize: 9,
+                  letterSpacing: '0.4em',
+                  color: accent1,
+                  textTransform: 'uppercase',
+                  marginBottom: 10,
+                  fontWeight: 400
+                }}
+              >
+                Ngày trọng đại
+              </p>
+              <h2
+                style={{
+                  fontSize: 'clamp(1.6rem,5vw,2.6rem)',
+                  fontFamily: "'Dancing Script', cursive",
+                  fontWeight: 600,
+                  color: textDark
+                }}
+              >
+                Lễ cưới của chúng tôi
+              </h2>
+            </div>
             {[
               { label: 'Ngày cưới', value: mergedContent.event_date || mergedContent.wedding_date, c: blush },
               { label: 'Giờ cưới', value: mergedContent.wedding_time, c: sky },
@@ -202,13 +505,13 @@ export default function PastelGuestView({ wedding, rsvpId, guestName }: Template
                   key={i}
                   style={{
                     display: 'flex',
-                    gap: 12,
+                    gap: 14,
                     padding: '12px 0',
                     borderBottom: `1px solid rgba(216,192,244,0.2)`
                   }}
                 >
                   <div
-                    style={{ width: 6, height: 34, borderRadius: 3, background: it.c, flexShrink: 0, opacity: 0.8 }}
+                    style={{ width: 8, height: 36, borderRadius: 4, background: it.c, flexShrink: 0, opacity: 0.7 }}
                   />
                   <div style={{ paddingTop: 4 }}>
                     <p
@@ -227,63 +530,291 @@ export default function PastelGuestView({ wedding, rsvpId, guestName }: Template
                   </div>
                 </div>
               ))}
-            {mergedContent.map_url && (
-              <a
-                href={mergedContent.map_url}
-                target='_blank'
-                rel='noopener noreferrer'
+            {mergedContent.address && (
+              <div
                 style={{
-                  display: 'inline-block',
-                  marginTop: 18,
-                  padding: '10px 24px',
-                  background: blush,
-                  color: textDark,
-                  textDecoration: 'none',
-                  fontSize: 10,
-                  letterSpacing: '0.2em',
-                  textTransform: 'uppercase',
-                  borderRadius: 24,
-                  fontWeight: 400
+                  marginTop: 28,
+                  width: '100%',
+                  height: 250,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  border: `1px solid rgba(216,192,244,0.2)`
                 }}
               >
-                Xem bản đồ
-              </a>
+                <iframe
+                  width='100%'
+                  height='100%'
+                  style={{ border: 0 }}
+                  loading='lazy'
+                  allowFullScreen
+                  referrerPolicy='no-referrer-when-downgrade'
+                  src={mapEmbedSrc}
+                />
+              </div>
             )}
           </div>
         </section>
 
-        {/* RSVP */}
-        <section style={{ background: softWhite, padding: '40px 24px' }}>
-          <div style={{ maxWidth: 460, margin: '0 auto' }}>
-            <RSVPForm weddingId={wedding.id} />
+        {/* ── ALBUM ── */}
+        {albumImages.length > 0 && (
+          <section style={{ background: white, padding: '72px 24px' }}>
+            <div style={{ maxWidth: 480, margin: '0 auto' }}>
+              <div style={{ textAlign: 'center', marginBottom: 32 }}>
+                <p
+                  style={{
+                    fontSize: 9,
+                    letterSpacing: '0.4em',
+                    color: accent1,
+                    textTransform: 'uppercase',
+                    marginBottom: 8,
+                    fontWeight: 400
+                  }}
+                >
+                  Album ảnh
+                </p>
+                <h2
+                  style={{
+                    fontSize: 'clamp(1.6rem,5vw,2.6rem)',
+                    fontFamily: "'Dancing Script', cursive",
+                    fontWeight: 600,
+                    color: textDark
+                  }}
+                >
+                  Kỷ niệm đẹp
+                </h2>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                {albumImages.slice(0, 4).map((img: string, i: number) => {
+                  const isLast = i === 3
+                  const extraCount = albumImages.length - 4
+                  return (
+                    <div
+                      key={i}
+                      style={{
+                        position: 'relative',
+                        aspectRatio: '3/4',
+                        overflow: 'hidden',
+                        borderRadius: 16,
+                        border: `3px solid ${[blush, sky, lavender, mint][i]}`,
+                        boxShadow: `0 4px 20px rgba(216,192,244,0.3)`,
+                        transform: i % 2 === 0 ? 'rotate(-1deg)' : 'rotate(1deg)'
+                      }}
+                    >
+                      <img
+                        src={img}
+                        alt=''
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          filter: 'saturate(0.9) brightness(1.03)',
+                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        }}
+                      />
+                      {isLast && extraCount > 0 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: white,
+                            fontSize: '1.5rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          +{extraCount}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── GIFT ── */}
+        {(mergedContent.bank_name || mergedContent.account_number || mergedContent.qr_image) && (
+          <section style={{ background: softWhite, padding: '72px 24px' }}>
+            <div style={{ maxWidth: 420, margin: '0 auto', textAlign: 'center' }}>
+              <p
+                style={{
+                  fontSize: 9,
+                  letterSpacing: '0.4em',
+                  color: accent1,
+                  textTransform: 'uppercase',
+                  marginBottom: 14,
+                  fontWeight: 400
+                }}
+              >
+                Mừng cưới
+              </p>
+              <h2
+                style={{
+                  fontSize: 'clamp(1.6rem,5vw,2.4rem)',
+                  fontFamily: "'Dancing Script', cursive",
+                  fontWeight: 600,
+                  color: textDark,
+                  marginBottom: 8
+                }}
+              >
+                Tấm lòng quý khách
+              </h2>
+              <p style={{ fontSize: 13, color: textMid, fontWeight: 300, marginBottom: 28, lineHeight: 1.7 }}>
+                Tình yêu và sự hiện diện của quý vị là điều chúng tôi trân trọng nhất.
+              </p>
+              <div
+                style={{
+                  border: `2px solid ${blush}`,
+                  borderRadius: 16,
+                  padding: '24px 20px',
+                  background: white,
+                  boxShadow: `0 4px 24px rgba(247,197,208,0.3)`
+                }}
+              >
+                {mergedContent.qr_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mergedContent.qr_image}
+                    alt='QR Tiền Mừng'
+                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
+                  />
+                ) : (
+                  mergedContent.account_number && (
+                    <p
+                      style={{
+                        fontSize: 22,
+                        color: textDark,
+                        letterSpacing: '0.08em',
+                        fontFamily: "'Dancing Script', cursive",
+                        fontWeight: 600
+                      }}
+                    >
+                      {mergedContent.account_number}
+                    </p>
+                  )
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── GUESTBOOK ── */}
+        <section style={{ background: white, padding: '72px 24px' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
+            <p
+              style={{
+                fontSize: 9,
+                letterSpacing: '0.4em',
+                color: accent1,
+                textTransform: 'uppercase',
+                marginBottom: 10,
+                fontWeight: 400
+              }}
+            >
+              Sổ Lưu Bút
+            </p>
+            <h2
+              style={{
+                fontSize: 'clamp(1.6rem,5vw,2.4rem)',
+                fontFamily: "'Dancing Script', cursive",
+                fontWeight: 600,
+                color: textDark,
+                marginBottom: 28
+              }}
+            >
+              Lời Chúc Trân Trọng
+            </h2>
+            <div
+              style={{
+                border: `2px solid ${lavender}`,
+                borderRadius: 16,
+                padding: '24px 20px',
+                background: softWhite,
+                boxShadow: `0 4px 24px rgba(216,192,244,0.3)`
+              }}
+            >
+              {wishesList.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {wishesList.map((w, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '16px',
+                        textAlign: 'left',
+                        background: white,
+                        borderRadius: 12,
+                        borderLeft: `3px solid ${accent1}`
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontStyle: 'italic',
+                          color: textMid,
+                          marginBottom: 8,
+                          fontSize: 14,
+                          lineHeight: 1.6,
+                          fontWeight: 300
+                        }}
+                      >
+                        "{w.wishes}"
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "'Poppins', sans-serif",
+                          color: textDark,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        - {w.guest_name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: textMid, fontStyle: 'italic' }}>Chưa có lời chúc nào.</p>
+              )}
+            </div>
           </div>
         </section>
 
-        {/* MoneyGift */}
-        <section style={{ background: white, padding: '40px 24px' }}>
-          <div style={{ maxWidth: 460, margin: '0 auto' }}>
-            <MoneyGift content={mergedContent} />
+        {/* ── RSVP ── */}
+        <section style={{ padding: '60px 20px 80px', background: 'transparent' }}>
+          <div style={{ maxWidth: 520, margin: '0 auto' }}>
+            <RSVPForm
+              weddingId={wedding?.id}
+              rsvpId={rsvpId}
+              guestName={guestName}
+              primaryColor={mergedContent.primary_color}
+              fontFamily={fontFamily}
+              sectionFontFamily={sectionFontFamily}
+            />
           </div>
         </section>
 
-        {/* Wishes */}
-        <section style={{ background: softWhite, padding: '40px 24px' }}>
-          <div style={{ maxWidth: 460, margin: '0 auto' }}>
-            <Wishes weddingId={wedding.id} />
-          </div>
-        </section>
-
-        {/* Footer */}
+        {/* ── FOOTER ── */}
         <section
           style={{
-            background: `linear-gradient(135deg, ${blush} 0%, ${sky} 50%, ${lavender} 100%)`,
-            padding: '36px 24px',
-            textAlign: 'center'
+            background: `linear-gradient(135deg, ${blush} 0%, ${sky} 35%, ${lavender} 70%, ${mint} 100%)`,
+            padding: '52px 24px',
+            textAlign: 'center',
+            opacity: 0.92
           }}
         >
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 16 }}>
+            {[blush, sky, lavender, mint, peach].map((c, i) => (
+              <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: textDark, opacity: 0.3 }} />
+            ))}
+          </div>
           <p
             style={{
-              fontSize: 'clamp(1.1rem,4vw,1.8rem)',
+              fontSize: 'clamp(1.4rem,5vw,2.5rem)',
               fontFamily: "'Dancing Script', cursive",
               fontWeight: 600,
               color: textDark,
@@ -292,8 +823,25 @@ export default function PastelGuestView({ wedding, rsvpId, guestName }: Template
           >
             {mergedContent.groom_name} & {mergedContent.bride_name}
           </p>
-          <p style={{ fontSize: 8, letterSpacing: '0.3em', color: 'rgba(42,26,48,0.3)', textTransform: 'uppercase' }}>
-            MoiMoi Studio
+          {mergedContent.wedding_date && (
+            <p style={{ fontSize: 11, letterSpacing: '0.1em', color: textMid, fontWeight: 300 }}>
+              {new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </p>
+          )}
+          <p
+            style={{
+              fontSize: 8,
+              letterSpacing: '0.3em',
+              color: 'rgba(42,26,48,0.3)',
+              marginTop: 24,
+              textTransform: 'uppercase'
+            }}
+          >
+            Made with love · MoiMoi Studio
           </p>
         </section>
       </div>

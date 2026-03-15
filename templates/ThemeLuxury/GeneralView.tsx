@@ -6,6 +6,7 @@ import { WeddingCalendar } from '../../components/WeddingCalendar'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 import { TemplateProps } from '../TemplateRegistry'
+import { useMapEmbed } from '../../lib/useMapEmbed'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -22,19 +23,14 @@ export default function LuxuryGeneralView({ wedding, guestName = '', rsvpId }: T
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
 
-  // RSVP state
-  const [wish, setWish] = useState('')
-  const [phone, setPhone] = useState('')
-  const [isAttending, setIsAttending] = useState<boolean | null>(null)
-  const [partySize, setPartySize] = useState(1)
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [submitError, setSubmitError] = useState('')
+  // Guestbook state
+  const [wishesList, setWishesList] = useState<any[]>([])
 
   const { content, template } = wedding || {}
   const viewport = useTemplateViewport()
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
 
   const gold = mergedContent.primary_color || '#C9A84C'
   const goldLight = '#E8D5A3'
@@ -59,7 +55,8 @@ export default function LuxuryGeneralView({ wedding, guestName = '', rsvpId }: T
     'https://images.unsplash.com/photo-1484863137850-59afcfe05386?w=600&h=400&fit=crop',
     'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=600&h=400&fit=crop'
   ]
-  const albumImages = mergedContent.images?.length > 0 ? mergedContent.images : mockAlbumImages
+  const allAlbumImages = mergedContent.images?.length > 0 ? mergedContent.images : mockAlbumImages
+  const albumImages = allAlbumImages.slice(0, 20)
 
   let calYear = 0,
     calMonth = 0,
@@ -92,48 +89,20 @@ export default function LuxuryGeneralView({ wedding, guestName = '', rsvpId }: T
     }
   }, [mergedContent.wedding_date, mergedContent.wedding_time])
 
-  // Pre-fill RSVP
+  // Fetch Wishes
   useEffect(() => {
-    if (!rsvpId) return
-    supabase
-      .from('rsvps')
-      .select('wishes, phone, is_attending, party_size')
-      .eq('id', rsvpId)
-      .single()
-      .then(({ data }) => {
-        if (!data) return
-        if (data.wishes) setWish(data.wishes)
-        if (data.phone) setPhone(data.phone)
-        if (data.is_attending != null) setIsAttending(data.is_attending)
-        if (data.party_size) setPartySize(data.party_size)
-      })
-  }, [rsvpId])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setSubmitError('')
-    try {
-      if (rsvpId) {
-        const { error } = await supabase
-          .from('rsvps')
-          .update({
-            phone: phone.trim() || null,
-            is_attending: isAttending,
-            party_size: isAttending ? partySize : 1,
-            wishes: wish.trim() || null
-          })
-          .eq('id', rsvpId)
-        if (error) throw error
-      }
-      setSubmitted(true)
-    } catch (err: any) {
-      console.error('RSVP error:', err)
-      setSubmitError('Có lỗi xảy ra, vui lòng thử lại!')
-    } finally {
-      setLoading(false)
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
     }
-  }
+  }, [wedding?.id])
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -517,11 +486,27 @@ export default function LuxuryGeneralView({ wedding, guestName = '', rsvpId }: T
                 lineHeight: 1.1,
                 paddingTop: '0.15em',
                 paddingBottom: '0.15em',
-                marginBottom: 10
+                marginBottom: mergedContent.groom_role ? 0 : 10
               }}
             >
               {mergedContent.groom_name}
             </h1>
+            {mergedContent.groom_role && (
+              <p
+                className='lx-up'
+                style={{
+                  fontFamily: sectionFontFamily,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  letterSpacing: '0.3em',
+                  textTransform: 'uppercase',
+                  color: goldLight,
+                  marginBottom: 10
+                }}
+              >
+                {mergedContent.groom_role}
+              </p>
+            )}
             <div
               className='lx-up'
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, margin: '10px 0' }}
@@ -539,11 +524,27 @@ export default function LuxuryGeneralView({ wedding, guestName = '', rsvpId }: T
                 lineHeight: 1.1,
                 paddingTop: '0.15em',
                 paddingBottom: '0.15em',
-                marginBottom: 14
+                marginBottom: mergedContent.bride_role ? 0 : 14
               }}
             >
               {mergedContent.bride_name}
             </h1>
+            {mergedContent.bride_role && (
+              <p
+                className='lx-up'
+                style={{
+                  fontFamily: sectionFontFamily,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  letterSpacing: '0.3em',
+                  textTransform: 'uppercase',
+                  color: goldLight,
+                  marginBottom: 14
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
             {mergedContent.wedding_date && (
               <p
                 className='lx-up'
@@ -791,6 +792,12 @@ export default function LuxuryGeneralView({ wedding, guestName = '', rsvpId }: T
                   <Clock size={16} color={gold} />
                   <span>Lúc {mergedContent.wedding_time || '00:00'}</span>
                 </div>
+                {mergedContent.lunar_date && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#777', marginTop: 8 }}>
+                    <Calendar size={16} color={gold} />
+                    <span>Âm lịch: {mergedContent.lunar_date}</span>
+                  </div>
+                )}
               </div>
 
               <div className='luxury-card lx-right' style={{ padding: 32 }}>
@@ -824,29 +831,28 @@ export default function LuxuryGeneralView({ wedding, guestName = '', rsvpId }: T
                 <p style={{ color: '#aaa', fontSize: 16, lineHeight: 1.7, marginBottom: 16 }}>
                   {mergedContent.address || '—'}
                 </p>
-                {mergedContent.map_url && (
-                  <a
-                    href={mergedContent.map_url}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='btn-luxury'
+                {mergedContent.address && (
+                  <div
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '12px 28px',
-                      background: `linear-gradient(135deg, ${goldDark}, ${gold})`,
-                      color: darkBg,
+                      marginTop: 24,
+                      width: '100%',
+                      height: 250,
                       borderRadius: 12,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      textDecoration: 'none',
-                      fontFamily: sectionFontFamily,
-                      letterSpacing: '0.08em'
+                      overflow: 'hidden',
+                      position: 'relative',
+                      border: `1px solid ${gold}25`
                     }}
                   >
-                    <MapPin size={16} /> XEM BẢN ĐỒ
-                  </a>
+                    <iframe
+                      width='100%'
+                      height='100%'
+                      style={{ border: 0 }}
+                      loading='lazy'
+                      allowFullScreen
+                      referrerPolicy='no-referrer-when-downgrade'
+                      src={mapEmbedSrc}
+                    />
+                  </div>
                 )}
               </div>
             </div>
@@ -949,7 +955,7 @@ export default function LuxuryGeneralView({ wedding, guestName = '', rsvpId }: T
                   marginBottom: 16
                 }}
               >
-                XÁC NHẬN THAM DỰ
+                SỔ LƯU BÚT
               </h2>
               <div className='marble-divider lx-up' style={{ width: 100 }} />
               {guestName && (
@@ -968,271 +974,93 @@ export default function LuxuryGeneralView({ wedding, guestName = '', rsvpId }: T
               )}
             </div>
 
-            {!submitted ? (
-              <div className='lg-card' style={{ padding: '28px 24px' }}>
-                <p
-                  style={{
-                    fontFamily: sectionFontFamily,
-                    fontSize: 9,
-                    fontWeight: 700,
-                    color: gold,
-                    letterSpacing: '0.2em',
-                    textTransform: 'uppercase',
-                    textAlign: 'center',
-                    marginBottom: 4
-                  }}
-                >
-                  ◆ CONFIRM ATTENDANCE ◆
-                </p>
-                <p style={{ textAlign: 'center', color: '#666', fontSize: 13, marginBottom: 24, fontStyle: 'italic' }}>
-                  Vui lòng điền thông tin để chúng tôi chuẩn bị đón tiếp quý khách
-                </p>
-
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                  <div>
-                    <label style={labelStyle}>Tham dự *</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      <button
-                        type='button'
-                        className='btn-lg-attend'
-                        onClick={() => setIsAttending(true)}
-                        style={{
-                          padding: '14px 8px',
-                          borderRadius: 12,
-                          border: isAttending === true ? '2px solid #22c55e' : `1px solid ${gold}20`,
-                          background: isAttending === true ? 'rgba(34,197,94,.08)' : darkBg,
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: isAttending === true ? '#4ade80' : '#666',
-                          transition: 'all .25s',
-                          fontFamily: "'Cormorant Garamond', serif"
-                        }}
-                      >
-                        ✅ Tôi sẽ đến
-                      </button>
-                      <button
-                        type='button'
-                        className='btn-lg-decline'
-                        onClick={() => setIsAttending(false)}
-                        style={{
-                          padding: '14px 8px',
-                          borderRadius: 12,
-                          border: isAttending === false ? '2px solid #b91c1c' : `1px solid ${gold}20`,
-                          background: isAttending === false ? 'rgba(185,28,28,.06)' : darkBg,
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: isAttending === false ? '#f87171' : '#666',
-                          transition: 'all .25s',
-                          fontFamily: "'Cormorant Garamond', serif"
-                        }}
-                      >
-                        ❌ Xin lỗi, bận
-                      </button>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>
-                      Điện thoại{' '}
-                      <span
-                        style={{
-                          color: '#555',
-                          fontWeight: 400,
-                          letterSpacing: 0,
-                          textTransform: 'none',
-                          fontFamily: "'Cormorant Garamond', serif",
-                          fontSize: 12
-                        }}
-                      >
-                        (tùy chọn)
-                      </span>
-                    </label>
-                    <input
-                      type='tel'
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder='0901 234 567'
-                      style={inputStyle}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Số người</label>
-                    <div style={{ display: 'flex' }}>
-                      {[1, 2, 3, 4, 5].map((n, i) => (
-                        <button
-                          key={n}
-                          type='button'
-                          onClick={() => setPartySize(n)}
-                          style={{
-                            flex: 1,
-                            padding: '12px 4px',
-                            border: '1px solid',
-                            borderColor: partySize === n ? gold : `${gold}20`,
-                            borderRight: i < 4 ? 'none' : '1px solid',
-                            borderRightColor: partySize === n ? gold : `${gold}20`,
-                            borderRadius: i === 0 ? '12px 0 0 12px' : i === 4 ? '0 12px 12px 0' : '0',
-                            background: partySize === n ? `linear-gradient(135deg, ${goldDark}, ${gold})` : darkBg,
-                            color: partySize === n ? darkBg : '#666',
-                            fontWeight: 800,
-                            fontSize: 15,
-                            cursor: 'pointer',
-                            transition: 'all .2s',
-                            fontFamily: "'Cinzel', serif",
-                            boxShadow: partySize === n ? `0 4px 16px ${gold}25` : 'none'
-                          }}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
-                    <p style={{ fontSize: 12, color: '#555', marginTop: 5, fontStyle: 'italic' }}>người tham dự</p>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>
-                      Lời chúc{' '}
-                      <span
-                        style={{
-                          color: '#555',
-                          fontWeight: 400,
-                          letterSpacing: 0,
-                          textTransform: 'none',
-                          fontFamily: "'Cormorant Garamond', serif",
-                          fontSize: 12
-                        }}
-                      >
-                        (tùy chọn)
-                      </span>
-                    </label>
-                    <textarea
-                      value={wish}
-                      onChange={(e) => setWish(e.target.value)}
-                      placeholder='Chúc hai bạn trăm năm hạnh phúc...'
-                      rows={4}
-                      style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.65 }}
-                    />
-                  </div>
-
-                  <button
-                    type='submit'
-                    className='btn-lg-submit'
-                    disabled={loading || isAttending === null}
-                    style={{
-                      width: '100%',
-                      padding: 16,
-                      background:
-                        isAttending === null || loading
-                          ? `${gold}15`
-                          : `linear-gradient(135deg, ${goldDark}, ${gold}, ${goldLight})`,
-                      color: isAttending === null || loading ? '#555' : darkBg,
-                      border: 'none',
-                      borderRadius: 14,
-                      fontSize: 14,
-                      fontWeight: 800,
-                      cursor: loading || isAttending === null ? 'not-allowed' : 'pointer',
-                      letterSpacing: '0.1em',
-                      transition: 'all .3s',
-                      boxShadow: isAttending !== null && !loading ? `0 8px 30px ${gold}30` : 'none',
-                      fontFamily: sectionFontFamily,
-                      textTransform: 'uppercase'
-                    }}
-                  >
-                    {loading ? '⏳ ĐANG GỬI...' : '✦ GỬI XÁC NHẬN'}
-                  </button>
-
-                  {submitError && (
+            <div className='lg-card' style={{ padding: '28px 24px' }}>
+              {wishesList.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {wishesList.map((w, idx) => (
                     <div
+                      key={idx}
                       style={{
-                        padding: '12px 16px',
-                        background: 'rgba(185,28,28,.08)',
-                        border: '1px solid rgba(185,28,28,.2)',
+                        padding: '20px',
+                        textAlign: 'left',
+                        background: `${gold}06`,
                         borderRadius: 12,
-                        color: '#f87171',
-                        fontSize: 14,
-                        textAlign: 'center',
-                        fontWeight: 500
+                        borderLeft: `2px solid ${gold}`
                       }}
                     >
-                      ❌ {submitError}
+                      <p style={{ fontStyle: 'italic', color: '#ccc', marginBottom: 8, fontSize: 14, lineHeight: 1.6 }}>
+                        "{w.wishes}"
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: sectionFontFamily,
+                          color: gold,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          letterSpacing: '0.1em',
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        - {w.guest_name}
+                      </p>
                     </div>
-                  )}
-                </form>
-              </div>
-            ) : (
-              <div className='lg-card' style={{ padding: '52px 28px', textAlign: 'center' }}>
-                <div className='lx-crown' style={{ fontSize: '4rem', marginBottom: 22 }}>
-                  {isAttending ? '🎊' : '👑'}
+                  ))}
                 </div>
-                <h3
-                  className='gold-shimmer-text'
-                  style={{
-                    fontFamily: sectionFontFamily,
-                    fontSize: '1.3rem',
-                    fontWeight: 800,
-                    marginBottom: 12,
-                    lineHeight: 1.3,
-                    letterSpacing: '0.05em'
-                  }}
-                >
-                  {isAttending ? 'HẸN GẶP TẠI ĐÁM CƯỚI' : 'CẢM ƠN QUÝ KHÁCH'}
-                </h3>
-                <p
-                  style={{
-                    color: '#888',
-                    fontSize: 15,
-                    lineHeight: 1.75,
-                    maxWidth: 300,
-                    margin: '0 auto',
-                    fontStyle: 'italic'
-                  }}
-                >
-                  {isAttending
-                    ? `Chúng tôi rất vinh hạnh được đón tiếp${guestName ? ` ${guestName}` : ''}. Hẹn gặp trong ngày trọng đại! 🥂`
-                    : 'Rất tiếc khi quý khách không thể tham dự. Mong có dịp gặp nhau trong tương lai! 💕'}
-                </p>
-                {wish && (
-                  <div
-                    style={{
-                      marginTop: 28,
-                      padding: '16px 20px',
-                      background: `${gold}06`,
-                      borderRadius: 14,
-                      borderLeft: `2px solid ${gold}`,
-                      textAlign: 'left'
-                    }}
-                  >
-                    <p
-                      style={{
-                        fontFamily: sectionFontFamily,
-                        fontSize: 9,
-                        fontWeight: 700,
-                        color: gold,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.12em',
-                        marginBottom: 8
-                      }}
-                    >
-                      YOUR WISHES
-                    </p>
-                    <p style={{ color: '#aaa', fontStyle: 'italic', fontSize: 14, lineHeight: 1.7 }}>
-                      &ldquo;{wish}&rdquo;
-                    </p>
-                  </div>
-                )}
-                <div
-                  style={{ marginTop: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}
-                >
-                  <div className='lg-marble' style={{ width: 40 }} />
-                  <span className='lg-diamond' style={{ width: 6, height: 6 }} />
-                  <div className='lg-marble' style={{ width: 40 }} />
-                </div>
-              </div>
-            )}
+              ) : (
+                <p style={{ color: '#666', fontStyle: 'italic', textAlign: 'center' }}>Chưa có lời chúc nào.</p>
+              )}
+            </div>
           </div>
         </section>
+
+        {/* ══ Gift ══ */}
+        {(mergedContent.account_number || mergedContent.qr_image) && (
+          <section style={{ background: darkCard, padding: '80px 24px', textAlign: 'center' }}>
+            <div style={{ maxWidth: 420, margin: '0 auto' }}>
+              <p
+                style={{
+                  fontSize: 9,
+                  letterSpacing: '0.55em',
+                  color: gold,
+                  textTransform: 'uppercase',
+                  fontFamily: headingFontFamily,
+                  marginBottom: 28
+                }}
+              >
+                Hộp Mừng Cưới
+              </p>
+              <div style={{ border: `1px solid rgba(201,168,76,0.25)`, padding: '32px 20px', position: 'relative' }}>
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: -1,
+                    left: '20%',
+                    right: '20%',
+                    height: 1,
+                    background: `linear-gradient(to right, transparent, ${gold}, transparent)`,
+                    opacity: 0.4
+                  }}
+                />
+                {mergedContent.qr_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mergedContent.qr_image}
+                    alt='QR Tiền Mừng'
+                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '0 auto', display: 'block' }}
+                  />
+                ) : (
+                  mergedContent.account_number && (
+                    <p
+                      style={{ fontSize: 22, color: '#f0e8d4', letterSpacing: '0.12em', fontFamily: headingFontFamily }}
+                    >
+                      {mergedContent.account_number}
+                    </p>
+                  )
+                )}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ══ Footer ══ */}
         <footer style={{ padding: '60px 20px', textAlign: 'center', position: 'relative' }}>

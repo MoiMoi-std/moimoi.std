@@ -1,59 +1,86 @@
-import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { TemplateProps } from '../TemplateRegistry'
+import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useTemplateViewport } from '../../lib/TemplateViewportContext'
+import { useMapEmbed } from '../../lib/useMapEmbed'
+import RSVPForm from '@/components/guest/RSVPForm'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
-export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }: TemplateProps) {
-  const [wish, setWish] = useState('')
-  const [phone, setPhone] = useState('')
-  const [isAttending, setIsAttending] = useState<boolean | null>(null)
-  const [partySize, setPartySize] = useState(1)
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [submitError, setSubmitError] = useState('')
+export default function MinimalistGuestView({ wedding, guestName, rsvpId }: TemplateProps) {
+  const [timeRemaining, setTimeRemaining] = useState<{
+    days: number
+    hours: number
+    minutes: number
+    seconds: number
+  } | null>(null)
+  const viewport = useTemplateViewport()
+  const [wishesList, setWishesList] = useState<any[]>([])
 
-  useEffect(() => {
-    if (!rsvpId) return
-    supabase
-      .from('rsvps')
-      .select('wishes, phone, is_attending, party_size')
-      .eq('id', rsvpId)
-      .single()
-      .then(({ data }) => {
-        if (!data) return
-        if (data.wishes) setWish(data.wishes)
-        if (data.phone) setPhone(data.phone)
-        if (data.is_attending != null) setIsAttending(data.is_attending)
-        if (data.party_size) setPartySize(data.party_size)
-      })
-  }, [rsvpId])
+  const { content, template } = wedding || {}
+  const templateData = template as any
+  const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
+  const fontFamily = mergedContent.font_family || ''
+  const sectionFontFamily = mergedContent.section_font_family || fontFamily
 
   const ink = '#0d0d0d'
-  const inkMid = '#444444'
-  const inkLight = '#888888'
-  const accent = '#b8927a'
+  const inkMid = '#4a4a4a'
+  const inkLight = '#9a9a9a'
+  const inkFaint = '#e8e8e8'
+  const accent = mergedContent.primary_color || '#b8927a'
+  const accentLight = '#ddbea9'
+  const bg = '#fafafa'
+
+  useEffect(() => {
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
+    }
+  }, [wedding?.id])
+
+  useEffect(() => {
+    if (!mergedContent.wedding_date) return
+    const interval = setInterval(() => {
+      const weddingDate = new Date(`${mergedContent.wedding_date}T${mergedContent.wedding_time || '00:00'}`)
+      const now = new Date()
+      const diff = weddingDate.getTime() - now.getTime()
+      if (diff > 0) {
+        setTimeRemaining({
+          days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((diff % (1000 * 60)) / 1000)
+        })
+      } else {
+        setTimeRemaining(null)
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [mergedContent.wedding_date, mergedContent.wedding_time])
 
   if (!wedding) {
     return (
       <div
-        style={{
-          minHeight: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: '#fff'
-        }}
+        style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: bg }}
       >
         <div style={{ textAlign: 'center', padding: 40 }}>
           <p
             style={{
-              fontSize: 11,
-              letterSpacing: '0.4em',
+              fontSize: 12,
+              letterSpacing: '0.3em',
               color: inkLight,
               textTransform: 'uppercase',
               marginBottom: 16
@@ -61,75 +88,27 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
           >
             NOT FOUND
           </p>
-          <h1 style={{ color: ink, fontFamily: "'Cormorant Garamond', serif", fontSize: '2.5rem', fontWeight: 300 }}>
-            Không tìm thấy thiệp mời
+          <h1 style={{ color: ink, fontFamily: "'Cormorant Garamond', serif", fontSize: '2.5rem' }}>
+            Không tìm thấy thiệp cưới
           </h1>
         </div>
       </div>
     )
   }
 
-  const { content, template } = wedding
-  const templateData = template as any
-  const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const allAlbumImages: string[] = (mergedContent.images || []).filter(Boolean)
+  const albumImages = allAlbumImages.slice(0, 20)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setSubmitError('')
-    try {
-      if (rsvpId) {
-        const { error } = await supabase
-          .from('rsvps')
-          .update({
-            phone: phone.trim() || null,
-            is_attending: isAttending,
-            party_size: isAttending ? partySize : 1,
-            wishes: wish.trim() || null
-          })
-          .eq('id', rsvpId)
-        if (error) throw error
-      }
-      setSubmitted(true)
-    } catch (err: any) {
-      console.error('RSVP error:', err)
-      setSubmitError('Có lỗi xảy ra, vui lòng thử lại!')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '14px 0',
-    border: 'none',
-    borderBottom: `1px solid ${ink}22`,
-    borderRadius: 0,
-    fontSize: 17,
-    outline: 'none',
-    background: 'transparent',
-    boxSizing: 'border-box',
-    fontFamily: "'Cormorant Garamond', serif",
-    color: ink,
-    transition: 'border-color 0.3s'
-  }
-
-  const labelStyle: React.CSSProperties = {
-    display: 'block',
-    marginBottom: 8,
-    fontWeight: 400,
-    fontSize: 10,
-    color: inkLight,
-    letterSpacing: '0.4em',
-    textTransform: 'uppercase',
-    fontFamily: "'Cormorant Garamond', serif"
-  }
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
 
   return (
     <>
       <Head>
-        <title>Thiệp mời — {guestName}</title>
-        <meta name='viewport' content='width=device-width, initial-scale=1' />
+        <title>
+          {mergedContent.groom_name} &amp; {mergedContent.bride_name}
+        </title>
+        <meta name='description' content={`Thiệp cưới — ${mergedContent.groom_name} và ${mergedContent.bride_name}`} />
         <link rel='preconnect' href='https://fonts.googleapis.com' />
         <link rel='preconnect' href='https://fonts.gstatic.com' crossOrigin='anonymous' />
         <link
@@ -138,28 +117,56 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
         />
         <style>{`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-          body { background: #ffffff; -webkit-font-smoothing: antialiased; }
-
-          input:focus, textarea:focus {
-            border-bottom-color: ${ink} !important;
-          }
+          body { background: ${bg}; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+          html { scroll-behavior: smooth; }
 
           @keyframes minFadeUp {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(28px); }
             to   { opacity: 1; transform: translateY(0); }
           }
-
-          .mi-fade { animation: minFadeUp 0.8s cubic-bezier(.16,1,.3,1) both; }
-          .mi-fade:nth-child(2) { animation-delay: .1s; }
-          .mi-fade:nth-child(3) { animation-delay: .2s; }
-          .mi-fade:nth-child(4) { animation-delay: .3s; }
-
-          .mi-btn-att {
-            transition: background 0.2s, color 0.2s, border-color 0.2s;
+          @keyframes minFadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
           }
-          .mi-btn-sub:not(:disabled):hover {
-            background: ${ink} !important;
-            color: #fff !important;
+          @keyframes minHeroZoom {
+            from { transform: scale(1.06); }
+            to   { transform: scale(1); }
+          }
+          @keyframes minScrollPulse {
+            0%, 100% { opacity: 0.8; transform: translateY(0); }
+            50%       { opacity: 0.3; transform: translateY(6px); }
+          }
+          @keyframes minLine {
+            from { width: 0; }
+            to   { width: 100%; }
+          }
+
+          .m-up    { animation: minFadeUp 1s cubic-bezier(.16,1,.3,1) both; }
+          .m-zoom  { animation: minHeroZoom 2.2s cubic-bezier(.16,1,.3,1) both; }
+          .m-in    { animation: minFadeIn 1.4s ease both; }
+          .m-d1    { animation-delay: 0.2s; }
+          .m-d2    { animation-delay: 0.4s; }
+          .m-d3    { animation-delay: 0.6s; }
+          .m-d4    { animation-delay: 0.8s; }
+          .m-d5    { animation-delay: 1s; }
+
+          .m-photo {
+            overflow: hidden;
+            transition: transform 0.7s cubic-bezier(.16,1,.3,1);
+            cursor: pointer;
+          }
+          .m-photo:hover { transform: scale(1.018); }
+
+          .m-line { height: 1px; background: ${inkFaint}; }
+          .m-accent-line { height: 1.5px; background: ${accent}; }
+
+          .m-btn { transition: background 0.25s, color 0.25s, box-shadow 0.25s; }
+          .m-btn:hover { box-shadow: 0 6px 24px rgba(13,13,13,0.15); }
+
+          .m-count-cell:not(:last-child) { border-right: 1px solid ${inkFaint}; }
+
+          .m-scroll-arr {
+            animation: minScrollPulse 2s ease-in-out infinite;
           }
         `}</style>
       </Head>
@@ -167,381 +174,773 @@ export default function MinimalistGuestView({ wedding, guestName = '', rsvpId }:
       <div
         style={{
           minHeight: '100vh',
-          background: '#ffffff',
+          background: bg,
           fontFamily: "'Cormorant Garamond', Georgia, serif",
-          color: ink
+          color: ink,
+          overflowX: 'hidden'
         }}
       >
         {/* ══ Hero ══ */}
-        <div style={{ position: 'relative', overflow: 'hidden', height: 380, borderBottom: `1px solid ${ink}0d` }}>
-          {mergedContent.cover_image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={mergedContent.cover_image}
-              alt=''
-              style={{
-                position: 'absolute',
-                inset: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                zIndex: 0,
-                filter: 'brightness(0.7) saturate(0.85)'
-              }}
-            />
-          ) : (
-            <div style={{ position: 'absolute', inset: 0, background: ink, zIndex: 0 }} />
-          )}
-          {/* Dark editorial overlay - heavier at bottom */}
+        <section
+          style={{
+            position: 'relative',
+            minHeight: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden'
+          }}
+        >
+          {/* Top bar */}
           <div
             style={{
-              position: 'absolute',
-              inset: 0,
-              background: 'linear-gradient(to bottom, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.68) 100%)',
-              zIndex: 1
+              padding: '28px 40px',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              position: 'relative',
+              zIndex: 10
             }}
-          />
-          {/* Corner marks */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 20,
-              left: 20,
-              width: 24,
-              height: 24,
-              borderTop: '1px solid rgba(255,255,255,0.3)',
-              borderLeft: '1px solid rgba(255,255,255,0.3)',
-              zIndex: 2
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: 20,
-              right: 20,
-              width: 24,
-              height: 24,
-              borderTop: '1px solid rgba(255,255,255,0.3)',
-              borderRight: '1px solid rgba(255,255,255,0.3)',
-              zIndex: 2
-            }}
-          />
-          {/* Text at bottom */}
-          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0 32px 36px', zIndex: 2 }}>
+          >
             <p
+              className='m-in'
               style={{
                 fontSize: 9,
-                fontWeight: 400,
-                color: 'rgba(255,255,255,0.55)',
                 letterSpacing: '0.5em',
-                textTransform: 'uppercase',
-                marginBottom: 16
+                color: 'rgba(255,255,255,0.6)',
+                textTransform: 'uppercase'
               }}
             >
               WEDDING INVITATION
             </p>
-            <h1
-              style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: 'clamp(2.4rem, 8vw, 3.8rem)',
-                fontWeight: 300,
-                color: '#fff',
-                lineHeight: 1.05,
-                fontStyle: 'italic',
-                marginBottom: 10,
-                textShadow: '0 2px 20px rgba(0,0,0,0.4)'
-              }}
-            >
-              {guestName}
-            </h1>
             <p
+              className='m-in'
               style={{
-                fontSize: 12,
-                fontWeight: 300,
-                color: 'rgba(255,255,255,0.65)',
-                letterSpacing: '0.06em',
-                marginBottom: 6
+                fontSize: 9,
+                letterSpacing: '0.4em',
+                color: 'rgba(255,255,255,0.45)',
+                textTransform: 'uppercase'
               }}
             >
-              tới tham dự lễ thành hôn của
+              MoiMoi Studio
+            </p>
+          </div>
+
+          {/* Full screen cover image */}
+          {mergedContent.cover_image ? (
+            <div
+              className='m-zoom'
+              style={{
+                position: 'absolute',
+                inset: 0,
+                backgroundImage: `url(${mergedContent.cover_image})`,
+                backgroundSize: 'cover',
+                ...(() => {
+                  const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
+                  return {
+                    backgroundPosition: adj ? `${adj.x}% ${adj.y}%` : 'center',
+                    ...(adj && adj.zoom !== 1
+                      ? { transform: `scale(${adj.zoom})`, transformOrigin: `${adj.x}% ${adj.y}%` }
+                      : {})
+                  }
+                })(),
+                filter: 'brightness(0.72) saturate(0.85)'
+              }}
+            />
+          ) : (
+            <div
+              style={{ position: 'absolute', inset: 0, background: `linear-gradient(160deg, #2a2a2a 0%, #111 100%)` }}
+            />
+          )}
+
+          {/* Gradient overlay — darkest at bottom */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background:
+                'linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.18) 40%, rgba(0,0,0,0.72) 85%, rgba(0,0,0,0.88) 100%)'
+            }}
+          />
+
+          {/* Names — positioned at bottom of hero */}
+          <div
+            style={{
+              marginTop: 'auto',
+              padding: '60px 44px 56px',
+              position: 'relative',
+              zIndex: 1,
+              textAlign: 'center',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center'
+            }}
+          >
+            <div className='m-accent-line m-up' style={{ width: 40, marginBottom: 28 }} />
+
+            {mergedContent.groom_role && (
+              <p
+                className='m-up'
+                style={{
+                  fontSize: 13,
+                  fontWeight: 300,
+                  fontStyle: 'italic',
+                  color: 'rgba(255,255,255,0.7)',
+                  letterSpacing: '0.1em',
+                  marginBottom: 8
+                }}
+              >
+                {mergedContent.groom_role}
+              </p>
+            )}
+            <h1
+              className='m-up m-d1'
+              style={{
+                fontSize: 'clamp(3.5rem, 11vw, 8rem)',
+                fontWeight: 300,
+                fontStyle: 'italic',
+                color: '#ffffff',
+                lineHeight: 1.15,
+                letterSpacing: '-0.01em',
+                textShadow: '0 2px 40px rgba(0,0,0,0.3)'
+              }}
+            >
+              {mergedContent.groom_name}
+            </h1>
+
+            <div className='m-up m-d2' style={{ display: 'flex', alignItems: 'center', gap: 20, margin: '20px 0' }}>
+              <div className='m-accent-line' style={{ width: 28 }} />
+              <p
+                style={{
+                  fontSize: 13,
+                  fontWeight: 300,
+                  letterSpacing: '0.18em',
+                  color: 'rgba(255,255,255,0.6)',
+                  textTransform: 'uppercase'
+                }}
+              >
+                and
+              </p>
+              <div className='m-accent-line' style={{ width: 28 }} />
+            </div>
+
+            {mergedContent.bride_role && (
+              <p
+                className='m-up m-d2'
+                style={{
+                  fontSize: 13,
+                  fontWeight: 300,
+                  fontStyle: 'italic',
+                  color: 'rgba(255,255,255,0.7)',
+                  letterSpacing: '0.1em',
+                  marginBottom: -20,
+                  zIndex: 2
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
+            <h1
+              className='m-up m-d3'
+              style={{
+                fontSize: 'clamp(3.5rem, 11vw, 8rem)',
+                fontWeight: 300,
+                fontStyle: 'italic',
+                color: '#ffffff',
+                lineHeight: 1.15,
+                letterSpacing: '-0.01em',
+                textShadow: '0 2px 40px rgba(0,0,0,0.3)',
+                marginBottom: 32
+              }}
+            >
+              {mergedContent.bride_name}
+            </h1>
+
+            {mergedContent.wedding_date && (
+              <p
+                className='m-up m-d4'
+                style={{ fontSize: 14, fontWeight: 300, letterSpacing: '0.12em', color: 'rgba(255,255,255,0.65)' }}
+              >
+                {new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            )}
+            {guestName && (
+              <div
+                style={{
+                  marginTop: 22,
+                  padding: '12px 28px',
+                  border: `1px solid rgba(184,146,122,0.4)`,
+                  display: 'inline-block'
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 9,
+                    letterSpacing: '0.4em',
+                    color: `rgba(255,255,255,0.5)`,
+                    textTransform: 'uppercase',
+                    fontFamily: "'Cormorant Garamond', serif",
+                    marginBottom: 4
+                  }}
+                >
+                  Kính gửi
+                </p>
+                <p
+                  style={{
+                    fontSize: 'clamp(1rem,3.5vw,1.6rem)',
+                    fontFamily: "'Cormorant Garamond', serif",
+                    color: '#ffffff'
+                  }}
+                >
+                  {guestName}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Scroll indicator */}
+          <div className='m-scroll-arr' style={{ position: 'absolute', bottom: 28, right: 44, zIndex: 2 }}>
+            <svg width='20' height='36' viewBox='0 0 20 36' fill='none'>
+              <rect x='9' y='1' width='2' height='20' rx='1' fill='rgba(255,255,255,0.5)' />
+              <path
+                d='M4 22l6 8 6-8'
+                stroke='rgba(255,255,255,0.5)'
+                strokeWidth='1.5'
+                fill='none'
+                strokeLinecap='round'
+              />
+            </svg>
+          </div>
+        </section>
+
+        {/* ══ Quote ══ */}
+        <section style={{ padding: '100px 44px', borderBottom: `1px solid ${inkFaint}` }}>
+          <div style={{ maxWidth: 700 }}>
+            <div className='m-accent-line' style={{ width: 32, marginBottom: 36 }} />
+            <p
+              className='m-up'
+              style={{
+                fontSize: 'clamp(1.1rem, 3.5vw, 1.5rem)',
+                fontWeight: 300,
+                fontStyle: 'italic',
+                color: inkMid,
+                lineHeight: 1.9,
+                letterSpacing: '0.01em'
+              }}
+            >
+              Hai gia đình trân trọng kính mời quý vị tới dự lễ thành hôn của
             </p>
             <p
+              className='m-up m-d1'
               style={{
-                fontFamily: "'Cormorant Garamond', serif",
-                fontSize: 'clamp(1rem, 3vw, 1.25rem)',
+                fontSize: 'clamp(1.8rem, 5vw, 2.6rem)',
                 fontWeight: 400,
-                color: 'rgba(255,255,255,0.88)',
-                letterSpacing: '0.06em'
+                color: ink,
+                marginTop: 20,
+                letterSpacing: '0.01em'
               }}
             >
               {mergedContent.groom_name} &amp; {mergedContent.bride_name}
             </p>
-            <div style={{ width: 32, height: 2, background: accent, marginTop: 18 }} />
           </div>
-        </div>
+        </section>
 
-        {/* ══ Cards ══ */}
-        <div style={{ maxWidth: 520, margin: '0 auto', padding: '0 32px 80px' }}>
-          {/* Event info */}
-          <div className='mi-fade' style={{ padding: '40px 0', borderBottom: `1px solid ${ink}0d` }}>
+        {/* ══ Countdown ══ */}
+        {timeRemaining && (
+          <section style={{ padding: '100px 44px', borderBottom: `1px solid ${inkFaint}` }}>
+            <div style={{ maxWidth: 820 }}>
+              <p
+                className='m-up'
+                style={{
+                  fontSize: 9,
+                  letterSpacing: '0.5em',
+                  color: accent,
+                  textTransform: 'uppercase',
+                  marginBottom: 52
+                }}
+              >
+                COUNTDOWN
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)' }}>
+                {[
+                  { label: 'Days', value: timeRemaining.days },
+                  { label: 'Hours', value: timeRemaining.hours },
+                  { label: 'Minutes', value: timeRemaining.minutes },
+                  { label: 'Seconds', value: timeRemaining.seconds }
+                ].map((item, i) => (
+                  <div
+                    key={item.label}
+                    className={`m-count-cell m-up m-d${i + 1}`}
+                    style={{ textAlign: 'center', padding: '0 16px', paddingBottom: 8 }}
+                  >
+                    <div
+                      style={{
+                        fontSize: 'clamp(3.5rem, 9vw, 6rem)',
+                        fontWeight: 200,
+                        letterSpacing: '-0.03em',
+                        color: ink,
+                        lineHeight: 1,
+                        marginBottom: 16
+                      }}
+                    >
+                      {String(item.value).padStart(2, '0')}
+                    </div>
+                    <div style={{ fontSize: 9, letterSpacing: '0.32em', color: inkLight, textTransform: 'uppercase' }}>
+                      {item.label}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className='m-accent-line' style={{ width: 40, marginTop: 52 }} />
+            </div>
+          </section>
+        )}
+
+        {/* ══ Event Details ══ */}
+        <section style={{ padding: '100px 44px', borderBottom: `1px solid ${inkFaint}` }}>
+          <div style={{ maxWidth: 820 }}>
             <p
+              className='m-up'
               style={{
                 fontSize: 9,
-                letterSpacing: '0.45em',
+                letterSpacing: '0.5em',
                 color: accent,
                 textTransform: 'uppercase',
-                marginBottom: 28
+                marginBottom: 56
               }}
             >
               EVENT DETAILS
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px,1fr))', gap: 52 }}>
               {[
-                { label: 'DATE', value: mergedContent.event_date },
+                {
+                  label: 'DATE',
+                  value: mergedContent.wedding_date
+                    ? new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })
+                    : null,
+                  subValue: mergedContent.lunar_date ? `(Âm lịch: ${mergedContent.lunar_date})` : null
+                },
                 { label: 'TIME', value: mergedContent.wedding_time },
                 { label: 'VENUE', value: mergedContent.address }
-              ].map(({ label, value }) => (
-                <div key={label} style={{ display: 'flex', gap: 24, alignItems: 'baseline' }}>
-                  <span
-                    style={{
-                      fontSize: 9,
-                      letterSpacing: '0.35em',
-                      color: inkLight,
-                      textTransform: 'uppercase',
-                      flexShrink: 0,
-                      minWidth: 48
-                    }}
-                  >
-                    {label}
-                  </span>
-                  <span style={{ fontSize: 17, fontWeight: 400, color: ink, lineHeight: 1.5 }}>{value || '—'}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* RSVP Form */}
-          {!submitted ? (
-            <div className='mi-fade' style={{ paddingTop: 40 }}>
-              <p
-                style={{
-                  fontSize: 9,
-                  letterSpacing: '0.45em',
-                  color: accent,
-                  textTransform: 'uppercase',
-                  marginBottom: 8
-                }}
-              >
-                RSVP
-              </p>
-              <p
-                style={{
-                  fontSize: 15,
-                  fontWeight: 300,
-                  color: inkMid,
-                  marginBottom: 36,
-                  fontStyle: 'italic',
-                  lineHeight: 1.6
-                }}
-              >
-                Vui lòng xác nhận sự tham dự để chúng tôi chuẩn bị đón tiếp
-              </p>
-
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-                {/* Tham dự? */}
-                <div>
-                  <label style={labelStyle}>Tham dự *</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <button
-                      type='button'
-                      className='mi-btn-att'
-                      onClick={() => setIsAttending(true)}
-                      style={{
-                        padding: '14px',
-                        border: `1px solid ${isAttending === true ? ink : `${ink}20`}`,
-                        background: isAttending === true ? ink : 'transparent',
-                        cursor: 'pointer',
-                        fontSize: 13,
-                        fontWeight: 400,
-                        letterSpacing: '0.1em',
-                        color: isAttending === true ? '#fff' : inkMid,
-                        fontFamily: "'Cormorant Garamond', serif",
-                        textTransform: 'uppercase'
-                      }}
-                    >
-                      Tôi sẽ đến
-                    </button>
-                    <button
-                      type='button'
-                      className='mi-btn-att'
-                      onClick={() => setIsAttending(false)}
-                      style={{
-                        padding: '14px',
-                        border: `1px solid ${isAttending === false ? `#c53030` : `${ink}20`}`,
-                        background: isAttending === false ? '#fff5f5' : 'transparent',
-                        cursor: 'pointer',
-                        fontSize: 13,
-                        fontWeight: 400,
-                        letterSpacing: '0.1em',
-                        color: isAttending === false ? '#c53030' : inkMid,
-                        fontFamily: "'Cormorant Garamond', serif",
-                        textTransform: 'uppercase'
-                      }}
-                    >
-                      Xin lỗi, bận
-                    </button>
-                  </div>
-                </div>
-
-                {/* Điện thoại */}
-                <div>
-                  <label style={labelStyle}>
-                    Điện thoại{' '}
-                    <span style={{ letterSpacing: 0, textTransform: 'none', color: inkLight, opacity: 0.7 }}>
-                      (tùy chọn)
-                    </span>
-                  </label>
-                  <input
-                    type='tel'
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder='0901 234 567'
-                    style={inputStyle}
-                  />
-                </div>
-
-                {/* Số người */}
-                <div>
-                  <label style={labelStyle}>Số người</label>
-                  <div style={{ display: 'flex', gap: 0 }}>
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <button
-                        key={n}
-                        type='button'
-                        onClick={() => setPartySize(n)}
-                        style={{
-                          flex: 1,
-                          padding: '12px 4px',
-                          border: `1px solid ${partySize === n ? ink : `${ink}15`}`,
-                          borderRight: 'none',
-                          background: partySize === n ? ink : 'transparent',
-                          color: partySize === n ? '#fff' : inkMid,
-                          fontWeight: 400,
-                          fontSize: 17,
-                          cursor: 'pointer',
-                          transition: 'all .18s',
-                          fontFamily: "'Cormorant Garamond', serif"
-                        }}
-                      >
-                        {n}
-                      </button>
-                    ))}
-                    <div style={{ width: 1, background: `${ink}15`, flexShrink: 0 }} />
-                  </div>
-                </div>
-
-                {/* Lời chúc */}
-                <div>
-                  <label style={labelStyle}>
-                    Lời chúc{' '}
-                    <span style={{ letterSpacing: 0, textTransform: 'none', color: inkLight, opacity: 0.7 }}>
-                      (tùy chọn)
-                    </span>
-                  </label>
-                  <textarea
-                    value={wish}
-                    onChange={(e) => setWish(e.target.value)}
-                    placeholder='Chúc hai bạn trăm năm hạnh phúc...'
-                    rows={4}
-                    style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.7, borderBottom: `1px solid ${ink}22` }}
-                  />
-                </div>
-
-                {/* Submit */}
-                <button
-                  type='submit'
-                  className='mi-btn-sub'
-                  disabled={loading || isAttending === null}
-                  style={{
-                    width: '100%',
-                    padding: '16px',
-                    background: isAttending === null || loading ? 'transparent' : 'transparent',
-                    color: isAttending === null || loading ? inkLight : ink,
-                    border: `1px solid ${isAttending === null || loading ? `${ink}20` : ink}`,
-                    fontSize: 12,
-                    fontWeight: 400,
-                    cursor: loading || isAttending === null ? 'not-allowed' : 'pointer',
-                    letterSpacing: '0.3em',
-                    textTransform: 'uppercase',
-                    fontFamily: "'Cormorant Garamond', serif",
-                    transition: 'all .3s'
-                  }}
-                >
-                  {loading ? 'ĐANG GỬI...' : 'GỬI XÁC NHẬN'}
-                </button>
-
-                {submitError && (
-                  <p style={{ color: '#c53030', fontSize: 13, textAlign: 'center', fontStyle: 'italic' }}>
-                    {submitError}
-                  </p>
-                )}
-              </form>
-            </div>
-          ) : (
-            /* ══ Success ══ */
-            <div className='mi-fade' style={{ paddingTop: 60, textAlign: 'center' }}>
-              <div style={{ width: 40, height: 2, background: accent, margin: '0 auto 40px' }} />
-              <h3
-                style={{
-                  fontFamily: "'Cormorant Garamond', serif",
-                  fontSize: 'clamp(1.6rem, 5vw, 2.4rem)',
-                  fontWeight: 300,
-                  color: ink,
-                  fontStyle: 'italic',
-                  marginBottom: 16,
-                  lineHeight: 1.3
-                }}
-              >
-                {isAttending ? 'Hẹn gặp bạn tại đám cưới' : 'Cảm ơn bạn đã phản hồi'}
-              </h3>
-              <p
-                style={{
-                  fontSize: 15,
-                  fontWeight: 300,
-                  color: inkMid,
-                  lineHeight: 1.8,
-                  maxWidth: 320,
-                  margin: '0 auto',
-                  fontStyle: 'italic'
-                }}
-              >
-                {isAttending
-                  ? `Chúng tôi rất hân hạnh được đón tiếp ${guestName}`
-                  : 'Rất tiếc khi bạn không thể tham dự. Mong có dịp gặp nhau trong tương lai'}
-              </p>
-              {wish && (
-                <div style={{ marginTop: 40, paddingTop: 32, borderTop: `1px solid ${ink}0d`, textAlign: 'left' }}>
+              ].map(({ label, value, subValue }) => (
+                <div key={label} className='m-up'>
                   <p
                     style={{
                       fontSize: 9,
                       letterSpacing: '0.4em',
                       color: accent,
                       textTransform: 'uppercase',
-                      marginBottom: 16
+                      marginBottom: 16,
+                      fontWeight: 400
                     }}
                   >
-                    YOUR WISHES
+                    {label}
                   </p>
-                  <p style={{ fontSize: 17, fontWeight: 300, color: inkMid, fontStyle: 'italic', lineHeight: 1.75 }}>
-                    &ldquo;{wish}&rdquo;
-                  </p>
+                  <div className='m-accent-line' style={{ width: 20, marginBottom: 16 }} />
+                  <p style={{ fontSize: 20, fontWeight: 300, color: ink, lineHeight: 1.65 }}>{value || '—'}</p>
+                  {subValue && (
+                    <p style={{ fontSize: 16, fontWeight: 300, color: inkLight, marginTop: 4 }}>{subValue}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {mergedContent.address && (
+              <div
+                className='m-up'
+                style={{
+                  marginTop: 56,
+                  width: '100%',
+                  height: 350,
+                  border: `1px solid ${inkFaint}`,
+                  position: 'relative'
+                }}
+              >
+                <iframe
+                  title='Google Map'
+                  width='100%'
+                  height='100%'
+                  style={{ border: 0, display: 'block' }}
+                  loading='lazy'
+                  allowFullScreen
+                  referrerPolicy='no-referrer-when-downgrade'
+                  src={mapEmbedSrc}
+                />
+              </div>
+            )}
+            {mergedContent.map_url && (
+              <div style={{ marginTop: 56 }}>
+                <a
+                  href={mergedContent.map_url}
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  className='m-btn'
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '14px 36px',
+                    border: `1px solid ${ink}`,
+                    color: ink,
+                    textDecoration: 'none',
+                    fontFamily: "'Cormorant Garamond', serif",
+                    fontSize: 14,
+                    fontWeight: 400,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  Xem bản đồ
+                </a>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ══ Cover + Album ══ */}
+        {(mergedContent.cover_image || albumImages.length > 0) && (
+          <section style={{ padding: '100px 40px', borderTop: `1px solid ${ink}0d`, background: '#fafafa' }}>
+            <div style={{ maxWidth: 1060, margin: '0 auto' }}>
+              <p
+                className='m-up'
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.5em',
+                  color: inkLight,
+                  textTransform: 'uppercase',
+                  marginBottom: 56
+                }}
+              >
+                OUR MOMENTS
+              </p>
+
+              {mergedContent.cover_image && (
+                <div className='m-photo' style={{ marginBottom: 16, maxHeight: 580, overflow: 'hidden' }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={mergedContent.cover_image}
+                    alt='Wedding Cover'
+                    style={{
+                      width: '100%',
+                      maxHeight: 580,
+                      display: 'block',
+                      filter: 'grayscale(10%)',
+                      ...getImageStyle(resolveImageAdjust(mergedContent.cover_image_position, viewport))
+                    }}
+                  />
                 </div>
               )}
-              <div style={{ width: 40, height: 2, background: accent, margin: '40px auto 0' }} />
+
+              {albumImages.length > 0 && (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(2, 1fr)',
+                    gap: 12,
+                    marginTop: 12
+                  }}
+                >
+                  {albumImages.slice(0, 4).map((img: string, i: number) => {
+                    const isLast = i === 3
+                    const extra = albumImages.length - 4
+                    return (
+                      <div
+                        key={i}
+                        className='m-photo'
+                        style={{ height: 260, position: 'relative' }}
+                        onClick={() => {
+                          setLightboxIndex(i)
+                          setLightboxOpen(true)
+                        }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={img}
+                          alt={`Ảnh cưới ${i + 1}`}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            display: 'block',
+                            objectFit: 'cover',
+                            filter: 'grayscale(8%)',
+                            ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                          }}
+                        />
+                        {isLast && extra > 0 && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              inset: 0,
+                              background: 'rgba(0,0,0,0.5)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#fff',
+                              fontSize: '2rem',
+                              fontFamily: "'Cormorant Garamond', serif"
+                            }}
+                          >
+                            +{extra}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
+          </section>
+        )}
+
+        {/* ══ Guestbook ══ */}
+        <section style={{ padding: '100px 44px', borderBottom: `1px solid ${inkFaint}` }}>
+          <div style={{ maxWidth: 820 }}>
+            <p
+              className='m-up'
+              style={{
+                fontSize: 9,
+                letterSpacing: '0.5em',
+                color: accent,
+                textTransform: 'uppercase',
+                marginBottom: 56
+              }}
+            >
+              GUESTBOOK
+            </p>
+            <h2
+              className='m-up'
+              style={{
+                fontSize: 'clamp(2rem, 5vw, 3rem)',
+                fontWeight: 400,
+                color: ink,
+                marginBottom: 40
+              }}
+            >
+              Sổ Lưu Bút
+            </h2>
+
+            {wishesList.length > 0 ? (
+              <div style={{ display: 'grid', gap: 24 }}>
+                {wishesList.map((w, idx) => (
+                  <div
+                    key={idx}
+                    className='m-up'
+                    style={{ padding: '24px', background: '#fff', border: `1px solid ${inkFaint}` }}
+                  >
+                    <p
+                      style={{
+                        fontSize: 16,
+                        fontWeight: 300,
+                        color: inkMid,
+                        fontStyle: 'italic',
+                        lineHeight: 1.8,
+                        marginBottom: 16
+                      }}
+                    >
+                      "{w.wishes}"
+                    </p>
+                    <p style={{ fontSize: 13, letterSpacing: '0.1em', color: inkLight, textTransform: 'uppercase' }}>
+                      - {w.guest_name}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className='m-up' style={{ color: inkLight, fontStyle: 'italic', fontSize: 16, fontWeight: 300 }}>
+                Chưa có lời chúc nào.
+              </p>
+            )}
+          </div>
+        </section>
+
+        {/* ══ Gift / Bank ══ */}
+        {(mergedContent.account_number || mergedContent.qr_image) && (
+          <section style={{ padding: '100px 44px', borderBottom: `1px solid ${inkFaint}` }}>
+            <div style={{ maxWidth: 580 }}>
+              <p
+                className='m-up'
+                style={{
+                  fontSize: 9,
+                  letterSpacing: '0.5em',
+                  color: accent,
+                  textTransform: 'uppercase',
+                  marginBottom: 40
+                }}
+              >
+                GIFT
+              </p>
+              <p
+                className='m-up m-d1'
+                style={{
+                  fontSize: 'clamp(1.1rem, 3vw, 1.5rem)',
+                  fontWeight: 300,
+                  color: inkMid,
+                  lineHeight: 1.9,
+                  marginBottom: 48,
+                  fontStyle: 'italic'
+                }}
+              >
+                Sự hiện diện của bạn là món quà quý giá nhất.
+              </p>
+              <div className='m-up m-d2' style={{ paddingTop: 36, borderTop: `1px solid ${inkFaint}` }}>
+                {mergedContent.qr_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mergedContent.qr_image}
+                    alt='QR Tiền Mừng'
+                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
+                  />
+                ) : (
+                  mergedContent.account_number && (
+                    <p
+                      style={{
+                        fontSize: 'clamp(2rem, 6vw, 3.2rem)',
+                        fontWeight: 200,
+                        color: ink,
+                        letterSpacing: '0.04em',
+                        marginBottom: 12
+                      }}
+                    >
+                      {mergedContent.account_number}
+                    </p>
+                  )
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
+        {/* ── RSVP ── */}
+        <section style={{ padding: '60px 20px 80px', background: 'transparent' }}>
+          <div style={{ maxWidth: 520, margin: '0 auto' }}>
+            <RSVPForm
+              weddingId={wedding?.id}
+              rsvpId={rsvpId}
+              guestName={guestName}
+              primaryColor={mergedContent.primary_color}
+              fontFamily={fontFamily}
+              sectionFontFamily={sectionFontFamily}
+            />
+          </div>
+        </section>
+
+        {/* ══ Footer ══ */}
+        <footer
+          style={{
+            padding: '56px 44px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 16
+          }}
+        >
+          <p style={{ fontSize: 'clamp(1.4rem, 4vw, 1.8rem)', fontWeight: 300, fontStyle: 'italic', color: ink }}>
+            {mergedContent.groom_name} &amp; {mergedContent.bride_name}
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+            <div className='m-accent-line' style={{ width: 24, alignSelf: 'flex-end' }} />
+            <p style={{ fontSize: 9, color: inkLight, letterSpacing: '0.22em', textTransform: 'uppercase' }}>
+              MoiMoi Studio
+            </p>
+          </div>
+        </footer>
+      </div>
+
+      {lightboxOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.92)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            onClick={() => setLightboxOpen(false)}
+            style={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              background: 'rgba(255,255,255,0.15)',
+              border: 'none',
+              color: '#fff',
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              fontSize: '1.1rem',
+              cursor: 'pointer'
+            }}
+          >
+            ✕
+          </button>
+          {lightboxIndex > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightboxIndex(lightboxIndex - 1)
+              }}
+              style={{
+                position: 'absolute',
+                left: 16,
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                color: '#fff',
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                fontSize: '1.5rem',
+                cursor: 'pointer'
+              }}
+            >
+              ‹
+            </button>
+          )}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={albumImages[lightboxIndex]}
+            alt={`Photo ${lightboxIndex + 1}`}
+            style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain' }}
+            onClick={(e) => e.stopPropagation()}
+          />
+          {lightboxIndex < albumImages.length - 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightboxIndex(lightboxIndex + 1)
+              }}
+              style={{
+                position: 'absolute',
+                right: 16,
+                background: 'rgba(255,255,255,0.15)',
+                border: 'none',
+                color: '#fff',
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                fontSize: '1.5rem',
+                cursor: 'pointer'
+              }}
+            >
+              ›
+            </button>
           )}
         </div>
-      </div>
+      )}
     </>
   )
 }

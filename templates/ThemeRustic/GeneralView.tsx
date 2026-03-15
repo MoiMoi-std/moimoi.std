@@ -1,8 +1,15 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
+import { createClient } from '@supabase/supabase-js'
 import { TemplateProps } from '../TemplateRegistry'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
+import { useMapEmbed } from '../../lib/useMapEmbed'
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+)
 
 export default function RusticGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -12,10 +19,26 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
     seconds: number
   } | null>(null)
   const viewport = useTemplateViewport()
+  const [wishesList, setWishesList] = useState<any[]>([])
 
   const { content, template } = wedding || {}
+
+  useEffect(() => {
+    if (wedding?.id) {
+      supabase
+        .from('rsvps')
+        .select('guest_name, wishes')
+        .eq('wedding_id', wedding.id)
+        .not('wishes', 'is', null)
+        .neq('wishes', '')
+        .then(({ data }) => {
+          if (data) setWishesList(data)
+        })
+    }
+  }, [wedding?.id])
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
+  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
 
   const bark = '#3d1f0a'
   const barkMid = '#5a2e10'
@@ -60,7 +83,8 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
       </div>
     )
 
-  const albumImages: string[] = mergedContent.images?.length > 0 ? mergedContent.images : []
+  const allAlbumImages: string[] = mergedContent.images?.length > 0 ? mergedContent.images : []
+  const albumImages = allAlbumImages.slice(0, 20)
 
   return (
     <>
@@ -109,9 +133,14 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
                 inset: 0,
                 backgroundImage: `url(${mergedContent.cover_image})`,
                 backgroundSize: 'cover',
-                backgroundPosition: (() => {
+                ...(() => {
                   const adj = resolveImageAdjust(mergedContent.cover_image_position, viewport)
-                  return adj ? `${adj.x}% ${adj.y}%` : 'center'
+                  return {
+                    backgroundPosition: adj ? `${adj.x}% ${adj.y}%` : 'center',
+                    ...(adj && adj.zoom !== 1
+                      ? { transform: `scale(${adj.zoom})`, transformOrigin: `${adj.x}% ${adj.y}%` }
+                      : {})
+                  }
                 })(),
                 filter: 'brightness(0.45) saturate(0.8) sepia(0.2)'
               }}
@@ -204,6 +233,21 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
             >
               Together forever
             </p>
+            {mergedContent.groom_role && (
+              <p
+                className='rs-up rs-d1'
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.4em',
+                  color: honeyLight,
+                  textTransform: 'uppercase',
+                  marginBottom: 6,
+                  fontStyle: 'italic'
+                }}
+              >
+                {mergedContent.groom_role}
+              </p>
+            )}
             <h1
               className='rs-up rs-d2'
               style={{
@@ -249,6 +293,22 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
                 }}
               />
             </div>
+            {mergedContent.bride_role && (
+              <p
+                className='rs-up rs-d3'
+                style={{
+                  fontSize: 10,
+                  letterSpacing: '0.4em',
+                  color: honeyLight,
+                  textTransform: 'uppercase',
+                  marginBottom: 6,
+                  marginTop: 8,
+                  fontStyle: 'italic'
+                }}
+              >
+                {mergedContent.bride_role}
+              </p>
+            )}
             <h1
               className='rs-up rs-d3'
               style={{
@@ -512,7 +572,37 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
                   </div>
                 </div>
               ))}
-            {mergedContent.map_url && (
+            {mergedContent.address ? (
+              <div
+                style={{
+                  marginTop: 28,
+                  width: '100%',
+                  height: 250,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  position: 'relative',
+                  border: `1px solid rgba(196,135,58,0.35)`
+                }}
+              >
+                <iframe
+                  width='100%'
+                  height='100%'
+                  style={{ border: 0 }}
+                  loading='lazy'
+                  allowFullScreen
+                  referrerPolicy='no-referrer-when-downgrade'
+                  src={mapEmbedSrc}
+                />
+                <a
+                  href={
+                    mergedContent.map_url || `https://maps.google.com/?q=${encodeURIComponent(mergedContent.address)}`
+                  }
+                  target='_blank'
+                  rel='noopener noreferrer'
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 10 }}
+                />
+              </div>
+            ) : mergedContent.map_url ? (
               <a
                 href={mergedContent.map_url}
                 target='_blank'
@@ -534,7 +624,7 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
               >
                 Xem bản đồ
               </a>
-            )}
+            ) : null}
           </div>
         </section>
 
@@ -567,36 +657,58 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
                 </h2>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 6 }}>
-                {albumImages.slice(0, 4).map((img: string, i: number) => (
-                  <div
-                    key={i}
-                    style={{
-                      aspectRatio: '3/4',
-                      overflow: 'hidden',
-                      border: `3px solid ${warmWhite}`,
-                      boxShadow: `0 4px 16px rgba(61,31,10,0.2)`,
-                      transform: i % 2 === 0 ? 'rotate(-0.8deg)' : 'rotate(0.8deg)'
-                    }}
-                  >
-                    <img
-                      src={img}
-                      alt=''
+                {albumImages.slice(0, 4).map((img: string, i: number) => {
+                  const isLast = i === 3
+                  const extraCount = albumImages.length - 4
+                  return (
+                    <div
+                      key={i}
                       style={{
-                        width: '100%',
-                        height: '100%',
-                        filter: 'sepia(0.12) saturate(1.05) warm(0.1)',
-                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        position: 'relative',
+                        aspectRatio: '3/4',
+                        overflow: 'hidden',
+                        border: `3px solid ${warmWhite}`,
+                        boxShadow: `0 4px 16px rgba(61,31,10,0.2)`,
+                        transform: i % 2 === 0 ? 'rotate(-0.8deg)' : 'rotate(0.8deg)'
                       }}
-                    />
-                  </div>
-                ))}
+                    >
+                      <img
+                        src={img}
+                        alt=''
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          filter: 'sepia(0.12) saturate(1.05) warm(0.1)',
+                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        }}
+                      />
+                      {isLast && extraCount > 0 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: warmWhite,
+                            fontSize: '1.5rem',
+                            fontWeight: 600
+                          }}
+                        >
+                          +{extraCount}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </section>
         )}
 
         {/* ── GIFT ── */}
-        {(mergedContent.bank_name || mergedContent.account_number) && (
+        {(mergedContent.bank_name || mergedContent.account_number || mergedContent.qr_image) && (
           <section style={{ background: kraftDark, padding: '72px 24px' }}>
             <div style={{ maxWidth: 420, margin: '0 auto', textAlign: 'center' }}>
               <p
@@ -634,48 +746,105 @@ export default function RusticGeneralView({ wedding }: TemplateProps) {
                   opacity: 0.95
                 }}
               >
-                {mergedContent.account_name && (
-                  <p
-                    style={{
-                      fontSize: 17,
-                      fontFamily: "'Playfair Display', serif",
-                      fontStyle: 'italic',
-                      color: barkMid,
-                      marginBottom: 6
-                    }}
-                  >
-                    {mergedContent.account_name}
-                  </p>
-                )}
-                {mergedContent.bank_name && (
-                  <p
-                    style={{
-                      fontSize: 10,
-                      letterSpacing: '0.2em',
-                      color: textMid,
-                      textTransform: 'uppercase',
-                      marginBottom: 6
-                    }}
-                  >
-                    {mergedContent.bank_name}
-                  </p>
-                )}
-                {mergedContent.account_number && (
-                  <p
-                    style={{
-                      fontSize: 22,
-                      color: textDark,
-                      letterSpacing: '0.08em',
-                      fontFamily: "'Playfair Display', serif"
-                    }}
-                  >
-                    {mergedContent.account_number}
-                  </p>
+                {mergedContent.qr_image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mergedContent.qr_image}
+                    alt='QR Tiền Mừng'
+                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
+                  />
+                ) : (
+                  mergedContent.account_number && (
+                    <p
+                      style={{
+                        fontSize: 22,
+                        color: textDark,
+                        letterSpacing: '0.08em',
+                        fontFamily: "'Playfair Display', serif"
+                      }}
+                    >
+                      {mergedContent.account_number}
+                    </p>
+                  )
                 )}
               </div>
             </div>
           </section>
         )}
+
+        {/* ── GUESTBOOK ── */}
+        <section style={{ background: kraft, padding: '72px 24px' }}>
+          <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
+            <p
+              style={{
+                fontSize: 9,
+                letterSpacing: '0.45em',
+                color: honey,
+                textTransform: 'uppercase',
+                fontStyle: 'italic',
+                marginBottom: 10
+              }}
+            >
+              Sổ Lưu Bút
+            </p>
+            <h2
+              style={{
+                fontSize: 'clamp(1.6rem,5vw,2.4rem)',
+                fontFamily: "'Playfair Display', serif",
+                fontStyle: 'italic',
+                color: textDark,
+                marginBottom: 28
+              }}
+            >
+              Lời Chúc Trân Trọng
+            </h2>
+            <div
+              style={{
+                border: `1px dashed ${honey}`,
+                borderRadius: 8,
+                padding: '28px 20px',
+                background: warmWhite,
+                opacity: 0.95
+              }}
+            >
+              {wishesList.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {wishesList.map((w, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '16px',
+                        textAlign: 'left',
+                        background: kraft,
+                        borderRadius: 8,
+                        borderLeft: `3px solid ${honey}`
+                      }}
+                    >
+                      <p
+                        style={{ fontStyle: 'italic', color: textMid, marginBottom: 8, fontSize: 14, lineHeight: 1.6 }}
+                      >
+                        "{w.wishes}"
+                      </p>
+                      <p
+                        style={{
+                          fontFamily: "'Playfair Display', serif",
+                          color: barkMid,
+                          fontSize: 12,
+                          fontWeight: 600,
+                          textTransform: 'uppercase'
+                        }}
+                      >
+                        - {w.guest_name}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ color: textMid, fontStyle: 'italic' }}>Chưa có lời chúc nào.</p>
+              )}
+            </div>
+          </div>
+        </section>
 
         {/* ── FOOTER ── */}
         <section
