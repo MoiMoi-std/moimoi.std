@@ -12,6 +12,17 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
+const BANK_MAP: Record<string, string> = {
+  Vietcombank: 'VCB',
+  Techcombank: 'TCB',
+  MBBank: 'MB',
+  ACB: 'ACB',
+  Vietinbank: 'ICB',
+  BIDV: 'BIDV',
+  VPBank: 'VPB',
+  TPBank: 'TPB'
+}
+
 export default function BohoGuestView({ wedding, guestName, rsvpId }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
     days: number
@@ -21,6 +32,7 @@ export default function BohoGuestView({ wedding, guestName, rsvpId }: TemplatePr
   } | null>(null)
   const viewport = useTemplateViewport()
   const [wishesList, setWishesList] = useState<any[]>([])
+  const [showGiftQr, setShowGiftQr] = useState(false)
 
   const { content, template } = wedding || {}
 
@@ -102,6 +114,22 @@ export default function BohoGuestView({ wedding, guestName, rsvpId }: TemplatePr
           .bh-d1{animation-delay:.25s} .bh-d2{animation-delay:.5s} .bh-d3{animation-delay:.75s} .bh-d4{animation-delay:1s}
           .bh-sway{animation:bohoSway 5s ease-in-out infinite;transform-origin:top center}
           .bh-drift{animation:bohoDrift 6s ease-in-out infinite}
+          
+          .gift-card-boho {
+            background: ${cream};
+            border: 1.5px dashed ${terra}66;
+            border-radius: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(45,31,14,0.06);
+          }
+          .gift-card-boho:hover {
+            transform: translateY(-4px);
+            border-style: solid;
+            border-color: ${terra};
+            box-shadow: 0 12px 32px rgba(45,31,14,0.12);
+          }
+          
           *{box-sizing:border-box;margin:0;padding:0}
         `}</style>
       </Head>
@@ -576,59 +604,244 @@ export default function BohoGuestView({ wedding, guestName, rsvpId }: TemplatePr
         )}
 
         {/* ── GIFT ── */}
-        {(mergedContent.bank_name || mergedContent.account_number || mergedContent.qr_image) && (
-          <section style={{ background: cream, padding: '72px 24px' }}>
-            <div style={{ maxWidth: 420, margin: '0 auto', textAlign: 'center' }}>
-              <p
-                style={{
-                  fontSize: 10,
-                  letterSpacing: '0.35em',
-                  color: terra,
-                  textTransform: 'uppercase',
-                  marginBottom: 10
-                }}
-              >
-                Hộp quà mừng
-              </p>
-              <h2
-                style={{
-                  fontSize: 'clamp(1.8rem,6vw,3rem)',
-                  fontFamily: "'Sacramento', cursive",
-                  color: textDark,
-                  marginBottom: 8
-                }}
-              >
-                Chung vui cùng chúng tôi
-              </h2>
-              <p style={{ fontSize: 13, color: textMid, marginBottom: 32 }}>
-                Sự hiện diện của bạn là niềm hạnh phúc lớn nhất.
-              </p>
-              <div
-                style={{
-                  border: `1.5px dashed rgba(184,97,58,0.35)`,
-                  borderRadius: 8,
-                  padding: '28px 20px',
-                  background: creamDark
-                }}
-              >
-                {mergedContent.qr_image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={mergedContent.qr_image}
-                    alt='QR Tiền Mừng'
-                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
-                  />
-                ) : (
-                  mergedContent.account_number && (
-                    <p style={{ fontSize: 20, color: textDark, letterSpacing: '0.1em', fontWeight: 300 }}>
-                      {mergedContent.account_number}
+        {(() => {
+          const bankName = mergedContent.bank_name || ''
+          const accountNumber = mergedContent.account_number || ''
+          const accountName = mergedContent.account_name || ''
+          const customQrImage = mergedContent.qr_image || mergedContent.qrImage || ''
+          const transferNote = `Mung cuoi ${mergedContent.groom_name} ${mergedContent.bride_name}`.trim()
+          const bankCode = BANK_MAP[bankName] || bankName
+          const generatedQrUrl =
+            bankCode && accountNumber
+              ? `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=0&addInfo=${encodeURIComponent(
+                  transferNote
+                )}&accountName=${encodeURIComponent(accountName)}`
+              : ''
+          const displayQrUrl = customQrImage || generatedQrUrl
+          const hasGiftInfo = Boolean(displayQrUrl || accountNumber || bankName || accountName)
+
+          if (!hasGiftInfo) return null
+
+          return (
+            <section style={{ background: cream, padding: '72px 24px' }}>
+              <div style={{ maxWidth: 420, margin: '0 auto', textAlign: 'center' }}>
+                <p
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: '0.35em',
+                    color: terra,
+                    textTransform: 'uppercase',
+                    marginBottom: 10
+                  }}
+                >
+                  Hộp quà mừng
+                </p>
+                <h2
+                  style={{
+                    fontSize: 'clamp(1.8rem,6vw,3rem)',
+                    fontFamily: "'Sacramento', cursive",
+                    color: textDark,
+                    marginBottom: 12
+                  }}
+                >
+                  Chung vui cùng chúng tôi
+                </h2>
+                <p style={{ fontSize: 13, color: textMid, marginBottom: 32 }}>
+                  Sự hiện diện của bạn là niềm hạnh phúc lớn nhất.
+                </p>
+
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div
+                    className='gift-card-boho'
+                    onClick={() => setShowGiftQr(true)}
+                    style={{ width: '100%', maxWidth: 300, padding: '36px 24px', position: 'relative' }}
+                  >
+                    {/* Boho decor icons */}
+                    <div style={{ position: 'absolute', top: 12, left: 12, opacity: 0.3 }}>
+                      <svg width='24' height='24' viewBox='0 0 24 24' fill='none'>
+                        <path
+                          d='M12 2C12 2 15 7 15 11C15 15 12 22 12 22C12 22 9 15 9 11C9 7 12 2 12 2Z'
+                          stroke={olive}
+                          strokeWidth='1.5'
+                        />
+                      </svg>
+                    </div>
+
+                    <div style={{ marginBottom: 16 }}>
+                      <svg width='44' height='44' viewBox='0 0 24 24' fill='none'>
+                        <path
+                          d='M20 12V20H4V12'
+                          stroke={terra}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        />
+                        <path
+                          d='M22 7H2V12H22V7Z'
+                          stroke={terra}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        />
+                        <path
+                          d='M12 20V7'
+                          stroke={terra}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        />
+                        <path
+                          d='M12 7C12 7 12 3 9.5 3C7 3 7 7 12 7Z'
+                          stroke={terra}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        />
+                        <path
+                          d='M12 7C12 7 12 3 14.5 3C17 3 17 7 12 7Z'
+                          stroke={terra}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        />
+                      </svg>
+                    </div>
+
+                    <p
+                      style={{
+                        fontSize: '0.95rem',
+                        color: textDark,
+                        fontWeight: 600,
+                        letterSpacing: '0.05em',
+                        marginBottom: 6
+                      }}
+                    >
+                      Mở Hộp Mừng Cưới
                     </p>
-                  )
-                )}
+                    <p style={{ color: textMid, fontSize: 11, fontStyle: 'italic' }}>Chạm vào thiệp để xem chi tiết</p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </section>
-        )}
+
+              {/* Gift Modal */}
+              {showGiftQr && (
+                <div
+                  onClick={() => setShowGiftQr(false)}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 9999,
+                    backgroundColor: 'rgba(45, 31, 14, 0.85)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 20,
+                    backdropFilter: 'blur(4px)'
+                  }}
+                >
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: '100%',
+                      maxWidth: 400,
+                      backgroundColor: cream,
+                      borderRadius: 24,
+                      border: `1px solid ${sand}`,
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                      padding: '32px 24px',
+                      position: 'relative'
+                    }}
+                  >
+                    <button
+                      onClick={() => setShowGiftQr(false)}
+                      style={{
+                        position: 'absolute',
+                        top: 16,
+                        right: 16,
+                        background: 'none',
+                        border: 'none',
+                        fontSize: 28,
+                        color: terra,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      &times;
+                    </button>
+
+                    <h3
+                      style={{
+                        fontFamily: "'Sacramento', cursive",
+                        textAlign: 'center',
+                        color: textDark,
+                        fontSize: '2rem',
+                        marginBottom: 20
+                      }}
+                    >
+                      Hộp Quà Mừng
+                    </h3>
+
+                    {displayQrUrl && (
+                      <div
+                        style={{
+                          background: '#fff',
+                          padding: 12,
+                          borderRadius: 16,
+                          marginBottom: 20,
+                          display: 'flex',
+                          justifyContent: 'center',
+                          border: `1px solid ${sand}`
+                        }}
+                      >
+                        <img
+                          src={displayQrUrl}
+                          alt='QR Code'
+                          style={{ width: '100%', maxWidth: 220, height: 'auto' }}
+                        />
+                      </div>
+                    )}
+
+                    <div style={{ display: 'grid', gap: 10, color: textDark }}>
+                      {bankName && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                          <span style={{ color: textMid }}>Ngân hàng:</span>
+                          <span style={{ fontWeight: 600 }}>{bankName}</span>
+                        </div>
+                      )}
+                      {accountName && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                          <span style={{ color: textMid }}>Chủ TK:</span>
+                          <span style={{ fontWeight: 600 }}>{accountName}</span>
+                        </div>
+                      )}
+                      {accountNumber && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                          <span style={{ color: textMid }}>Số TK:</span>
+                          <span style={{ fontWeight: 600, letterSpacing: 0.5 }}>{accountNumber}</span>
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          marginTop: 10,
+                          padding: '12px',
+                          background: creamDark,
+                          borderRadius: 12,
+                          fontSize: 13,
+                          lineHeight: 1.5,
+                          fontStyle: 'italic',
+                          color: textMid,
+                          textAlign: 'center',
+                          border: `1px dashed ${terra}44`
+                        }}
+                      >
+                        Nội dung: {transferNote}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          )
+        })()}
 
         {/* ── GUESTBOOK ── */}
         <section style={{ background: creamDark, padding: '72px 24px' }}>

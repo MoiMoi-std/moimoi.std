@@ -12,6 +12,17 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
+const BANK_MAP: Record<string, string> = {
+  Vietcombank: 'VCB',
+  Techcombank: 'TCB',
+  MBBank: 'MB',
+  ACB: 'ACB',
+  Vietinbank: 'ICB',
+  BIDV: 'BIDV',
+  VPBank: 'VPB',
+  TPBank: 'TPB'
+}
+
 export default function RoyalGuestView({ wedding, guestName, rsvpId }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
     days: number
@@ -21,6 +32,7 @@ export default function RoyalGuestView({ wedding, guestName, rsvpId }: TemplateP
   } | null>(null)
   const viewport = useTemplateViewport()
   const [wishesList, setWishesList] = useState<any[]>([])
+  const [showGiftQr, setShowGiftQr] = useState(false)
 
   const { content, template } = wedding || {}
 
@@ -102,9 +114,22 @@ export default function RoyalGuestView({ wedding, guestName, rsvpId }: TemplateP
           .ry-up{animation:royalFadeUp 1s ease forwards;opacity:0}
           .ry-d1{animation-delay:.3s} .ry-d2{animation-delay:.6s} .ry-d3{animation-delay:.9s} .ry-d4{animation-delay:1.2s}
           .ry-shimmer{background:linear-gradient(90deg,${gold} 0%,${goldLight} 35%,#fffbe8 50%,${goldLight} 65%,${gold} 100%);background-size:200% auto;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:royalShimmer 4s linear infinite}
-          .ry-up.ry-shimmer.ry-d2{animation:royalFadeUp 1s .6s ease forwards, royalShimmer 4s 1.6s linear infinite}
           .ry-up.ry-shimmer.ry-d3{animation:royalFadeUp 1s .9s ease forwards, royalShimmer 4s 1.9s linear infinite}
           .ry-zoom{animation:royalZoom 14s ease-in-out infinite alternate}
+          
+          .gift-card-royal {
+            background: linear-gradient(135deg, ${navyMid} 0%, ${navy} 100%);
+            border: 1px solid ${gold}44;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+          }
+          .gift-card-royal:hover {
+            transform: translateY(-5px);
+            border-color: ${gold};
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+          }
+          
           *{box-sizing:border-box;margin:0;padding:0}
         `}</style>
       </Head>
@@ -630,62 +655,259 @@ export default function RoyalGuestView({ wedding, guestName, rsvpId }: TemplateP
         )}
 
         {/* ── GIFT ── */}
-        {(mergedContent.bank_name || mergedContent.account_number || mergedContent.qr_image) && (
-          <section style={{ background: navy, padding: '72px 24px' }}>
-            <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
-              <p
-                style={{
-                  fontSize: 9,
-                  letterSpacing: '0.5em',
-                  color: gold,
-                  textTransform: 'uppercase',
-                  fontFamily: "'Cinzel',serif",
-                  marginBottom: 14
-                }}
-              >
-                Hộp mừng cưới
-              </p>
-              <h2
-                style={{
-                  fontSize: 'clamp(1.6rem,5vw,2.4rem)',
-                  color: parchment,
-                  fontWeight: 300,
-                  fontStyle: 'italic',
-                  marginBottom: 8
-                }}
-              >
-                Tấm lòng của quý khách
-              </h2>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 32, fontStyle: 'italic' }}>
-                Sự hiện diện của quý vị là món quà quý giá nhất.
-              </p>
-              <div
-                style={{
-                  border: `1px solid rgba(201,162,39,0.28)`,
-                  padding: '28px 24px',
-                  background: 'rgba(201,162,39,0.04)'
-                }}
-              >
-                {mergedContent.qr_image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={mergedContent.qr_image}
-                    alt='QR Tiền Mừng'
-                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
-                  />
-                ) : (
-                  mergedContent.account_number && (
+        {(() => {
+          const bankName = mergedContent.bank_name || ''
+          const accountNumber = mergedContent.account_number || ''
+          const accountName = mergedContent.account_name || ''
+          const customQrImage = mergedContent.qr_image || mergedContent.qrImage || ''
+          const transferNote = `Mung cuoi ${mergedContent.groom_name} ${mergedContent.bride_name}`.trim()
+          const bankCode = BANK_MAP[bankName] || bankName
+          const generatedQrUrl =
+            bankCode && accountNumber
+              ? `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=0&addInfo=${encodeURIComponent(
+                  transferNote
+                )}&accountName=${encodeURIComponent(accountName)}`
+              : ''
+          const displayQrUrl = customQrImage || generatedQrUrl
+          const hasGiftInfo = Boolean(displayQrUrl || accountNumber || bankName || accountName)
+
+          if (!hasGiftInfo) return null
+
+          return (
+            <section style={{ background: navy, padding: '72px 24px' }}>
+              <div style={{ maxWidth: 480, margin: '0 auto', textAlign: 'center' }}>
+                <p
+                  style={{
+                    fontSize: 9,
+                    letterSpacing: '0.5em',
+                    color: gold,
+                    textTransform: 'uppercase',
+                    fontFamily: "'Cinzel',serif",
+                    marginBottom: 14
+                  }}
+                >
+                  Hộp mừng cưới
+                </p>
+                <h2
+                  style={{
+                    fontSize: 'clamp(1.6rem,5vw,2.4rem)',
+                    color: parchment,
+                    fontWeight: 300,
+                    fontStyle: 'italic',
+                    marginBottom: 12
+                  }}
+                >
+                  Tấm lòng của quý khách
+                </h2>
+                <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', marginBottom: 32, fontStyle: 'italic' }}>
+                  Sự hiện diện của quý vị là món quà quý giá nhất.
+                </p>
+
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div
+                    className='gift-card-royal'
+                    onClick={() => setShowGiftQr(true)}
+                    style={{
+                      width: '100%',
+                      maxWidth: 320,
+                      borderRadius: 12,
+                      padding: '32px 24px',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}
+                  >
+                    {/* Decorative bits */}
+                    <div
+                      style={{
+                        position: 'absolute',
+                        inset: 8,
+                        border: `1px solid ${gold}22`,
+                        borderRadius: 8,
+                        pointerEvents: 'none'
+                      }}
+                    />
+
+                    <div style={{ marginBottom: 16 }}>
+                      <svg width='40' height='40' viewBox='0 0 24 24' fill='none'>
+                        <path
+                          d='M20 12V20H4V12'
+                          stroke={gold}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        />
+                        <path
+                          d='M22 7H2V12H22V7Z'
+                          stroke={gold}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        />
+                        <path
+                          d='M12 20V7'
+                          stroke={gold}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        />
+                        <path
+                          d='M12 7C12 7 12 3 9.5 3C7 3 7 7 12 7Z'
+                          stroke={gold}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        />
+                        <path
+                          d='M12 7C12 7 12 3 14.5 3C17 3 17 7 12 7Z'
+                          stroke={gold}
+                          strokeWidth='1.5'
+                          strokeLinecap='round'
+                          strokeLinejoin='round'
+                        />
+                      </svg>
+                    </div>
+
                     <p
-                      style={{ fontSize: 22, color: parchment, letterSpacing: '0.12em', fontFamily: "'Cinzel',serif" }}
+                      style={{
+                        fontFamily: "'Cinzel', serif",
+                        color: gold,
+                        fontSize: '0.9rem',
+                        letterSpacing: '0.2em',
+                        textTransform: 'uppercase',
+                        marginBottom: 6
+                      }}
                     >
-                      {mergedContent.account_number}
+                      Mở Hộp Mừng Cưới
                     </p>
-                  )
-                )}
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11, fontStyle: 'italic' }}>
+                      Nhấn để gửi lời chúc và quà tặng
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </section>
-        )}
+
+              {/* Gift Modal */}
+              {showGiftQr && (
+                <div
+                  onClick={() => setShowGiftQr(false)}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 9999,
+                    backgroundColor: 'rgba(15, 27, 53, 0.95)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 20,
+                    backdropFilter: 'blur(8px)'
+                  }}
+                >
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      width: '100%',
+                      maxWidth: 400,
+                      backgroundColor: parchment,
+                      borderRadius: 16,
+                      border: `2px solid ${gold}`,
+                      boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                      padding: '30px 24px',
+                      position: 'relative'
+                    }}
+                  >
+                    <button
+                      onClick={() => setShowGiftQr(false)}
+                      style={{
+                        position: 'absolute',
+                        top: 12,
+                        right: 12,
+                        background: 'none',
+                        border: 'none',
+                        fontSize: 24,
+                        color: gold,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      &times;
+                    </button>
+
+                    <p
+                      style={{
+                        fontFamily: "'Cinzel', serif",
+                        textAlign: 'center',
+                        color: navy,
+                        fontSize: '1.1rem',
+                        letterSpacing: '0.15em',
+                        textTransform: 'uppercase',
+                        marginBottom: 24,
+                        borderBottom: `1px solid ${gold}33`,
+                        paddingBottom: 12
+                      }}
+                    >
+                      Thông tin chuyển khoản
+                    </p>
+
+                    {displayQrUrl && (
+                      <div
+                        style={{
+                          background: '#fff',
+                          padding: 12,
+                          borderRadius: 12,
+                          marginBottom: 24,
+                          boxShadow: 'inset 0 0 10px rgba(0,0,0,0.05)',
+                          display: 'flex',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <img
+                          src={displayQrUrl}
+                          alt='QR Code'
+                          style={{ width: '100%', maxWidth: 240, height: 'auto' }}
+                        />
+                      </div>
+                    )}
+
+                    <div style={{ display: 'grid', gap: 12, color: navy }}>
+                      {bankName && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                          <span style={{ opacity: 0.6 }}>Ngân hàng:</span>
+                          <span style={{ fontWeight: 600 }}>{bankName}</span>
+                        </div>
+                      )}
+                      {accountName && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                          <span style={{ opacity: 0.6 }}>Chủ TK:</span>
+                          <span style={{ fontWeight: 600 }}>{accountName}</span>
+                        </div>
+                      )}
+                      {accountNumber && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                          <span style={{ opacity: 0.6 }}>Số TK:</span>
+                          <span style={{ fontWeight: 600, letterSpacing: 1 }}>{accountNumber}</span>
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          marginTop: 12,
+                          padding: 10,
+                          background: `${gold}11`,
+                          borderRadius: 8,
+                          fontSize: 12,
+                          lineHeight: 1.5,
+                          fontStyle: 'italic',
+                          color: textMid,
+                          textAlign: 'center'
+                        }}
+                      >
+                        Nội dung: {transferNote}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          )
+        })()}
 
         {/* ── GUESTBOOK ── */}
         <section style={{ background: parchmentDark, padding: '72px 24px' }}>
