@@ -30,6 +30,10 @@ interface TabAlbumProps {
   onImagePositionsChange?: (positions: (ImagePosition | null)[]) => void
   coverImagePosition?: ImagePosition
   onCoverImagePositionChange?: (position: ImagePosition) => void
+  groomImagePosition?: ImagePosition
+  onGroomImagePositionChange?: (position: ImagePosition) => void
+  brideImagePosition?: ImagePosition
+  onBrideImagePositionChange?: (position: ImagePosition) => void
   onImageDeleted?: (url: string) => void
 }
 
@@ -256,6 +260,10 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
   onImagePositionsChange,
   coverImagePosition,
   onCoverImagePositionChange,
+  groomImagePosition,
+  onGroomImagePositionChange,
+  brideImagePosition,
+  onBrideImagePositionChange,
   onImageDeleted
 }) => {
   const [albumImages, setAlbumImages] = useState<string[]>(images || [])
@@ -495,6 +503,10 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
   const handleSavePosition = (pos: ImagePosition) => {
     if (editingTarget === 'cover') {
       onCoverImagePositionChange?.(pos)
+    } else if (editingTarget === 'groom') {
+      onGroomImagePositionChange?.(pos)
+    } else if (editingTarget === 'bride') {
+      onBrideImagePositionChange?.(pos)
     } else if (typeof editingTarget === 'number') {
       const current = imagePositions ? [...imagePositions] : albumImages.map(() => null)
       // Pad if needed
@@ -507,7 +519,8 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
 
   const getPositionForTarget = (target: 'cover' | 'groom' | 'bride' | number): ImagePosition => {
     if (target === 'cover') return coverImagePosition || {}
-    if (target === 'groom' || target === 'bride') return {}
+    if (target === 'groom') return groomImagePosition || {}
+    if (target === 'bride') return brideImagePosition || {}
     return imagePositions?.[target as number] || {}
   }
 
@@ -586,6 +599,13 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
                 <img src={currentGroomImage} alt='Chú rể' className='object-cover w-full h-full' />
                 <div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center gap-2'>
                   <button
+                    onClick={() => setEditingTarget('groom')}
+                    className='opacity-0 group-hover:opacity-100 bg-white text-gray-800 p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
+                    title='Chỉnh vị trí ảnh'
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
                     onClick={handleRemoveGroom}
                     className='opacity-0 group-hover:opacity-100 bg-red-600 text-white p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
                     title='Xóa ảnh chú rể'
@@ -625,6 +645,13 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={currentBrideImage} alt='Cô dâu' className='object-cover w-full h-full' />
                 <div className='absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center gap-2'>
+                  <button
+                    onClick={() => setEditingTarget('bride')}
+                    className='opacity-0 group-hover:opacity-100 bg-white text-gray-800 p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
+                    title='Chỉnh vị trí ảnh'
+                  >
+                    <Pencil size={14} />
+                  </button>
                   <button
                     onClick={handleRemoveBride}
                     className='opacity-0 group-hover:opacity-100 bg-red-600 text-white p-2 rounded-full transform scale-90 group-hover:scale-100 transition-all'
@@ -738,13 +765,23 @@ const TabAlbum: React.FC<TabAlbumProps> = ({
             editingTarget === 'cover'
               ? () => {
                   setEditingTarget(null)
-                  if (editingTarget === 'cover') coverFileInputRef.current?.click()
+                  coverFileInputRef.current?.click()
                 }
-              : () => {
-                  setReplacingAlbumIndex(editingTarget as number)
-                  setEditingTarget(null)
-                  replaceAlbumFileInputRef.current?.click()
-                }
+              : editingTarget === 'groom'
+                ? () => {
+                    setEditingTarget(null)
+                    groomFileInputRef.current?.click()
+                  }
+                : editingTarget === 'bride'
+                  ? () => {
+                      setEditingTarget(null)
+                      brideFileInputRef.current?.click()
+                    }
+                  : () => {
+                      setReplacingAlbumIndex(editingTarget as number)
+                      setEditingTarget(null)
+                      replaceAlbumFileInputRef.current?.click()
+                    }
           }
         />
       )}

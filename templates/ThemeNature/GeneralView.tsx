@@ -5,13 +5,73 @@ import { TemplateProps } from '../TemplateRegistry'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 import { useMapEmbed } from '../../lib/useMapEmbed'
+import MusicPlayer from '@/components/MusicPlayer'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
-export default function NatureGeneralView({ wedding }: TemplateProps) {
+const BANK_MAP: Record<string, string> = {
+  Vietcombank: 'VCB',
+  Techcombank: 'TCB',
+  MBBank: 'MB',
+  ACB: 'ACB',
+  Vietinbank: 'ICB',
+  BIDV: 'BIDV',
+  VPBank: 'VPB',
+  TPBank: 'TPB'
+}
+
+// Leaf SVG path for floating petals
+const LEAF_PATH = 'M10,1 Q18,5 18,12 Q18,20 10,23 Q2,20 2,12 Q2,5 10,1Z'
+
+const NaturePetals = () => {
+  const [petals, setPetals] = useState<
+    { left: string; size: number; dur: number; delay: number; drift: number; spin: number; color: string }[]
+  >([])
+  useEffect(() => {
+    const colors = ['#7aab8a', '#4a7c59', '#a8d5b5', '#c8e6c9', '#81c784']
+    setPetals(
+      [...Array(16)].map(() => ({
+        left: `${Math.random() * 100}%`,
+        size: 8 + Math.random() * 10,
+        dur: 8 + Math.random() * 10,
+        delay: Math.random() * 12,
+        drift: (Math.random() - 0.5) * 100,
+        spin: Math.random() > 0.5 ? 360 : -360,
+        color: colors[Math.floor(Math.random() * colors.length)]
+      }))
+    )
+  }, [])
+  if (petals.length === 0) return null
+  return (
+    <>
+      {petals.map((p, i) => (
+        <div
+          key={i}
+          className='nat-petal'
+          style={
+            {
+              left: p.left,
+              '--size': `${p.size}px`,
+              '--dur': `${p.dur}s`,
+              '--delay': `${p.delay}s`,
+              '--drift': `${p.drift}px`,
+              '--spin': `${p.spin}deg`
+            } as React.CSSProperties
+          }
+        >
+          <svg width={p.size} height={p.size} viewBox='0 0 20 24' fill={p.color} opacity='0.7'>
+            <path d={LEAF_PATH} />
+          </svg>
+        </div>
+      ))}
+    </>
+  )
+}
+
+export default function NatureGeneralView({ wedding, disableSplash, musicUrl }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
     days: number
     hours: number
@@ -20,6 +80,11 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
   } | null>(null)
   const viewport = useTemplateViewport()
   const [wishesList, setWishesList] = useState<any[]>([])
+  const [showSplash, setShowSplash] = useState(!disableSplash)
+  const [splashFading, setSplashFading] = useState(false)
+  const [showGiftQr, setShowGiftQr] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
 
   const { content, template } = wedding || {}
 
@@ -47,6 +112,9 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
   const creamDark = '#ede5d4'
   const textDark = '#1e2b1a'
   const textMid = '#5a6e52'
+  const headingFontFamily = mergedContent.heading_font_family || "'Lora', Georgia, serif"
+  const sectionFontFamily = mergedContent.section_font_family || "'Lora', serif"
+  const fontFamily = mergedContent.font_family || "'DM Sans', sans-serif"
 
   useEffect(() => {
     if (!mergedContent.wedding_date) return
@@ -67,6 +135,11 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
     }, 1000)
     return () => clearInterval(interval)
   }, [mergedContent.wedding_date, mergedContent.wedding_time])
+
+  const handleOpenInvitation = () => {
+    setSplashFading(true)
+    setTimeout(() => setShowSplash(false), 700)
+  }
 
   if (!wedding) {
     return (
@@ -184,6 +257,106 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
             margin: 0 auto;
             animation: natScrollPulse 1.8s ease-in-out infinite;
           }
+
+          /* ── Splash ── */
+          @keyframes splashFadeOutNat {
+            to { opacity: 0; transform: scale(1.02); }
+          }
+          @keyframes splashCardInNat {
+            from { opacity: 0; transform: translateY(24px) scale(0.97); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          .splash-card-nat { animation: splashCardInNat 0.9s cubic-bezier(.16,1,.3,1) both; }
+          .splash-fading-nat { animation: splashFadeOutNat 0.7s cubic-bezier(.4,0,.6,1) forwards; }
+
+          /* ── Gift box ── */
+          @keyframes natGiftFloat {
+            0%, 100% { transform: translateY(0) rotate(-0.5deg); }
+            50%       { transform: translateY(-10px) rotate(0.5deg); }
+          }
+          @keyframes natGiftGlow {
+            0%, 100% { box-shadow: 0 4px 24px ${sage}20; border-color: ${sage}20; }
+            50%       { box-shadow: 0 8px 40px ${sage}40; border-color: ${sage}50; }
+          }
+          .nat-gift-box {
+            animation: natGiftFloat 3.5s ease-in-out infinite, natGiftGlow 3.5s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+          }
+          .nat-gift-box:hover {
+            animation-play-state: paused;
+            transform: scale(1.07) !important;
+          }
+
+          /* ── Floating petals/leaves ── */
+          @keyframes petalFall {
+            0%   { transform: translateX(0) translateY(-20px) rotate(0deg); opacity: 0; }
+            10%  { opacity: 0.7; }
+            80%  { opacity: 0.5; }
+            100% { transform: translateX(var(--drift, 40px)) translateY(110vh) rotate(var(--spin, 360deg)); opacity: 0; }
+          }
+          .nat-petal {
+            position: fixed;
+            width: var(--size, 10px);
+            height: var(--size, 10px);
+            pointer-events: none;
+            z-index: 9990;
+            animation: petalFall var(--dur, 10s) linear infinite;
+            animation-delay: var(--delay, 0s);
+          }
+
+          /* ── Shimmer on nat-photo ── */
+          @keyframes natSweep {
+            0%   { left: -60%; }
+            100% { left: 120%; }
+          }
+          .nat-photo::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -60%;
+            width: 35%; height: 100%;
+            background: linear-gradient(100deg, transparent, rgba(255,255,255,0.15) 50%, transparent);
+            z-index: 2;
+            animation: natSweep 3.5s ease-in-out infinite;
+            animation-play-state: paused;
+          }
+          .nat-photo:hover::before { animation-play-state: running; }
+
+          /* ── Pulsing sage glow on divider ── */
+          @keyframes sagePulse {
+            0%, 100% { opacity: 0.4; }
+            50%       { opacity: 1; }
+          }
+          .nat-divider-anim {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, ${sage}80, ${sage}, ${sage}80, transparent);
+            animation: sagePulse 4s ease-in-out infinite;
+          }
+
+          /* ── Sparkle twinkle ── */
+          @keyframes natTwinkle {
+            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+            50%       { opacity: 0.8; transform: scale(1) rotate(90deg); }
+          }
+          .nat-sparkle {
+            width: 8px; height: 8px;
+            background: ${sage};
+            clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+            animation: natTwinkle var(--ns-dur, 3s) ease-in-out infinite;
+          }
+
+          /* ── Soft glow orb ── */
+          @keyframes natOrbDrift {
+            0%, 100% { transform: translate(0, 0); opacity: 0.12; }
+            50%        { transform: translate(15px, -25px); opacity: 0.22; }
+          }
+          .nat-orb {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            filter: blur(50px);
+            animation: natOrbDrift var(--nor-dur, 14s) ease-in-out infinite;
+          }
         `}</style>
       </Head>
 
@@ -191,11 +364,220 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
         style={{
           minHeight: '100vh',
           background: cream,
-          fontFamily: "'DM Sans', sans-serif",
+          fontFamily: fontFamily,
           color: textDark,
           overflowX: 'hidden'
         }}
       >
+        <NaturePetals />
+        {/* ══ Splash Screen ══ */}
+        {showSplash && (
+          <div
+            onClick={handleOpenInvitation}
+            className={splashFading ? 'splash-fading-nat' : ''}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9997,
+              background: cream,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+              cursor: 'pointer'
+            }}
+          >
+            {/* Background botanical deco */}
+            <svg
+              style={{ position: 'absolute', top: 0, left: 0, width: 280, opacity: 0.06, pointerEvents: 'none' }}
+              viewBox='0 0 200 200'
+            >
+              <path d='M12,188 Q18,52 178,12 Q88,76 12,188Z' fill={sageDark} />
+              <path d='M30,188 Q38,80 160,36' stroke={sageDark} strokeWidth='1' fill='none' />
+            </svg>
+            <svg
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                width: 240,
+                opacity: 0.06,
+                transform: 'rotate(180deg)',
+                pointerEvents: 'none'
+              }}
+              viewBox='0 0 200 200'
+            >
+              <path d='M12,188 Q18,52 178,12 Q88,76 12,188Z' fill={sageDark} />
+            </svg>
+
+            <div
+              className='splash-card-nat nat-card'
+              style={{
+                maxWidth: 400,
+                width: '100%',
+                padding: '52px 36px',
+                textAlign: 'center',
+                position: 'relative',
+                border: `1.5px solid ${sage}35`,
+                background: 'rgba(255,255,255,0.97)'
+              }}
+            >
+              {/* Botanical corner motifs */}
+              <svg
+                className='nat-sway'
+                style={{
+                  position: 'absolute',
+                  top: -8,
+                  left: -8,
+                  width: 90,
+                  height: 90,
+                  opacity: 0.2,
+                  pointerEvents: 'none'
+                }}
+                viewBox='0 0 100 100'
+              >
+                <path d='M8,92 Q12,28 88,8 Q44,44 8,92Z' fill={sage} />
+                <path d='M18,92 Q22,44 80,22' stroke={sage} strokeWidth='0.8' fill='none' opacity='0.6' />
+              </svg>
+              <svg
+                className='nat-sway nat-d2'
+                style={{
+                  position: 'absolute',
+                  top: -8,
+                  right: -8,
+                  width: 80,
+                  height: 80,
+                  opacity: 0.15,
+                  transform: 'scaleX(-1)',
+                  pointerEvents: 'none'
+                }}
+                viewBox='0 0 100 100'
+              >
+                <path d='M8,92 Q12,28 88,8 Q44,44 8,92Z' fill={sage} />
+              </svg>
+
+              {/* Leaf icon */}
+              <div style={{ marginBottom: 20 }}>
+                <svg width='36' height='36' viewBox='0 0 36 36' fill='none'>
+                  <path d='M18,3 Q6,12 6,22a12 12 0 0024 0Q30,12 18,3Z' fill={sage} opacity='0.85' />
+                  <path d='M18,34 Q10,26 8,20' stroke={sageLight} strokeWidth='1' fill='none' opacity='0.7' />
+                  <path d='M18,34 Q26,26 28,20' stroke={sageLight} strokeWidth='0.8' fill='none' opacity='0.5' />
+                </svg>
+              </div>
+
+              <p
+                style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  letterSpacing: '0.5em',
+                  textTransform: 'uppercase',
+                  color: `${sage}80`,
+                  marginBottom: 28
+                }}
+              >
+                WEDDING INVITATION
+              </p>
+
+              <div
+                style={{
+                  width: 60,
+                  height: 1,
+                  background: `linear-gradient(90deg, transparent, ${sage}, transparent)`,
+                  margin: '0 auto 28px'
+                }}
+              />
+
+              <h2
+                style={{
+                  fontFamily: "'Lora', serif",
+                  fontSize: 'clamp(1.6rem, 6vw, 2.4rem)',
+                  fontWeight: 600,
+                  fontStyle: 'italic',
+                  color: textDark,
+                  lineHeight: 1.15,
+                  marginBottom: 4
+                }}
+              >
+                {mergedContent.groom_name}
+              </h2>
+              <div
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, margin: '12px 0' }}
+              >
+                <div style={{ flex: 1, maxWidth: 60, height: 1, background: `${sage}40` }} />
+                <svg width='20' height='20' viewBox='0 0 24 24' fill={sage} opacity='0.7'>
+                  <path d='M12,2 Q5,8 5,14a7 7 0 0014 0Q19,8 12,2Z' />
+                </svg>
+                <div style={{ flex: 1, maxWidth: 60, height: 1, background: `${sage}40` }} />
+              </div>
+              <h2
+                style={{
+                  fontFamily: "'Lora', serif",
+                  fontSize: 'clamp(1.6rem, 6vw, 2.4rem)',
+                  fontWeight: 600,
+                  fontStyle: 'italic',
+                  color: textDark,
+                  lineHeight: 1.15,
+                  marginBottom: 28
+                }}
+              >
+                {mergedContent.bride_name}
+              </h2>
+
+              <div
+                style={{
+                  width: 60,
+                  height: 1,
+                  background: `linear-gradient(90deg, transparent, ${sage}, transparent)`,
+                  margin: '0 auto 24px'
+                }}
+              />
+
+              {mergedContent.wedding_date && (
+                <p
+                  style={{
+                    fontFamily: "'Lora', serif",
+                    fontSize: 14,
+                    fontStyle: 'italic',
+                    color: textMid,
+                    marginBottom: 36,
+                    letterSpacing: '0.04em'
+                  }}
+                >
+                  {new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              )}
+
+              <button
+                className='nat-btn'
+                style={{
+                  padding: '14px 40px',
+                  background: sage,
+                  border: 'none',
+                  borderRadius: 50,
+                  color: '#fff',
+                  fontFamily: "'DM Sans', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 600,
+                  letterSpacing: '0.1em',
+                  cursor: 'pointer',
+                  boxShadow: `0 8px 24px ${sage}40`
+                }}
+              >
+                Mở Thiệp
+              </button>
+
+              <p style={{ marginTop: 20, fontSize: 11, color: `${sage}50`, letterSpacing: '0.08em' }}>
+                Nhấn để mở thiệp
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ══ Hero ══ */}
         <section
           style={{
@@ -334,12 +716,12 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
             <h1
               className='nat-up nat-d1'
               style={{
-                fontFamily: "'Lora', Georgia, serif",
-                fontSize: 'clamp(3.2rem, 10vw, 6.5rem)',
-                fontWeight: 600,
+                fontFamily: headingFontFamily,
+                fontSize: viewport === 'laptop' ? 'clamp(2.8rem, 4vw, 4.5rem)' : 'clamp(1.8rem, 7vw, 3rem)',
+                fontWeight: 700,
                 fontStyle: 'italic',
                 color: '#fff',
-                lineHeight: 1.05,
+                lineHeight: 1.15,
                 textShadow: '0 4px 40px rgba(0,0,0,0.35)'
               }}
             >
@@ -377,12 +759,12 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
             <h1
               className='nat-up nat-d3'
               style={{
-                fontFamily: "'Lora', Georgia, serif",
-                fontSize: 'clamp(3.2rem, 10vw, 6.5rem)',
-                fontWeight: 600,
+                fontFamily: headingFontFamily,
+                fontSize: viewport === 'laptop' ? 'clamp(2.8rem, 4vw, 4.5rem)' : 'clamp(1.8rem, 7vw, 3rem)',
+                fontWeight: 700,
                 fontStyle: 'italic',
                 color: '#fff',
-                lineHeight: 1.05,
+                lineHeight: 1.15,
                 textShadow: '0 4px 40px rgba(0,0,0,0.35)',
                 marginBottom: 36
               }}
@@ -747,9 +1129,29 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
         {/* ══ Album ══ */}
         {albumImages.length > 0 && (
           <section
-            style={{ padding: '90px 20px', background: `linear-gradient(135deg, ${cream} 0%, ${creamDark} 100%)` }}
+            style={{
+              padding: '90px 20px',
+              background: `linear-gradient(135deg, ${cream} 0%, ${creamDark} 100%)`,
+              position: 'relative',
+              overflow: 'hidden'
+            }}
           >
-            <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+            {/* Soft orb background */}
+            <div
+              className='nat-orb'
+              style={
+                {
+                  width: 350,
+                  height: 350,
+                  background: `radial-gradient(circle,${sage}18,transparent 70%)`,
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%,-50%)',
+                  '--nor-dur': '16s'
+                } as React.CSSProperties
+              }
+            />
+            <div style={{ maxWidth: 1000, margin: '0 auto', position: 'relative', zIndex: 1 }}>
               <div style={{ textAlign: 'center', marginBottom: 52 }}>
                 <p
                   style={{
@@ -763,26 +1165,38 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
                 >
                   KHOẢNH KHẮC
                 </p>
-                <h2
-                  style={{
-                    fontFamily: "'Lora', serif",
-                    fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
-                    fontWeight: 600,
-                    color: textDark
-                  }}
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}
                 >
-                  Album cưới
-                </h2>
+                  <span
+                    className='nat-sparkle'
+                    style={{ '--ns-dur': '2.5s', animationDelay: '0.3s', width: 8, height: 8 } as React.CSSProperties}
+                  />
+                  <h2
+                    style={{
+                      fontFamily: sectionFontFamily,
+                      fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
+                      fontWeight: 600,
+                      color: textDark
+                    }}
+                  >
+                    Album cưới
+                  </h2>
+                </div>
               </div>
-              <div style={{ columns: '2 200px', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                 {albumImages.slice(0, 4).map((img: string, i: number) => {
-                  const isLast = i === 3
+                  const isLast = i === 3 && albumImages.length > 4
                   const extraCount = albumImages.length - 4
                   return (
                     <div
                       key={i}
                       className='nat-photo'
-                      style={{ position: 'relative', marginBottom: 12, breakInside: 'avoid' }}
+                      style={{ position: 'relative', aspectRatio: '1' }}
+                      onClick={() => {
+                        setLightboxIndex(i)
+                        setLightboxOpen(true)
+                      }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -790,6 +1204,7 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
                         alt={`Ảnh cưới ${i + 1}`}
                         style={{
                           width: '100%',
+                          height: '100%',
                           display: 'block',
                           ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
                         }}
@@ -799,12 +1214,13 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
                           style={{
                             position: 'absolute',
                             inset: 0,
-                            backgroundColor: 'rgba(0,0,0,0.5)',
+                            backgroundColor: 'rgba(30,43,26,0.6)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             color: '#fff',
                             fontSize: '1.5rem',
+                            fontFamily: "'Lora', serif",
                             fontWeight: 600
                           }}
                         >
@@ -820,121 +1236,262 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
         )}
 
         {/* ══ Gift / Bank ══ */}
-        {(mergedContent.account_number || mergedContent.qr_image) && (
-          <section style={{ padding: '90px 20px' }}>
-            <div style={{ maxWidth: 560, margin: '0 auto' }}>
-              <div style={{ textAlign: 'center', marginBottom: 48 }}>
-                <p
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 500,
-                    letterSpacing: '0.5em',
-                    textTransform: 'uppercase',
-                    color: sage,
-                    marginBottom: 12
-                  }}
-                >
-                  MỪNG CƯỚI
-                </p>
-                <h2
-                  style={{
-                    fontFamily: "'Lora', serif",
-                    fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
-                    fontWeight: 600,
-                    color: textDark,
-                    marginBottom: 16
-                  }}
-                >
-                  Tấm lòng thơm thảo
-                </h2>
-                <p
-                  style={{
-                    color: textMid,
-                    fontSize: 15,
-                    lineHeight: 1.85,
-                    fontStyle: 'italic',
-                    fontFamily: "'Lora', serif"
-                  }}
-                >
-                  Sự hiện diện của bạn là món quà quý giá nhất.
-                  <br />
-                  Nếu muốn gửi tặng thêm, xin trân trọng cảm ơn!
-                </p>
-              </div>
-              <div className='nat-card' style={{ padding: '36px 32px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    marginBottom: 24,
-                    paddingBottom: 20,
-                    borderBottom: `1px solid ${sage}15`
-                  }}
-                >
-                  <div
+        {(() => {
+          const bankName = mergedContent.bank_name || ''
+          const accountNumber = mergedContent.account_number || ''
+          const accountName = mergedContent.account_name || ''
+          const customQrImage = mergedContent.qr_image || ''
+          const transferNote = `Mừng cưới ${mergedContent.groom_name} ${mergedContent.bride_name}`.trim()
+          const bankCode = BANK_MAP[bankName] || bankName
+          const generatedQrUrl =
+            bankCode && accountNumber
+              ? `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=0&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(accountName)}`
+              : ''
+          const displayQrUrl = customQrImage || generatedQrUrl
+          const hasGiftInfo = Boolean(displayQrUrl || accountNumber || bankName || accountName)
+          if (!hasGiftInfo) return null
+
+          return (
+            <section style={{ padding: '90px 20px', textAlign: 'center' }}>
+              <div style={{ maxWidth: 520, margin: '0 auto' }}>
+                <div style={{ textAlign: 'center', marginBottom: 48 }}>
+                  <p
                     style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      background: `${sage}12`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
+                      fontSize: 10,
+                      fontWeight: 500,
+                      letterSpacing: '0.5em',
+                      textTransform: 'uppercase',
+                      color: sage,
+                      marginBottom: 12
                     }}
                   >
-                    <svg
-                      width='20'
-                      height='20'
-                      viewBox='0 0 24 24'
-                      fill='none'
+                    MỪNG CƯỚI
+                  </p>
+                  <h2
+                    style={{
+                      fontFamily: "'Lora', serif",
+                      fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
+                      fontWeight: 600,
+                      color: textDark,
+                      marginBottom: 12
+                    }}
+                  >
+                    Tấm lòng thơm thảo
+                  </h2>
+                  <p
+                    style={{
+                      color: textMid,
+                      fontSize: 14,
+                      fontStyle: 'italic',
+                      fontFamily: "'Lora', serif",
+                      lineHeight: 1.8
+                    }}
+                  >
+                    Sự hiện diện của bạn là món quà quý giá nhất.
+                    <br />
+                    Nếu muốn gửi tặng thêm, xin trân trọng cảm ơn!
+                  </p>
+                </div>
+
+                {/* Animated Gift Box */}
+                <div
+                  className='nat-gift-box nat-card'
+                  onClick={() => setShowGiftQr(true)}
+                  style={{
+                    display: 'inline-flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 14,
+                    padding: '36px 48px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {/* Gift box SVG with Nature colors */}
+                  <svg width='80' height='88' viewBox='0 0 80 88' fill='none'>
+                    {/* Box body */}
+                    <rect
+                      x='8'
+                      y='36'
+                      width='64'
+                      height='48'
+                      rx='3'
+                      fill={`${sage}15`}
                       stroke={sage}
                       strokeWidth='1.5'
-                      strokeLinecap='round'
-                    >
-                      <rect x='2' y='5' width='20' height='14' rx='2' />
-                      <path d='M2 10h20' />
-                    </svg>
-                  </div>
+                    />
+                    {/* Box lid */}
+                    <rect
+                      x='4'
+                      y='24'
+                      width='72'
+                      height='16'
+                      rx='3'
+                      fill={`${sage}25`}
+                      stroke={sage}
+                      strokeWidth='1.5'
+                    />
+                    {/* Vertical ribbon */}
+                    <rect x='36' y='36' width='8' height='48' fill={`${sage}50`} />
+                    {/* Horizontal ribbon on lid */}
+                    <rect x='4' y='29' width='72' height='6' fill={`${sage}50`} />
+                    {/* Bow left loop */}
+                    <ellipse cx='30' cy='20' rx='12' ry='8' fill={sage} opacity='0.75' transform='rotate(-20 30 20)' />
+                    {/* Bow right loop */}
+                    <ellipse cx='50' cy='20' rx='12' ry='8' fill={sage} opacity='0.75' transform='rotate(20 50 20)' />
+                    {/* Bow center with leaf */}
+                    <path d='M40,14 Q35,19 40,26 Q45,19 40,14Z' fill={sageLight} />
+                    {/* Leaf decorations on box */}
+                    <path d='M18,50 Q22,45 26,50 Q22,55 18,50Z' fill={sage} opacity='0.3' />
+                    <path d='M54,62 Q58,57 62,62 Q58,67 54,62Z' fill={sage} opacity='0.3' />
+                    <path d='M15,68 Q18,64 21,68' stroke={sageLight} strokeWidth='1' fill='none' opacity='0.5' />
+                  </svg>
+
                   <p
                     style={{
                       fontSize: 11,
                       fontWeight: 600,
-                      color: textMid,
-                      letterSpacing: '0.12em',
+                      letterSpacing: '0.25em',
+                      color: sage,
                       textTransform: 'uppercase'
                     }}
                   >
-                    Thông tin tài khoản
+                    Nhấn để xem
                   </p>
                 </div>
-                {mergedContent.qr_image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={mergedContent.qr_image}
-                    alt='QR Tiền Mừng'
-                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
-                  />
-                ) : (
-                  mergedContent.account_number && (
-                    <p
+              </div>
+
+              {/* Gift QR Modal */}
+              {showGiftQr && (
+                <div
+                  onClick={() => setShowGiftQr(false)}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 9998,
+                    background: 'rgba(20,38,22,0.85)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 24
+                  }}
+                >
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    className='nat-card'
+                    style={{
+                      maxWidth: 360,
+                      width: '100%',
+                      padding: '40px 28px 32px',
+                      textAlign: 'center',
+                      position: 'relative'
+                    }}
+                  >
+                    <button
+                      onClick={() => setShowGiftQr(false)}
                       style={{
-                        fontFamily: "'Lora', serif",
-                        fontSize: 'clamp(1.5rem, 5vw, 2.1rem)',
-                        fontWeight: 600,
-                        color: sageDark,
-                        letterSpacing: '0.08em',
-                        marginBottom: 8
+                        position: 'absolute',
+                        top: 12,
+                        right: 12,
+                        background: `${sage}15`,
+                        border: `1px solid ${sage}25`,
+                        color: sage,
+                        width: 32,
+                        height: 32,
+                        borderRadius: '50%',
+                        fontSize: 14,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
                       }}
                     >
-                      {mergedContent.account_number}
+                      ✕
+                    </button>
+
+                    {/* Leaf icon */}
+                    <div style={{ marginBottom: 16 }}>
+                      <svg width='28' height='28' viewBox='0 0 28 28' fill={sage} opacity='0.6'>
+                        <path d='M14,2 Q5,9 5,16a9 9 0 0018 0Q23,9 14,2Z' />
+                      </svg>
+                    </div>
+
+                    <p
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 500,
+                        letterSpacing: '0.45em',
+                        color: sage,
+                        textTransform: 'uppercase',
+                        marginBottom: 20
+                      }}
+                    >
+                      MỪNG CƯỚI
                     </p>
-                  )
-                )}
-              </div>
-            </div>
-          </section>
-        )}
+
+                    <div
+                      style={{
+                        width: 50,
+                        height: 1,
+                        background: `linear-gradient(90deg, transparent, ${sage}, transparent)`,
+                        margin: '0 auto 24px'
+                      }}
+                    />
+
+                    {displayQrUrl && (
+                      <div style={{ marginBottom: 20 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={displayQrUrl}
+                          alt='QR Tiền Mừng'
+                          style={{
+                            width: 200,
+                            height: 200,
+                            objectFit: 'contain',
+                            margin: '0 auto',
+                            display: 'block',
+                            border: `1px solid ${sage}20`,
+                            borderRadius: 8,
+                            padding: 8,
+                            background: '#fff'
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {(bankName || accountNumber || accountName) && (
+                      <div style={{ fontSize: 13, color: textMid, lineHeight: 2, marginTop: 8 }}>
+                        {bankName && <p style={{ color: sageDark, fontWeight: 600 }}>{bankName}</p>}
+                        {accountNumber && (
+                          <p
+                            style={{
+                              fontFamily: "'Lora', serif",
+                              fontSize: 18,
+                              letterSpacing: '0.08em',
+                              color: textDark,
+                              fontWeight: 700
+                            }}
+                          >
+                            {accountNumber}
+                          </p>
+                        )}
+                        {accountName && <p style={{ color: textMid }}>{accountName}</p>}
+                      </div>
+                    )}
+
+                    <div
+                      style={{
+                        width: 50,
+                        height: 1,
+                        background: `linear-gradient(90deg, transparent, ${sage}, transparent)`,
+                        margin: '20px auto 0'
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </section>
+          )
+        })()}
 
         {/* ══ GUESTBOOK ══ */}
         <section
@@ -1065,6 +1622,118 @@ export default function NatureGeneralView({ wedding }: TemplateProps) {
           </p>
         </footer>
       </div>
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(12,24,14,0.95)',
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            onClick={() => setLightboxOpen(false)}
+            style={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              background: 'rgba(255,255,255,0.15)',
+              border: 'none',
+              color: '#fff',
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              fontSize: '1.1rem',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          >
+            ✕
+          </button>
+          <div
+            style={{
+              position: 'absolute',
+              top: 20,
+              left: 0,
+              right: 0,
+              textAlign: 'center',
+              color: 'rgba(255,255,255,0.6)',
+              fontSize: '0.85rem'
+            }}
+          >
+            {lightboxIndex + 1} / {albumImages.length}
+          </div>
+          {lightboxIndex > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightboxIndex(lightboxIndex - 1)
+              }}
+              style={{
+                position: 'absolute',
+                left: 12,
+                background: 'rgba(255,255,255,0.12)',
+                border: 'none',
+                color: '#fff',
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ‹
+            </button>
+          )}
+          <div onClick={(e) => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={albumImages[lightboxIndex]}
+              alt={`Ảnh cưới ${lightboxIndex + 1}`}
+              style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 8, display: 'block' }}
+            />
+          </div>
+          {lightboxIndex < albumImages.length - 1 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation()
+                setLightboxIndex(lightboxIndex + 1)
+              }}
+              style={{
+                position: 'absolute',
+                right: 12,
+                background: 'rgba(255,255,255,0.12)',
+                border: 'none',
+                color: '#fff',
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                fontSize: '1.5rem',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              ›
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ═════════ MUSIC PLAYER ═════════ */}
+      {!showSplash && <MusicPlayer musicUrl={musicUrl} />}
     </>
   )
 }
