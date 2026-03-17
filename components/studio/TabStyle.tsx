@@ -1,5 +1,5 @@
 import { Check, ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 
 interface TabStyleProps {
   content?: Record<string, any>
@@ -31,100 +31,104 @@ const COLOR_PRESETS = [
 ]
 
 const HEADING_FONT_OPTIONS = [
+  { label: 'Quicksand', value: 'Quicksand, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Nhẹ nhàng, lãng mạn' },
+  { label: 'Nunito', value: 'Nunito, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Mềm mại, dễ thương' },
+  { label: 'Mulish', value: 'Mulish, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Tinh tế, tiếng Việt tốt' },
   {
-    label: 'Great Vibes',
-    value: 'Great Vibes, cursive',
-    preview: 'Nguyễn Văn Nam',
-    description: 'Thư pháp, nghệ thuật'
-  },
-  {
-    label: 'Dancing Script',
-    value: 'Dancing Script, cursive',
-    preview: 'Nguyễn Văn Nam',
-    description: 'Chữ viết tay, tình cảm'
+    label: 'Josefin Sans',
+    value: 'Josefin Sans, sans-serif',
+    preview: 'Nguyễn Thị Lan',
+    description: 'Thanh mảnh, hiện đại'
   },
   {
     label: 'Cormorant Garamond',
     value: 'Cormorant Garamond, serif',
-    preview: 'Nguyễn Văn Nam',
+    preview: 'Nguyễn Thị Lan',
     description: 'Cổ điển, lãng mạn'
   },
   {
     label: 'Playfair Display',
     value: 'Playfair Display, serif',
-    preview: 'Nguyễn Văn Nam',
+    preview: 'Nguyễn Thị Lan',
     description: 'Sang trọng, tinh tế'
   },
-  { label: 'Cinzel', value: 'Cinzel, serif', preview: 'Nguyen Van Nam', description: 'Hoàng gia, kiêu sa' },
-  { label: 'Lora', value: 'Lora, serif', preview: 'Nguyễn Văn Nam', description: 'Nhẹ nhàng, thơ mộng' },
-  { label: 'Raleway', value: 'Raleway, sans-serif', preview: 'Nguyen Van Nam', description: 'Thanh mảnh, tinh tế' },
-  { label: 'Montserrat', value: 'Montserrat, sans-serif', preview: 'Nguyen Van Nam', description: 'Hiện đại, mạnh mẽ' },
-  { label: 'Outfit', value: 'Outfit, sans-serif', preview: 'Nguyen Van Nam', description: 'Trẻ trung, năng động' },
-  { label: 'Inter', value: 'Inter, sans-serif', preview: 'Nguyen Van Nam', description: 'Hiện đại, tối giản' },
+  { label: 'Lora', value: 'Lora, serif', preview: 'Nguyễn Thị Lan', description: 'Nhẹ nhàng, thơ mộng' },
+  { label: 'EB Garamond', value: 'EB Garamond, serif', preview: 'Nguyễn Thị Lan', description: 'Cổ điển, thanh lịch' },
+  { label: 'Montserrat', value: 'Montserrat, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Hiện đại, mạnh mẽ' },
+  { label: 'Outfit', value: 'Outfit, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Trẻ trung, năng động' },
+  { label: 'Inter', value: 'Inter, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Hiện đại, tối giản' },
   {
     label: 'Be Vietnam Pro',
     value: 'Be Vietnam Pro, sans-serif',
-    preview: 'Nguyễn Văn Nam',
+    preview: 'Nguyễn Thị Lan',
     description: 'Tiếng Việt, hiện đại'
-  }
+  },
+  { label: 'Open Sans', value: 'Open Sans, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Phổ biến, dễ đọc' }
 ]
 
 const SECTION_FONT_OPTIONS = [
   {
     label: 'Playfair Display',
     value: 'Playfair Display, serif',
-    preview: 'GIA ĐÌNH · EVENT DETAILS',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
     description: 'Sang trọng, tinh tế'
   },
   {
     label: 'Cormorant Garamond',
     value: 'Cormorant Garamond, serif',
-    preview: 'GIA ĐÌNH · EVENT DETAILS',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
     description: 'Cổ điển, lãng mạn'
   },
-  { label: 'Cinzel', value: 'Cinzel, serif', preview: 'GIA DINH · EVENT DETAILS', description: 'Hoàng gia, kiêu sa' },
-  { label: 'Lora', value: 'Lora, serif', preview: 'GIA ĐÌNH · EVENT DETAILS', description: 'Nhẹ nhàng, thơ mộng' },
+  { label: 'Lora', value: 'Lora, serif', preview: 'GIA ĐÌNH · THÔNG TIN', description: 'Nhẹ nhàng, thơ mộng' },
   {
-    label: 'Raleway',
-    value: 'Raleway, sans-serif',
-    preview: 'GIA DINH · EVENT DETAILS',
-    description: 'Thanh mảnh, tinh tế'
+    label: 'EB Garamond',
+    value: 'EB Garamond, serif',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
+    description: 'Cổ điển, thanh lịch'
+  },
+  {
+    label: 'Josefin Sans',
+    value: 'Josefin Sans, sans-serif',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
+    description: 'Thanh mảnh, hiện đại'
   },
   {
     label: 'Montserrat',
     value: 'Montserrat, sans-serif',
-    preview: 'GIA DINH · EVENT DETAILS',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
     description: 'Hiện đại, mạnh mẽ'
   },
   {
     label: 'Outfit',
     value: 'Outfit, sans-serif',
-    preview: 'GIA DINH · EVENT DETAILS',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
     description: 'Trẻ trung, năng động'
   },
-  {
-    label: 'Inter',
-    value: 'Inter, sans-serif',
-    preview: 'GIA ĐÌNH · EVENT DETAILS',
-    description: 'Hiện đại, tối giản'
-  },
+  { label: 'Inter', value: 'Inter, sans-serif', preview: 'GIA ĐÌNH · THÔNG TIN', description: 'Hiện đại, tối giản' },
   {
     label: 'Be Vietnam Pro',
     value: 'Be Vietnam Pro, sans-serif',
-    preview: 'GIA ĐÌNH · EVENT DETAILS',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
     description: 'Tiếng Việt, hiện đại'
   },
   {
-    label: 'Dancing Script',
-    value: 'Dancing Script, cursive',
-    preview: 'Gia Đình · Album Ảnh Cưới',
-    description: 'Chữ tay, gần gũi'
+    label: 'Quicksand',
+    value: 'Quicksand, sans-serif',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
+    description: 'Nhẹ nhàng, thanh thoát'
+  },
+  { label: 'Nunito', value: 'Nunito, sans-serif', preview: 'GIA ĐÌNH · THÔNG TIN', description: 'Mềm mại, thân thiện' },
+  {
+    label: 'Mulish',
+    value: 'Mulish, sans-serif',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
+    description: 'Tinh tế, tiếng Việt tốt'
   },
   {
-    label: 'Great Vibes',
-    value: 'Great Vibes, cursive',
-    preview: 'Gia Đình · Album Ảnh Cưới',
-    description: 'Thư pháp, nghệ thuật'
+    label: 'Open Sans',
+    value: 'Open Sans, sans-serif',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
+    description: 'Phổ biến, dễ đọc'
   }
 ]
 
@@ -143,27 +147,51 @@ const BODY_FONT_OPTIONS = [
   },
   { label: 'Lora', value: 'Lora, serif', preview: 'Trân trọng kính mời quý vị', description: 'Nhẹ nhàng, thơ mộng' },
   {
-    label: 'Raleway',
-    value: 'Raleway, sans-serif',
-    preview: 'Tran trong kinh moi quy vi',
-    description: 'Thanh mảnh, tinh tế'
+    label: 'EB Garamond',
+    value: 'EB Garamond, serif',
+    preview: 'Trân trọng kính mời quý vị',
+    description: 'Cổ điển, thanh lịch'
+  },
+  {
+    label: 'Quicksand',
+    value: 'Quicksand, sans-serif',
+    preview: 'Trân trọng kính mời quý vị',
+    description: 'Nhẹ nhàng, thanh thoát'
+  },
+  {
+    label: 'Nunito',
+    value: 'Nunito, sans-serif',
+    preview: 'Trân trọng kính mời quý vị',
+    description: 'Mềm mại, thân thiện'
+  },
+  {
+    label: 'Mulish',
+    value: 'Mulish, sans-serif',
+    preview: 'Trân trọng kính mời quý vị',
+    description: 'Tinh tế, tiếng Việt tốt'
+  },
+  {
+    label: 'Josefin Sans',
+    value: 'Josefin Sans, sans-serif',
+    preview: 'Trân trọng kính mời quý vị',
+    description: 'Thanh mảnh, hiện đại'
   },
   {
     label: 'Montserrat',
     value: 'Montserrat, sans-serif',
-    preview: 'Tran trong kinh moi quy vi',
+    preview: 'Trân trọng kính mời quý vị',
     description: 'Hiện đại, mạnh mẽ'
   },
   {
     label: 'Outfit',
     value: 'Outfit, sans-serif',
-    preview: 'Tran trong kinh moi quy vi',
+    preview: 'Trân trọng kính mời quý vị',
     description: 'Trẻ trung, năng động'
   },
   {
     label: 'Inter',
     value: 'Inter, sans-serif',
-    preview: 'Tran trong kinh moi quy vi',
+    preview: 'Trân trọng kính mời quý vị',
     description: 'Hiện đại, tối giản'
   },
   {
@@ -171,6 +199,12 @@ const BODY_FONT_OPTIONS = [
     value: 'Be Vietnam Pro, sans-serif',
     preview: 'Trân trọng kính mời quý vị',
     description: 'Tiếng Việt, hiện đại'
+  },
+  {
+    label: 'Open Sans',
+    value: 'Open Sans, sans-serif',
+    preview: 'Trân trọng kính mời quý vị',
+    description: 'Phổ biến, dễ đọc'
   }
 ]
 
@@ -178,19 +212,19 @@ const STYLE_PRESETS = [
   {
     label: 'Vintage Cổ Điển',
     primary_color: '#9a2a2a',
-    heading_font_family: 'Great Vibes, cursive',
+    heading_font_family: 'Lora, serif',
     section_font_family: 'Playfair Display, serif',
     font_family: 'Lora, serif',
-    description: 'Đỏ trầm · thư pháp · cổ điển',
+    description: 'Đỏ trầm · cổ điển · lãng mạn',
     swatch: ['#9a2a2a', '#f2e8de']
   },
   {
     label: 'Lãng Mạn',
     primary_color: '#e91e8c',
-    heading_font_family: 'Dancing Script, cursive',
+    heading_font_family: 'Quicksand, sans-serif',
     section_font_family: 'Cormorant Garamond, serif',
     font_family: 'Cormorant Garamond, serif',
-    description: 'Hồng ngọt · chữ tay · lãng mạn',
+    description: 'Hồng ngọt · nhẹ nhàng · lãng mạn',
     swatch: ['#e91e8c', '#fff0f5']
   },
   {
@@ -232,17 +266,17 @@ const STYLE_PRESETS = [
   {
     label: 'Hoàng Gia',
     primary_color: '#1e3a8a',
-    heading_font_family: 'Cinzel, serif',
-    section_font_family: 'Cinzel, serif',
+    heading_font_family: 'Nunito, sans-serif',
+    section_font_family: 'Nunito, sans-serif',
     font_family: 'Cormorant Garamond, serif',
-    description: 'Xanh navy · Cinzel · hoàng gia',
+    description: 'Xanh navy · thanh lịch · hoàng gia',
     swatch: ['#1e3a8a', '#f0f4ff']
   },
   {
     label: 'Đào Hoa',
     primary_color: '#c07a85',
-    heading_font_family: 'Raleway, sans-serif',
-    section_font_family: 'Raleway, sans-serif',
+    heading_font_family: 'Mulish, sans-serif',
+    section_font_family: 'Mulish, sans-serif',
     font_family: 'Lora, serif',
     description: 'Hồng đất · thanh mảnh · mộng mơ',
     swatch: ['#c07a85', '#fff5f7']
@@ -258,46 +292,139 @@ const STYLE_PRESETS = [
   }
 ]
 
-function FontOptionList({
-  options,
-  currentValue,
-  contentKey,
-  previewSize = 'text-lg',
+type FontTab = 'heading' | 'section' | 'body'
+
+const FONT_TABS: {
+  key: FontTab
+  label: string
+  contentKey: string
+  options: typeof HEADING_FONT_OPTIONS
+  previewSize: string
+}[] = [
+  {
+    key: 'heading',
+    label: 'Chữ chính',
+    contentKey: 'heading_font_family',
+    options: HEADING_FONT_OPTIONS,
+    previewSize: 'text-xl'
+  },
+  { key: 'body', label: 'Chữ phụ', contentKey: 'font_family', options: BODY_FONT_OPTIONS, previewSize: 'text-sm' },
+  {
+    key: 'section',
+    label: 'Chữ mục lớn',
+    contentKey: 'section_font_family',
+    options: SECTION_FONT_OPTIONS,
+    previewSize: 'text-sm'
+  }
+]
+
+function FontTabsSelector({
+  content,
   onChange
 }: {
-  options: { label: string; value: string; preview: string; description: string }[]
-  currentValue: string
-  contentKey: string
-  previewSize?: string
+  content?: Record<string, any>
   onChange: (key: string, value: string) => void
 }) {
+  const [activeTab, setActiveTab] = useState<FontTab | null>(null)
+  const listRef = useRef<HTMLDivElement>(null)
+
+  const currentValues: Record<FontTab, string> = {
+    heading: content?.heading_font_family || '',
+    body: content?.font_family || '',
+    section: content?.section_font_family || ''
+  }
+
+  function getLabelFor(tab: FontTab) {
+    const val = currentValues[tab]
+    const opt = FONT_TABS.find((t) => t.key === tab)?.options.find((o) => o.value === val)
+    return opt?.label || 'Chưa chọn'
+  }
+
+  function getPreviewFor(tab: FontTab) {
+    const val = currentValues[tab]
+    const opt = FONT_TABS.find((t) => t.key === tab)?.options.find((o) => o.value === val)
+    return val ? opt?.preview || '' : ''
+  }
+
+  const activeTabData = activeTab ? FONT_TABS.find((t) => t.key === activeTab) : null
+
   return (
-    <div className='space-y-1.5'>
-      {options.map((font) => {
-        const isActive = currentValue === font.value
-        return (
-          <button
-            key={font.value}
-            type='button'
-            onClick={() => onChange(contentKey, font.value)}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl border-2 text-left transition-all ${
-              isActive
-                ? 'border-pink-500 bg-pink-50/40'
-                : 'border-gray-100 bg-white hover:border-pink-200 hover:bg-pink-50/20'
-            }`}
-          >
-            <div className='flex-1 min-w-0'>
-              <div className={`${previewSize} text-gray-800 truncate leading-tight`} style={{ fontFamily: font.value }}>
-                {font.preview}
-              </div>
-              <div className='text-xs text-gray-400 mt-0.5'>
-                {font.label} · {font.description}
-              </div>
-            </div>
-            {isActive && <Check size={16} className='text-pink-500 shrink-0 ml-2' />}
-          </button>
-        )
-      })}
+    <div>
+      {/* 3 horizontal tab buttons */}
+      <div className='grid grid-cols-3 gap-1.5 mb-2'>
+        {FONT_TABS.map((tab) => {
+          const isActive = activeTab === tab.key
+          const fontVal = currentValues[tab.key]
+          return (
+            <button
+              key={tab.key}
+              type='button'
+              onClick={() => setActiveTab(isActive ? null : tab.key)}
+              className={`flex flex-col items-center text-center px-2 py-2 rounded-xl border-2 transition-all min-w-0 ${
+                isActive
+                  ? 'border-pink-500 bg-pink-50/50'
+                  : 'border-gray-100 bg-white hover:border-pink-200 hover:bg-pink-50/20'
+              }`}
+            >
+              <span className='text-[10px] font-semibold text-gray-500 uppercase tracking-wide leading-none mb-1.5 truncate w-full block'>
+                {tab.label}
+              </span>
+              <span
+                className='text-sm leading-tight truncate w-full block text-gray-800'
+                style={{ fontFamily: fontVal }}
+              >
+                {getPreviewFor(tab.key) || 'Aa'}
+              </span>
+              <span className='text-[10px] text-gray-400 mt-0.5 truncate w-full block'>{getLabelFor(tab.key)}</span>
+              <ChevronDown
+                size={12}
+                className={`text-gray-400 mt-1 transition-transform ${isActive ? 'rotate-180' : ''}`}
+              />
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Fixed-height scrollable font list */}
+      {activeTabData && (
+        <div
+          ref={listRef}
+          className='border-2 border-pink-200 rounded-xl bg-white'
+          style={{ maxHeight: 260, overflowY: 'auto', overscrollBehavior: 'contain' }}
+          onWheel={(e) => e.stopPropagation()}
+        >
+          <div className='p-2 space-y-1'>
+            {activeTabData.options.map((font) => {
+              const isSelected = currentValues[activeTab!] === font.value
+              return (
+                <button
+                  key={font.value}
+                  type='button'
+                  onClick={() => onChange(activeTabData.contentKey, font.value)}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-lg border text-left transition-all ${
+                    isSelected
+                      ? 'border-pink-400 bg-pink-50/60'
+                      : 'border-transparent hover:border-pink-100 hover:bg-pink-50/20'
+                  }`}
+                >
+                  <div className='flex-1 min-w-0'>
+                    <div
+                      className={`${activeTabData.previewSize} text-gray-800 truncate leading-snug`}
+                      style={{ fontFamily: font.value }}
+                    >
+                      {font.preview}
+                    </div>
+                    <div className='text-xs text-gray-400 mt-0.5'>
+                      {font.label} · {font.description}
+                    </div>
+                  </div>
+                  {isSelected && <Check size={14} className='text-pink-500 shrink-0 ml-2' />}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -418,9 +545,6 @@ function CollapsibleSection({
 
 export default function TabStyle({ content, onChange, onBatchChange }: TabStyleProps) {
   const currentColor = content?.primary_color || '#d97706'
-  const currentHeadingFont = content?.heading_font_family || ''
-  const currentSectionFont = content?.section_font_family || ''
-  const currentBodyFont = content?.font_family || ''
 
   const applyPreset = (preset: (typeof STYLE_PRESETS)[0]) => {
     onBatchChange({
@@ -436,10 +560,6 @@ export default function TabStyle({ content, onChange, onBatchChange }: TabStyleP
     content?.heading_font_family === preset.heading_font_family &&
     content?.section_font_family === preset.section_font_family &&
     content?.font_family === preset.font_family
-
-  const headingFontLabel = HEADING_FONT_OPTIONS.find((f) => f.value === currentHeadingFont)?.label || 'Chưa chọn'
-  const sectionFontLabel = SECTION_FONT_OPTIONS.find((f) => f.value === currentSectionFont)?.label || 'Chưa chọn'
-  const bodyFontLabel = BODY_FONT_OPTIONS.find((f) => f.value === currentBodyFont)?.label || 'Chưa chọn'
 
   return (
     <div className='space-y-6'>
@@ -514,66 +634,12 @@ export default function TabStyle({ content, onChange, onBatchChange }: TabStyleP
 
       <div className='border-t border-gray-100' />
 
-      {/* Heading Font */}
-      <CollapsibleSection
-        title='Chữ Chính'
-        description='Phông chữ cho tên cô dâu và chú rể'
-        summary={
-          <span>
-            Phông chữ cho tên cô dâu và chú rể · <span className='font-medium text-gray-700'>{headingFontLabel}</span>
-          </span>
-        }
-      >
-        <FontOptionList
-          options={HEADING_FONT_OPTIONS}
-          currentValue={currentHeadingFont}
-          contentKey='heading_font_family'
-          previewSize='text-xl'
-          onChange={onChange}
-        />
-      </CollapsibleSection>
-
-      <div className='border-t border-gray-100' />
-
-      {/* Section Font */}
-      <CollapsibleSection
-        title='Chữ Mục Lớn'
-        description='Phông chữ cho tiêu đề các mục: Gia Đình, Countdown, Event Details, Album...'
-        summary={
-          <span>
-            Tiêu đề các mục · <span className='font-medium text-gray-700'>{sectionFontLabel}</span>
-          </span>
-        }
-      >
-        <FontOptionList
-          options={SECTION_FONT_OPTIONS}
-          currentValue={currentSectionFont}
-          contentKey='section_font_family'
-          previewSize='text-base'
-          onChange={onChange}
-        />
-      </CollapsibleSection>
-
-      <div className='border-t border-gray-100' />
-
-      {/* Body Font */}
-      <CollapsibleSection
-        title='Chữ Phụ'
-        description='Phông chữ cho nội dung, thông tin địa điểm và thời gian'
-        summary={
-          <span>
-            Nội dung, địa điểm, thời gian · <span className='font-medium text-gray-700'>{bodyFontLabel}</span>
-          </span>
-        }
-      >
-        <FontOptionList
-          options={BODY_FONT_OPTIONS}
-          currentValue={currentBodyFont}
-          contentKey='font_family'
-          previewSize='text-sm'
-          onChange={onChange}
-        />
-      </CollapsibleSection>
+      {/* Font Tabs */}
+      <div>
+        <h3 className='text-base font-semibold text-gray-900 mb-1'>Kiểu Chữ</h3>
+        <p className='text-sm text-gray-500 mb-3'>Chọn mục để thay đổi phông chữ tương ứng</p>
+        <FontTabsSelector content={content} onChange={onChange} />
+      </div>
     </div>
   )
 }

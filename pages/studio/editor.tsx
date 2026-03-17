@@ -658,6 +658,18 @@ const Editor = () => {
                         prev ? { ...prev, content: { ...prev.content, cover_image_position: cp } } : prev
                       )
                     }
+                    groomImagePosition={adminSelectedWedding.content?.groom_image_position || undefined}
+                    onGroomImagePositionChange={(gp) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, groom_image_position: gp } } : prev
+                      )
+                    }
+                    brideImagePosition={adminSelectedWedding.content?.bride_image_position || undefined}
+                    onBrideImagePositionChange={(bp) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, bride_image_position: bp } } : prev
+                      )
+                    }
                     onImageDeleted={() => {}}
                   />
                 </div>
@@ -951,6 +963,18 @@ const Editor = () => {
                     onImagePositionsChange={handleImagePositionsChange}
                     coverImagePosition={wedding?.content?.cover_image_position || undefined}
                     onCoverImagePositionChange={handleCoverImagePositionChange}
+                    groomImagePosition={wedding?.content?.groom_image_position || undefined}
+                    onGroomImagePositionChange={(gp) => {
+                      if (!wedding) return
+                      setWedding({ ...wedding, content: { ...wedding.content, groom_image_position: gp } })
+                      setIsDirty(true)
+                    }}
+                    brideImagePosition={wedding?.content?.bride_image_position || undefined}
+                    onBrideImagePositionChange={(bp) => {
+                      if (!wedding) return
+                      setWedding({ ...wedding, content: { ...wedding.content, bride_image_position: bp } })
+                      setIsDirty(true)
+                    }}
                     onImageDeleted={handleImageDeleted}
                   />
                 </div>

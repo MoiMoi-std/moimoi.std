@@ -14,7 +14,54 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
-export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: TemplateProps) {
+const BANK_MAP: Record<string, string> = {
+  Vietcombank: 'VCB',
+  Techcombank: 'TCB',
+  MBBank: 'MB',
+  ACB: 'ACB',
+  Vietinbank: 'ICB',
+  BIDV: 'BIDV',
+  VPBank: 'VPB',
+  TPBank: 'TPB'
+}
+
+const LuxurySparkles = () => {
+  const [items, setItems] = useState<{ left: string; top: string; delay: string; dur: string; size: number }[]>([])
+  useEffect(() => {
+    setItems(
+      [...Array(24)].map(() => ({
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        delay: `${Math.random() * 6}s`,
+        dur: `${3 + Math.random() * 4}s`,
+        size: 4 + Math.random() * 6
+      }))
+    )
+  }, [])
+  if (items.length === 0) return null
+  return (
+    <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', overflow: 'hidden', zIndex: 1 }}>
+      {items.map((s, i) => (
+        <div
+          key={i}
+          className='lx-star'
+          style={
+            {
+              left: s.left,
+              top: s.top,
+              width: s.size,
+              height: s.size,
+              '--tw-dur': s.dur,
+              animationDelay: s.delay
+            } as React.CSSProperties
+          }
+        />
+      ))}
+    </div>
+  )
+}
+
+export default function LuxuryGeneralView({ wedding, guestName = '', rsvpId, disableSplash }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
     days: number
     hours: number
@@ -23,7 +70,11 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
   } | null>(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [showSplash, setShowSplash] = useState(!disableSplash)
+  const [splashFading, setSplashFading] = useState(false)
+  const [showGiftQr, setShowGiftQr] = useState(false)
 
+  // Guestbook state
   const [wishesList, setWishesList] = useState<any[]>([])
 
   const { content, template } = wedding || {}
@@ -89,6 +140,7 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
     }
   }, [mergedContent.wedding_date, mergedContent.wedding_time])
 
+  // Fetch Wishes
   useEffect(() => {
     if (wedding?.id) {
       supabase
@@ -102,6 +154,36 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
         })
     }
   }, [wedding?.id])
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%',
+    padding: '14px 16px',
+    border: `1px solid ${gold}20`,
+    borderRadius: 12,
+    fontSize: 15,
+    outline: 'none',
+    background: darkBg,
+    boxSizing: 'border-box',
+    fontFamily: fontFamily,
+    color: '#d4d4d4',
+    transition: 'border-color 0.3s, box-shadow 0.3s'
+  }
+
+  const labelStyle: React.CSSProperties = {
+    display: 'block',
+    marginBottom: 6,
+    fontWeight: 700,
+    fontSize: 11,
+    color: gold,
+    letterSpacing: '0.12em',
+    textTransform: 'uppercase',
+    fontFamily: "'Cinzel', serif"
+  }
+
+  const handleOpenInvitation = () => {
+    setSplashFading(true)
+    setTimeout(() => setShowSplash(false), 700)
+  }
 
   if (!wedding) {
     return (
@@ -256,6 +338,14 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
             box-shadow: 0 0 12px ${gold}50;
           }
 
+          .lg-diamond {
+            width: 8px; height: 8px;
+            background: ${gold};
+            transform: rotate(45deg);
+            display: inline-block;
+            box-shadow: 0 0 10px ${gold}40;
+          }
+
           .photo-lux {
             overflow: hidden;
             border-radius: 16px;
@@ -278,10 +368,32 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
           }
           .photo-lux:hover::after { opacity: 1; }
 
+          .btn-luxury {
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+          }
+          .btn-luxury::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: -50%;
+            width: 200%; height: 200%;
+            background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,.08) 50%, transparent 70%);
+            transform: rotate(45deg) translateY(100%);
+            transition: transform 0.6s ease;
+          }
+          .btn-luxury:hover::after { transform: rotate(45deg) translateY(-100%); }
+          .btn-luxury:hover { transform: translateY(-3px); box-shadow: 0 12px 40px ${gold}30; }
+
           .marble-divider {
             height: 1px;
             background: linear-gradient(90deg, transparent 0%, ${gold}40 20%, ${gold} 50%, ${gold}40 80%, transparent 100%);
             margin: 0 auto;
+          }
+
+          .lg-marble {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, ${gold}40, ${gold}, ${gold}40, transparent);
           }
 
           .ornate-corner {
@@ -303,6 +415,125 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
           .ornate-corner.bl::after  { bottom: 0; left: 0; width: 1px; height: 40px; }
           .ornate-corner.br::before { bottom: 0; right: 0; width: 40px; height: 1px; }
           .ornate-corner.br::after  { bottom: 0; right: 0; width: 1px; height: 40px; }
+
+          .corner-lux {
+            position: absolute; width: 40px; height: 40px; opacity: 0.35;
+          }
+          .corner-lux.tl { top: 12px; left: 12px; border-top: 1px solid ${gold}; border-left: 1px solid ${gold}; }
+          .corner-lux.tr { top: 12px; right: 12px; border-top: 1px solid ${gold}; border-right: 1px solid ${gold}; }
+          .corner-lux.bl { bottom: 12px; left: 12px; border-bottom: 1px solid ${gold}; border-left: 1px solid ${gold}; }
+          .corner-lux.br { bottom: 12px; right: 12px; border-bottom: 1px solid ${gold}; border-right: 1px solid ${gold}; }
+
+          .btn-lg-attend:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(34,197,94,.2); }
+          .btn-lg-decline:hover { transform: translateY(-2px); box-shadow: 0 4px 20px rgba(239,68,68,.15); }
+          .btn-lg-submit:not(:disabled):hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 40px ${gold}35;
+          }
+
+          /* ── Splash ── */
+          @keyframes splashFadeOut {
+            to { opacity: 0; transform: scale(1.03); }
+          }
+          @keyframes splashCardIn {
+            from { opacity: 0; transform: translateY(30px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+          }
+          .splash-card-lx {
+            animation: splashCardIn 0.9s cubic-bezier(.16,1,.3,1) both;
+          }
+          .splash-fading {
+            animation: splashFadeOut 0.7s cubic-bezier(.4,0,.6,1) forwards;
+          }
+
+          /* ── Gift box ── */
+          @keyframes giftFloat {
+            0%, 100% { transform: translateY(0) rotate(-1deg); }
+            50%       { transform: translateY(-12px) rotate(1deg); }
+          }
+          @keyframes giftGlow {
+            0%, 100% { box-shadow: 0 0 20px ${gold}20, 0 8px 40px rgba(0,0,0,.4); }
+            50%       { box-shadow: 0 0 40px ${gold}50, 0 8px 60px rgba(0,0,0,.5); }
+          }
+          @keyframes ribbonShine {
+            0%   { opacity: 0.6; }
+            50%  { opacity: 1; }
+            100% { opacity: 0.6; }
+          }
+          .gift-box-lx {
+            animation: giftFloat 3s ease-in-out infinite, giftGlow 3s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+          }
+          .gift-box-lx:hover {
+            animation-play-state: paused;
+            transform: scale(1.08) !important;
+          }
+
+          /* ── Floating orbs ── */
+          @keyframes orbDrift {
+            0%   { transform: translate(0, 0) scale(1); opacity: 0.18; }
+            33%  { transform: translate(20px, -30px) scale(1.08); opacity: 0.28; }
+            66%  { transform: translate(-15px, -50px) scale(0.95); opacity: 0.15; }
+            100% { transform: translate(0, 0) scale(1); opacity: 0.18; }
+          }
+          .lx-orb {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            filter: blur(40px);
+            animation: orbDrift var(--dur, 12s) ease-in-out infinite;
+          }
+
+          /* ── Image sweep shimmer ── */
+          @keyframes lxSweep {
+            0%   { left: -60%; }
+            100% { left: 120%; }
+          }
+          .photo-lux::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -60%;
+            width: 40%; height: 100%;
+            background: linear-gradient(100deg, transparent 20%, rgba(201,168,76,0.18) 50%, transparent 80%);
+            z-index: 3;
+            animation: lxSweep 4s ease-in-out infinite;
+            animation-play-state: paused;
+          }
+          .photo-lux:hover::before { animation-play-state: running; }
+
+          /* ── Section glow line ── */
+          @keyframes glowLine {
+            0%, 100% { opacity: 0.4; transform: scaleX(0.6); }
+            50%       { opacity: 1; transform: scaleX(1); }
+          }
+          .marble-divider {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, ${gold}99, ${goldLight}, ${gold}99, transparent);
+            animation: glowLine 4s ease-in-out infinite;
+            margin: 0 auto;
+          }
+
+          /* ── Twinkle stars ── */
+          @keyframes lxTwinkle {
+            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+            50%       { opacity: 1; transform: scale(1) rotate(180deg); }
+          }
+          .lx-star {
+            position: absolute;
+            width: 6px; height: 6px;
+            background: ${gold};
+            clip-path: polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);
+            animation: lxTwinkle var(--tw-dur, 3s) ease-in-out infinite;
+            pointer-events: none;
+          }
+
+          /* ── Section fade in on scroll ── */
+          @keyframes lxFadeSection {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+          }
+          .lx-section-in { animation: lxFadeSection 1s cubic-bezier(.16,1,.3,1) both; }
         `}</style>
       </Head>
 
@@ -315,8 +546,200 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
           overflowX: 'hidden'
         }}
       >
+        {/* ══ Splash Screen ══ */}
+        {showSplash && (
+          <div
+            onClick={handleOpenInvitation}
+            className={splashFading ? 'splash-fading' : ''}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9997,
+              backgroundColor: darkBg,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 24,
+              cursor: 'pointer'
+            }}
+          >
+            {/* Bg shimmer circles */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '20%',
+                left: '15%',
+                width: 300,
+                height: 300,
+                borderRadius: '50%',
+                background: `radial-gradient(circle, ${gold}08 0%, transparent 70%)`,
+                pointerEvents: 'none'
+              }}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '15%',
+                right: '10%',
+                width: 400,
+                height: 400,
+                borderRadius: '50%',
+                background: `radial-gradient(circle, ${gold}06 0%, transparent 70%)`,
+                pointerEvents: 'none'
+              }}
+            />
+
+            <div
+              className='splash-card-lx'
+              style={{
+                maxWidth: 420,
+                width: '100%',
+                padding: '52px 36px',
+                textAlign: 'center',
+                border: `1px solid ${gold}35`,
+                borderRadius: 4,
+                outline: `1px solid ${gold}15`,
+                outlineOffset: 8,
+                background: 'linear-gradient(145deg, #111111, #0d0d0d)',
+                boxShadow: `0 40px 120px rgba(0,0,0,.8), 0 0 60px ${gold}10`,
+                position: 'relative'
+              }}
+            >
+              {/* Corner ornaments */}
+              <div className='corner-lux tl' />
+              <div className='corner-lux tr' />
+              <div className='corner-lux bl' />
+              <div className='corner-lux br' />
+
+              {/* Crown SVG */}
+              <div style={{ marginBottom: 20 }}>
+                <svg width='40' height='28' viewBox='0 0 40 28' fill='none'>
+                  <path d='M4 24L8 8L16 18L20 4L24 18L32 8L36 24H4Z' fill={gold} opacity='0.9' />
+                  <path d='M4 24L8 8L16 18L20 4L24 18L32 8L36 24H4Z' stroke={goldLight} strokeWidth='0.8' fill='none' />
+                  <circle cx='8' cy='8' r='2' fill={goldLight} />
+                  <circle cx='20' cy='4' r='2' fill={goldLight} />
+                  <circle cx='32' cy='8' r='2' fill={goldLight} />
+                </svg>
+              </div>
+
+              <p
+                style={{
+                  fontFamily: sectionFontFamily,
+                  fontSize: 9,
+                  fontWeight: 600,
+                  letterSpacing: '0.55em',
+                  textTransform: 'uppercase',
+                  color: `${gold}80`,
+                  marginBottom: 28
+                }}
+              >
+                WEDDING INVITATION
+              </p>
+
+              <div className='marble-divider' style={{ width: '60%', margin: '0 auto 28px' }} />
+
+              <h2
+                className='gold-shimmer-text'
+                style={{
+                  fontFamily: headingFontFamily,
+                  fontSize: 'clamp(1.6rem, 6vw, 2.4rem)',
+                  fontWeight: 700,
+                  lineHeight: 1.15,
+                  marginBottom: 4
+                }}
+              >
+                {mergedContent.groom_name}
+              </h2>
+              <p
+                style={{
+                  fontFamily: sectionFontFamily,
+                  fontSize: 20,
+                  color: gold,
+                  fontWeight: 300,
+                  margin: '8px 0'
+                }}
+              >
+                &amp;
+              </p>
+              <h2
+                className='gold-shimmer-text'
+                style={{
+                  fontFamily: headingFontFamily,
+                  fontSize: 'clamp(1.6rem, 6vw, 2.4rem)',
+                  fontWeight: 700,
+                  lineHeight: 1.15,
+                  marginBottom: 24
+                }}
+              >
+                {mergedContent.bride_name}
+              </h2>
+
+              <div className='marble-divider' style={{ width: '60%', margin: '0 auto 24px' }} />
+
+              {mergedContent.wedding_date && (
+                <p
+                  style={{
+                    fontFamily: fontFamily,
+                    fontSize: 14,
+                    color: goldLight,
+                    fontStyle: 'italic',
+                    marginBottom: 32,
+                    letterSpacing: '0.04em'
+                  }}
+                >
+                  {new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                  })}
+                </p>
+              )}
+
+              <button
+                className='btn-luxury'
+                style={{
+                  padding: '14px 40px',
+                  background: `linear-gradient(135deg, ${goldDark}, ${gold}, ${goldLight}, ${gold})`,
+                  backgroundSize: '300% 100%',
+                  animation: 'goldShimmer 4s linear infinite',
+                  border: 'none',
+                  borderRadius: 2,
+                  color: '#0a0a0a',
+                  fontFamily: sectionFontFamily,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.35em',
+                  textTransform: 'uppercase',
+                  cursor: 'pointer'
+                }}
+              >
+                MỞ THIỆP
+              </button>
+
+              <p
+                style={{
+                  marginTop: 20,
+                  fontSize: 11,
+                  color: `${gold}40`,
+                  letterSpacing: '0.1em'
+                }}
+              >
+                Nhấn để mở thiệp
+              </p>
+            </div>
+          </div>
+        )}
+
         {/* ══ Hero Section ══ */}
-        <section style={{ position: 'relative', height: '100vh', minHeight: 600, overflow: 'hidden' }}>
+        <section
+          style={{
+            position: 'relative',
+            height: '100vh',
+            minHeight: 600,
+            overflow: 'hidden'
+          }}
+        >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={coverImage}
@@ -337,6 +760,51 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
               background: 'linear-gradient(to bottom, rgba(10,10,10,0.3) 0%, transparent 35%, rgba(10,10,10,0.82) 100%)'
             }}
           />
+
+          {/* Floating gold orbs */}
+          <div
+            className='lx-orb'
+            style={
+              {
+                width: 300,
+                height: 300,
+                background: `radial-gradient(circle,${gold}22,transparent 70%)`,
+                bottom: '10%',
+                right: '-5%',
+                '--dur': '14s'
+              } as React.CSSProperties
+            }
+          />
+          <div
+            className='lx-orb'
+            style={
+              {
+                width: 200,
+                height: 200,
+                background: `radial-gradient(circle,${goldLight}18,transparent 70%)`,
+                top: '15%',
+                left: '-5%',
+                '--dur': '10s',
+                animationDelay: '3s'
+              } as React.CSSProperties
+            }
+          />
+          <div
+            className='lx-orb'
+            style={
+              {
+                width: 150,
+                height: 150,
+                background: `radial-gradient(circle,${gold}15,transparent 70%)`,
+                top: '40%',
+                right: '10%',
+                '--dur': '18s',
+                animationDelay: '7s'
+              } as React.CSSProperties
+            }
+          />
+
+          <LuxurySparkles />
 
           <div className='ornate-corner tl' style={{ top: 32, left: 32 }} />
           <div className='ornate-corner tr' style={{ top: 32, right: 32 }} />
@@ -403,7 +871,7 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
               className='gold-shimmer-text lx-up'
               style={{
                 fontFamily: headingFontFamily,
-                fontSize: 'clamp(1.8rem, 7vw, 3rem)',
+                fontSize: viewport === 'laptop' ? 'clamp(2.8rem, 4vw, 4.5rem)' : 'clamp(1.8rem, 7vw, 3rem)',
                 fontWeight: 800,
                 lineHeight: 1.1,
                 paddingTop: '0.15em',
@@ -441,7 +909,7 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
               className='gold-shimmer-text lx-up'
               style={{
                 fontFamily: headingFontFamily,
-                fontSize: 'clamp(1.8rem, 7vw, 3rem)',
+                fontSize: viewport === 'laptop' ? 'clamp(2.8rem, 4vw, 4.5rem)' : 'clamp(1.8rem, 7vw, 3rem)',
                 fontWeight: 800,
                 lineHeight: 1.1,
                 paddingTop: '0.15em',
@@ -782,14 +1250,40 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
         </section>
 
         {/* ══ Gallery ══ */}
-        <section style={{ padding: '80px 20px', position: 'relative' }}>
+        <section style={{ padding: '80px 20px', position: 'relative', overflow: 'hidden' }}>
+          {/* Background orb */}
+          <div
+            className='lx-orb'
+            style={
+              {
+                width: 400,
+                height: 400,
+                background: `radial-gradient(circle,${gold}10,transparent 70%)`,
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%,-50%)',
+                '--dur': '16s'
+              } as React.CSSProperties
+            }
+          />
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1 }}>
             <div className='marble-divider' style={{ width: '60%' }} />
           </div>
           <div style={{ maxWidth: 1000, margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <div className='lx-pulse' style={{ marginBottom: 16 }}>
+              <div
+                className='lx-pulse'
+                style={{ marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}
+              >
+                <span
+                  className='lx-star'
+                  style={{ '--tw-dur': '2.5s', animationDelay: '0.5s', width: 8, height: 8 } as React.CSSProperties}
+                />
                 <span className='diamond-accent' />
+                <span
+                  className='lx-star'
+                  style={{ '--tw-dur': '3s', animationDelay: '1s', width: 6, height: 6 } as React.CSSProperties}
+                />
               </div>
               <h2
                 className='gold-shimmer-text lx-up'
@@ -806,15 +1300,15 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
               <div className='marble-divider lx-up' style={{ width: 100 }} />
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
               {albumImages.slice(0, 4).map((img: string, idx: number) => {
-                const isLast = idx === 3
+                const isLast = idx === 3 && albumImages.length > 4
                 const extraCount = albumImages.length - 4
                 return (
                   <div
                     key={idx}
-                    className='photo-lux lx-up'
-                    style={{ animationDelay: `${idx * 0.12}s`, aspectRatio: '3/4', cursor: 'pointer' }}
+                    className={`photo-lux lx-up`}
+                    style={{ animationDelay: `${idx * 0.1}s`, cursor: 'pointer', aspectRatio: '3/4' }}
                     onClick={() => {
                       setLightboxIndex(idx)
                       setLightboxOpen(true)
@@ -841,8 +1335,9 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: '#fff',
-                          fontSize: '1.2rem',
+                          color: gold,
+                          fontSize: '1.5rem',
+                          fontFamily: sectionFontFamily,
                           fontWeight: 700,
                           zIndex: 2
                         }}
@@ -857,56 +1352,7 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
           </div>
         </section>
 
-        {/* ══ Gift ══ */}
-        {(mergedContent.account_number || mergedContent.qr_image) && (
-          <section style={{ background: darkCard, padding: '80px 24px', textAlign: 'center' }}>
-            <div style={{ maxWidth: 420, margin: '0 auto' }}>
-              <p
-                style={{
-                  fontSize: 9,
-                  letterSpacing: '0.55em',
-                  color: gold,
-                  textTransform: 'uppercase',
-                  fontFamily: headingFontFamily,
-                  marginBottom: 28
-                }}
-              >
-                Hộp Mừng Cưới
-              </p>
-              <div style={{ border: `1px solid rgba(201,168,76,0.25)`, padding: '32px 20px', position: 'relative' }}>
-                <div
-                  style={{
-                    position: 'absolute',
-                    top: -1,
-                    left: '20%',
-                    right: '20%',
-                    height: 1,
-                    background: `linear-gradient(to right, transparent, ${gold}, transparent)`,
-                    opacity: 0.4
-                  }}
-                />
-                {mergedContent.qr_image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={mergedContent.qr_image}
-                    alt='QR Tiền Mừng'
-                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '0 auto', display: 'block' }}
-                  />
-                ) : (
-                  mergedContent.account_number && (
-                    <p
-                      style={{ fontSize: 22, color: '#f0e8d4', letterSpacing: '0.12em', fontFamily: headingFontFamily }}
-                    >
-                      {mergedContent.account_number}
-                    </p>
-                  )
-                )}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ══ Guestbook ══ */}
+        {/* ══ RSVP Section ══ */}
         <section style={{ padding: '80px 20px', position: 'relative' }}>
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1 }}>
             <div className='marble-divider' style={{ width: '60%' }} />
@@ -929,6 +1375,20 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
                 SỔ LƯU BÚT
               </h2>
               <div className='marble-divider lx-up' style={{ width: 100 }} />
+              {guestName && (
+                <p
+                  className='lx-up'
+                  style={{
+                    marginTop: 16,
+                    color: gold,
+                    fontSize: 14,
+                    fontStyle: 'italic',
+                    fontFamily: "'Cormorant Garamond', serif"
+                  }}
+                >
+                  Kính mời <span style={{ fontWeight: 700 }}>{guestName}</span>
+                </p>
+              )}
             </div>
 
             <div className='lg-card' style={{ padding: '28px 24px' }}>
@@ -970,9 +1430,248 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
           </div>
         </section>
 
-        {/* ── RSVP ── */}
+        {/* ══ Gift ══ */}
+        {(() => {
+          const bankName = mergedContent.bank_name || ''
+          const accountNumber = mergedContent.account_number || ''
+          const accountName = mergedContent.account_name || ''
+          const customQrImage = mergedContent.qr_image || ''
+          const transferNote = `Mừng cưới ${mergedContent.groom_name} ${mergedContent.bride_name}`.trim()
+          const bankCode = BANK_MAP[bankName] || bankName
+          const generatedQrUrl =
+            bankCode && accountNumber
+              ? `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=0&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(accountName)}`
+              : ''
+          const displayQrUrl = customQrImage || generatedQrUrl
+          const hasGiftInfo = Boolean(displayQrUrl || accountNumber || bankName || accountName)
+          if (!hasGiftInfo) return null
+
+          return (
+            <section style={{ background: darkCard, padding: '80px 24px', textAlign: 'center', position: 'relative' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 1 }}>
+                <div className='marble-divider' style={{ width: '60%' }} />
+              </div>
+              <div style={{ maxWidth: 480, margin: '0 auto' }}>
+                <div className='lx-pulse' style={{ marginBottom: 16 }}>
+                  <span className='diamond-accent' />
+                </div>
+                <h2
+                  className='gold-shimmer-text lx-up'
+                  style={{
+                    fontFamily: sectionFontFamily,
+                    fontSize: 'clamp(1.1rem, 3.5vw, 1.8rem)',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    marginBottom: 8
+                  }}
+                >
+                  HỘP MỪNG CƯỚI
+                </h2>
+                <p className='lx-up' style={{ color: '#888', fontSize: 14, fontStyle: 'italic', marginBottom: 48 }}>
+                  Sự hiện diện của bạn là món quà quý giá nhất
+                </p>
+
+                {/* Animated Gift Box */}
+                <div
+                  className='gift-box-lx'
+                  onClick={() => setShowGiftQr(true)}
+                  style={{
+                    display: 'inline-flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '32px 40px',
+                    border: `1px solid ${gold}30`,
+                    borderRadius: 16,
+                    background: `linear-gradient(145deg, #1a1500, #0f0d00, #1a1500)`,
+                    position: 'relative'
+                  }}
+                >
+                  <div className='corner-lux tl' style={{ width: 24, height: 24 }} />
+                  <div className='corner-lux tr' style={{ width: 24, height: 24 }} />
+                  <div className='corner-lux bl' style={{ width: 24, height: 24 }} />
+                  <div className='corner-lux br' style={{ width: 24, height: 24 }} />
+
+                  {/* Gift box SVG */}
+                  <svg width='80' height='88' viewBox='0 0 80 88' fill='none'>
+                    {/* Box body */}
+                    <rect
+                      x='8'
+                      y='36'
+                      width='64'
+                      height='48'
+                      rx='3'
+                      fill={`${gold}20`}
+                      stroke={gold}
+                      strokeWidth='1.5'
+                    />
+                    {/* Box lid */}
+                    <rect
+                      x='4'
+                      y='24'
+                      width='72'
+                      height='16'
+                      rx='3'
+                      fill={`${gold}30`}
+                      stroke={gold}
+                      strokeWidth='1.5'
+                    />
+                    {/* Vertical ribbon on body */}
+                    <rect x='36' y='36' width='8' height='48' fill={`${gold}60`} />
+                    {/* Horizontal ribbon on lid */}
+                    <rect x='4' y='29' width='72' height='6' fill={`${gold}60`} />
+                    {/* Bow left loop */}
+                    <ellipse cx='30' cy='20' rx='12' ry='8' fill={gold} opacity='0.85' transform='rotate(-20 30 20)' />
+                    {/* Bow right loop */}
+                    <ellipse cx='50' cy='20' rx='12' ry='8' fill={gold} opacity='0.85' transform='rotate(20 50 20)' />
+                    {/* Bow center */}
+                    <circle cx='40' cy='22' r='5' fill={goldLight} />
+                    {/* Glow dot at top */}
+                    <circle cx='40' cy='22' r='3' fill='white' opacity='0.4' />
+                    {/* Sparkle dots */}
+                    <circle cx='20' cy='55' r='1.5' fill={gold} opacity='0.5' />
+                    <circle cx='60' cy='65' r='1.5' fill={gold} opacity='0.5' />
+                    <circle cx='55' cy='48' r='1' fill={goldLight} opacity='0.6' />
+                  </svg>
+
+                  <p
+                    style={{
+                      fontFamily: sectionFontFamily,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: '0.3em',
+                      color: gold,
+                      textTransform: 'uppercase'
+                    }}
+                  >
+                    Nhấn để xem
+                  </p>
+                </div>
+              </div>
+
+              {/* Gift Modal */}
+              {showGiftQr && (
+                <div
+                  onClick={() => setShowGiftQr(false)}
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    zIndex: 9998,
+                    background: 'rgba(0,0,0,0.88)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 24
+                  }}
+                >
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      maxWidth: 380,
+                      width: '100%',
+                      background: 'linear-gradient(145deg, #141414, #111)',
+                      border: `1px solid ${gold}40`,
+                      borderRadius: 4,
+                      outline: `1px solid ${gold}12`,
+                      outlineOffset: 6,
+                      padding: '40px 28px 32px',
+                      textAlign: 'center',
+                      position: 'relative'
+                    }}
+                  >
+                    <div className='corner-lux tl' />
+                    <div className='corner-lux tr' />
+                    <div className='corner-lux bl' />
+                    <div className='corner-lux br' />
+
+                    <button
+                      onClick={() => setShowGiftQr(false)}
+                      style={{
+                        position: 'absolute',
+                        top: 12,
+                        right: 12,
+                        background: `${gold}20`,
+                        border: `1px solid ${gold}30`,
+                        color: gold,
+                        width: 32,
+                        height: 32,
+                        borderRadius: '50%',
+                        fontSize: 14,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      ✕
+                    </button>
+
+                    <p
+                      style={{
+                        fontFamily: sectionFontFamily,
+                        fontSize: 9,
+                        letterSpacing: '0.45em',
+                        color: `${gold}80`,
+                        textTransform: 'uppercase',
+                        marginBottom: 20
+                      }}
+                    >
+                      HỘP MỪNG CƯỚI
+                    </p>
+                    <div className='marble-divider' style={{ width: '50%', margin: '0 auto 24px' }} />
+
+                    {displayQrUrl && (
+                      <div style={{ marginBottom: 20 }}>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={displayQrUrl}
+                          alt='QR Tiền Mừng'
+                          style={{
+                            width: 200,
+                            height: 200,
+                            objectFit: 'contain',
+                            margin: '0 auto',
+                            display: 'block',
+                            border: `1px solid ${gold}20`,
+                            borderRadius: 8,
+                            padding: 8,
+                            background: '#fff'
+                          }}
+                        />
+                      </div>
+                    )}
+
+                    {(bankName || accountNumber || accountName) && (
+                      <div style={{ fontSize: 13, color: '#bbb', lineHeight: 2, marginTop: 8 }}>
+                        {bankName && <p style={{ color: gold, fontWeight: 600 }}>{bankName}</p>}
+                        {accountNumber && (
+                          <p
+                            style={{
+                              fontFamily: sectionFontFamily,
+                              fontSize: 18,
+                              letterSpacing: '0.1em',
+                              color: goldLight,
+                              fontWeight: 700
+                            }}
+                          >
+                            {accountNumber}
+                          </p>
+                        )}
+                        {accountName && <p style={{ color: '#ccc' }}>{accountName}</p>}
+                      </div>
+                    )}
+
+                    <div className='marble-divider' style={{ width: '50%', margin: '20px auto 0' }} />
+                  </div>
+                </div>
+              )}
+            </section>
+          )
+        })()}
+
+        {/* ══ RSVP ══ */}
         <section style={{ padding: '60px 20px 80px', background: 'transparent' }}>
-          <div style={{ maxWidth: 520, margin: '0 auto' }}>
+          <div style={{ maxWidth: 600, margin: '0 auto' }}>
             <RSVPForm
               weddingId={wedding?.id}
               rsvpId={rsvpId}
@@ -980,7 +1679,6 @@ export default function LuxuryGuestView({ wedding, guestName = '', rsvpId }: Tem
               primaryColor={mergedContent.primary_color}
               fontFamily={fontFamily}
               sectionFontFamily={sectionFontFamily}
-              isDark
             />
           </div>
         </section>

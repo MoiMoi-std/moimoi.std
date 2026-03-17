@@ -14,7 +14,10 @@ export default function MusicPlayer({ musicUrl }: MusicPlayerProps) {
     audio.loop = true
     audioRef.current = audio
 
+    let isCancelled = false
+
     const handleInteraction = () => {
+      if (isCancelled) return
       audio
         .play()
         .then(() => setIsPlaying(true))
@@ -23,14 +26,18 @@ export default function MusicPlayer({ musicUrl }: MusicPlayerProps) {
 
     audio
       .play()
-      .then(() => setIsPlaying(true))
+      .then(() => {
+        if (!isCancelled) setIsPlaying(true)
+      })
       .catch(() => {
+        if (isCancelled) return
         // Autoplay blocked by browser — start on first user gesture
         document.addEventListener('click', handleInteraction, { once: true })
         document.addEventListener('touchstart', handleInteraction, { once: true })
       })
 
     return () => {
+      isCancelled = true
       audio.pause()
       audioRef.current = null
       document.removeEventListener('click', handleInteraction)

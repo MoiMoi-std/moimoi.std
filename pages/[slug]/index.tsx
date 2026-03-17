@@ -211,8 +211,10 @@ export default function GeneralWeddingPage({ wedding, slug }: Props) {
         )}
       </div>
 
-      {/* Music player cho các template không tự quản lý nhạc */}
-      {branch !== 'theme-vintage' && <MusicPlayer musicUrl={wedding.content?.music_url} />}
+      {/* Music player cho các template không tự quản lý nhạc (trừ những template tự nhúng MusicPlayer) */}
+      {!['theme-vintage', 'theme-boho', 'theme-royal', 'theme-modern', 'theme-luxury', 'theme-nature'].includes(
+        branch
+      ) && <MusicPlayer musicUrl={wedding.content?.music_url} />}
     </>
   )
 }
