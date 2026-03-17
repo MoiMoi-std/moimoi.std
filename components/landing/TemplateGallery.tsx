@@ -1,5 +1,4 @@
-import Image from 'next/image'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { ExternalLink } from 'lucide-react'
 
 interface Template {
@@ -15,18 +14,103 @@ interface Props {
   initialTemplates?: Template[]
 }
 
-const CATEGORIES = ['Tất cả', 'Vintage', 'Modern', 'Minimal', 'Luxury', 'Traditional']
-const CARD_COLORS = ['bg-amber-100', 'bg-gray-100', 'bg-yellow-50', 'bg-pink-50', 'bg-blue-50', 'bg-red-50']
+interface CategoryRule {
+  label: string
+  keywords: string[]
+}
+
+const CATEGORY_RULES: CategoryRule[] = [
+  { label: 'Vintage', keywords: ['vintage'] },
+  { label: 'Modern', keywords: ['modern'] },
+  { label: 'Minimal', keywords: ['minimal', 'minimalist'] },
+  { label: 'Luxury', keywords: ['luxury', 'gold', 'premium'] },
+  { label: 'Traditional', keywords: ['traditional', 'royal', 'oriental', 'rustic'] },
+  { label: 'Nature', keywords: ['nature', 'ocean', 'boho', 'garden', 'forest'] },
+  { label: 'Romantic', keywords: ['pastel', 'cherry', 'provence', 'golden-hour'] },
+]
+
+const getCategoryLabel = (template: Template): string => {
+  const haystack = `${template.name} ${template.repo_branch}`.toLowerCase()
+  const matched = CATEGORY_RULES.find((rule) => rule.keywords.some((keyword) => haystack.includes(keyword)))
+  return matched?.label || 'Khác'
+}
 
 const matchCategory = (template: Template, category: string) => {
   if (category === 'Tất cả') return true
-  const keyword = category.toLowerCase()
-  return template.name.toLowerCase().includes(keyword) || template.repo_branch.toLowerCase().includes(keyword)
+  if (category === 'Khác') {
+    return getCategoryLabel(template) === 'Khác'
+  }
+  return getCategoryLabel(template) === category
+}
+
+function TemplatePreviewFrame({
+  branch,
+  name,
+  eager,
+}: {
+  branch: string
+  name: string
+  eager: boolean
+}) {
+  const wrapperRef = useRef<HTMLDivElement>(null)
+  const [shouldLoad, setShouldLoad] = useState(eager)
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    if (eager) return
+    const el = wrapperRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setShouldLoad(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '220px' }
+    )
+
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [eager])
+
+  return (
+    <div ref={wrapperRef} className='relative w-[142px] h-[300px] rounded-[28px] bg-gray-900 p-[6px] shadow-[0_12px_28px_rgba(15,23,42,0.25)]'>
+      <div className='absolute top-[10px] left-1/2 -translate-x-1/2 w-12 h-4 rounded-full bg-gray-800 z-20' />
+      <div className='relative w-full h-full rounded-[22px] overflow-hidden bg-gray-200'>
+        {!loaded && <div className='absolute inset-0 bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-pulse' />}
+        {shouldLoad && (
+          <iframe
+            src={`/studio/templates/preview/${encodeURIComponent(branch)}`}
+            title={`Preview ${name}`}
+            scrolling='no'
+            loading='lazy'
+            onLoad={() => setLoaded(true)}
+            style={{
+              width: '375px',
+              height: '812px',
+              transform: 'scale(0.38)',
+              transformOrigin: 'top center',
+              border: 'none',
+              pointerEvents: 'none',
+              position: 'absolute',
+              top: 0,
+              left: '50%',
+              marginLeft: '-187.5px',
+              backgroundColor: '#fff',
+              opacity: loaded ? 1 : 0,
+              transition: 'opacity 0.2s ease',
+            }}
+          />
+        )}
+      </div>
+    </div>
+  )
 }
 
 export default function TemplateGallery({ initialTemplates }: Props) {
   const [activeCategory, setActiveCategory] = useState('Tất cả')
-  // Nếu có initialTemplates từ server thì dùng ngay (không cần loading state)
   const [templates, setTemplates] = useState<Template[]>(initialTemplates || [])
   const [loading, setLoading] = useState(!initialTemplates)
   const [showAll, setShowAll] = useState(false)
@@ -34,9 +118,7 @@ export default function TemplateGallery({ initialTemplates }: Props) {
   const INITIAL_VISIBLE_COUNT = 6
 
   useEffect(() => {
-    // Chỉ fetch nếu không có server-side data
     if (initialTemplates && initialTemplates.length > 0) return
-
     const loadTemplates = async () => {
       setLoading(true)
       try {
@@ -44,8 +126,6 @@ export default function TemplateGallery({ initialTemplates }: Props) {
         if (response.ok) {
           const result = await response.json()
           setTemplates(result.data || [])
-        } else {
-          console.error('Failed to fetch templates')
         }
       } catch (error) {
         console.error('Error fetching templates:', error)
@@ -56,18 +136,39 @@ export default function TemplateGallery({ initialTemplates }: Props) {
     loadTemplates()
   }, [initialTemplates])
 
-  const filteredTemplates = useMemo(() => {
-    return templates.filter((template) => matchCategory(template, activeCategory))
-  }, [activeCategory, templates])
+  const categoryStats = useMemo(() => {
+    const stats = templates.reduce<Record<string, number>>((acc, template) => {
+      const label = getCategoryLabel(template)
+      acc[label] = (acc[label] || 0) + 1
+      return acc
+    }, {})
+    return stats
+  }, [templates])
 
-  const visibleTemplates = useMemo(() => {
-    if (showAll) return filteredTemplates
-    return filteredTemplates.slice(0, INITIAL_VISIBLE_COUNT)
-  }, [filteredTemplates, showAll])
+  const categories = useMemo(() => {
+    const dynamicCategories = Object.keys(categoryStats)
+      .sort((a, b) => a.localeCompare(b, 'vi'))
+      .filter((label) => categoryStats[label] > 0)
+    return ['Tất cả', ...dynamicCategories]
+  }, [categoryStats])
 
   useEffect(() => {
-    setShowAll(false)
-  }, [activeCategory])
+    if (!categories.includes(activeCategory)) {
+      setActiveCategory('Tất cả')
+    }
+  }, [activeCategory, categories])
+
+  const filteredTemplates = useMemo(
+    () => templates.filter((t) => matchCategory(t, activeCategory)),
+    [activeCategory, templates]
+  )
+
+  const visibleTemplates = useMemo(
+    () => (showAll ? filteredTemplates : filteredTemplates.slice(0, INITIAL_VISIBLE_COUNT)),
+    [filteredTemplates, showAll]
+  )
+
+  useEffect(() => { setShowAll(false) }, [activeCategory])
 
   return (
     <section id='templates' className='py-20 bg-white'>
@@ -78,81 +179,79 @@ export default function TemplateGallery({ initialTemplates }: Props) {
         </div>
 
         {/* Filter Tabs */}
-        <div className='flex flex-wrap justify-center gap-2 mb-10'>
-          {CATEGORIES.map((cat) => (
+        <div className='mb-10 overflow-x-auto'>
+          <div className='flex w-max min-w-full justify-center gap-2 px-1'>
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+              className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                 activeCategory === cat
                   ? 'bg-pink-600 text-white shadow-md'
                   : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
               }`}
             >
-              {cat}
+              <span>{cat}</span>
+              {cat !== 'Tất cả' && (
+                <span
+                  className={`ml-2 inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] ${
+                    activeCategory === cat ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                  }`}
+                >
+                  {categoryStats[cat] || 0}
+                </span>
+              )}
             </button>
           ))}
+          </div>
         </div>
 
-        {/* Grid Templates */}
+        {/* Grid */}
         {loading ? (
           <div className='text-center text-gray-400 py-16'>Đang tải kho mẫu...</div>
         ) : (
-          <div className='grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3'>
+          <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
             {visibleTemplates.map((template, index) => (
-              <div key={template.id} className='cursor-pointer group'>
-                {/* Card Image */}
-                <div
-                  className={`aspect-[3/4] rounded-2xl relative overflow-hidden mb-4 shadow-sm border border-gray-100 transition-transform group-hover:-translate-y-2 ${
-                    !template.thumbnail_url ? CARD_COLORS[index % CARD_COLORS.length] : ''
-                  }`}
-                >
-                  {template.thumbnail_url ? (
-                    <Image
-                      src={template.thumbnail_url}
-                      alt={`Mẫu thiệp ${template.name}`}
-                      fill
-                      sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'
-                      className='object-cover'
-                      loading='lazy'
-                    />
-                  ) : (
-                    <div className='absolute inset-0 flex items-center justify-center font-medium text-gray-400'>
-                      Ảnh Mẫu: {template.name}
-                    </div>
-                  )}
+              <div
+                key={template.id}
+                className='bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow'
+              >
+                {/* Preview area — thumbnail first, iframe loads progressively */}
+                <div className='relative aspect-[4/3] bg-gray-100 overflow-hidden rounded-t-3xl flex items-start justify-center pt-3'>
+                  <TemplatePreviewFrame
+                    branch={template.repo_branch}
+                    name={template.name}
+                    eager={index < 2}
+                  />
+                </div>
 
-                  {/* Hover Overlay */}
-                  <div className='absolute inset-0 flex items-center justify-center gap-3 transition-opacity opacity-0 bg-black/40 group-hover:opacity-100'>
-                    <button className='flex items-center gap-2 px-4 py-2 text-sm font-bold text-gray-900 bg-white rounded-full hover:bg-pink-50'>
-                      <ExternalLink className='w-4 h-4' /> Xem Demo
-                    </button>
+                {/* Info + actions */}
+                <div className='p-5 space-y-3'>
+                  <h3 className='font-bold text-gray-900'>{template.name}</h3>
+
+                  {/* Package badge */}
+                  <div>
+                    {template.packages && template.packages.length > 0 ? (
+                      <span className='px-2 py-1 rounded-full text-xs bg-amber-50 text-amber-700'>
+                        Gói: {template.packages.map((p: any) => p.name).join(', ')}
+                      </span>
+                    ) : (
+                      <span className='px-2 py-1 rounded-full text-xs bg-green-50 text-green-700'>
+                        Tất cả gói
+                      </span>
+                    )}
                   </div>
-                </div>
 
-                <div className='flex items-center justify-between'>
-                  <h3 className='text-lg font-bold text-gray-900'>{template.name}</h3>
-                  <span className='px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded-md'>{template.repo_branch}</span>
-                </div>
+                  {/* Xem trước button */}
+                  <a
+                    href={template.repo_branch ? `/studio/templates/preview/${encodeURIComponent(template.repo_branch)}` : '/studio/login'}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='w-full py-2.5 bg-gradient-to-r from-violet-600 to-blue-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:shadow-lg shadow-blue-200 transition-all hover:scale-[1.01] active:scale-[0.99]'
+                  >
+                    <ExternalLink size={16} /> Xem trước
+                  </a>
 
-                {/* Packages Info */}
-                <div className='mt-2'>
-                  {template.packages && template.packages.length > 0 ? (
-                    <div className='flex flex-wrap gap-1'>
-                      {template.packages.map((pkg: any) => (
-                        <span
-                          key={pkg.id}
-                          className='inline-flex items-center px-2 py-1 text-xs font-semibold text-pink-700 bg-pink-50 rounded-full'
-                        >
-                          {pkg.name}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <span className='inline-flex items-center px-2 py-1 text-xs font-semibold text-green-700 bg-green-50 rounded-full'>
-                      Tất cả gói
-                    </span>
-                  )}
                 </div>
               </div>
             ))}
