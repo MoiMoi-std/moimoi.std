@@ -16,33 +16,60 @@ const mockAlbum = [
 
 const mockGuestbook = [
   {
-    name: 'Test',
+    name: 'Thành Phát',
     time: '05:31:21 8/3/2026',
     message: 'Chúc hai bạn luôn tràn ngập yêu thương và hạnh phúc trong suốt quãng đời còn lại.'
   },
   {
-    name: 'Test',
+    name: 'Anh Khoa',
     time: '05:31:16 8/3/2026',
     message: 'Hy vọng hai bạn luôn tìm thấy bình yên và hạnh phúc trong vòng tay của nhau.'
   },
   {
-    name: 'Test',
+    name: 'Thành Đạt',
     time: '05:31:11 8/3/2026',
     message: 'Mong rằng cuộc sống hôn nhân sẽ là hành trình tuyệt vời nhất của hai bạn.'
   },
-  { name: 'binh', time: '20:07:36 1/3/2026', message: 'chúc bạn' },
-  { name: 'fe', time: '12:40:14 1/3/2026', message: 'Chúc mừng hạnh phúc!' }
+  { name: 'Quốc Dũng', time: '20:07:36 1/3/2026', message: 'Chúc hai bạn trăm năm hạnh phúc và luôn yêu thương nhau.' },
+  { name: 'Hữu Thọ', time: '12:40:14 1/3/2026', message: 'Chúc mừng hạnh phúc!' }
 ]
 
 export default function VintageGeneralView({ wedding, disableSplash, musicUrl }: TemplateProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showSplash, setShowSplash] = useState(!disableSplash)
   const [splashFading, setSplashFading] = useState(false)
+  const [demoRsvpName, setDemoRsvpName] = useState('')
+  const [demoAttend, setDemoAttend] = useState<'yes' | 'no' | ''>('')
+  const [demoPartySize, setDemoPartySize] = useState(1)
+  const [demoRsvpMessage, setDemoRsvpMessage] = useState('')
   const viewport = useTemplateViewport()
 
   const handleOpenInvitation = () => {
     setSplashFading(true)
     setTimeout(() => setShowSplash(false), 600)
+  }
+
+  const handleDemoRsvpSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const trimmedName = demoRsvpName.trim()
+    if (!trimmedName) {
+      alert('Vui lòng nhập tên khách mời.')
+      return
+    }
+
+    if (!demoAttend) {
+      alert('Vui lòng chọn tình trạng tham dự.')
+      return
+    }
+
+    const partyCount = demoAttend === 'yes' ? Math.max(1, demoPartySize) : 0
+    const attendText = demoAttend === 'yes' ? 'Sẽ tham dự' : 'Không tham dự'
+    const note = demoRsvpMessage.trim() || 'Không có lời nhắn'
+
+    alert(
+      `Demo RSVP\n\nKhách mời: ${trimmedName}\nTrạng thái: ${attendText}\nSố lượng: ${partyCount}\nLời nhắn: ${note}\n\nĐây chỉ là giao diện demo, chưa gửi dữ liệu thật.`
+    )
   }
 
   const red = '#d6838a'
@@ -168,6 +195,20 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           .splash-card { animation: fadeInUp 0.85s cubic-bezier(.22,.68,0,1.2) both; }
           .btn-open { animation: sealPulse 2.2s ease-out infinite; }
           .btn-calendar:hover { opacity: 0.9; transform: scale(1.02); }
+          .vintage-guestbook-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #e2a5ab #f3c8cd;
+          }
+          .vintage-guestbook-scroll::-webkit-scrollbar { width: 10px; }
+          .vintage-guestbook-scroll::-webkit-scrollbar-track {
+            background: #f3c8cd;
+            border-radius: 999px;
+          }
+          .vintage-guestbook-scroll::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #d6838a, #c46a73);
+            border-radius: 999px;
+            border: 1px solid #ffffff66;
+          }
         `}</style>
         <style>{`
           @media (max-width: 768px) {
@@ -796,10 +837,16 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           </div>
 
           {/* ═════════ ALBUM ═════════ */}
-          <div style={{ padding: '20px 20px', marginBottom: 40 }}>
+          <div style={{ padding: '24px 20px 10px', marginBottom: 40 }}>
             <div
               className='vintage-album-grid'
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 16,
+                maxWidth: 620,
+                margin: '0 auto'
+              }}
             >
               {albumImages.slice(0, 4).map((img: string, i: number) => {
                 const isLast = i === 3
@@ -810,11 +857,13 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                     key={i}
                     onClick={() => setLightboxIndex(i)}
                     style={{
-                      borderRadius: 8,
+                      borderRadius: 14,
+                      border: '1px solid rgba(198,106,115,0.45)',
                       overflow: 'hidden',
-                      aspectRatio: '3/4',
+                      aspectRatio: '1 / 1',
                       position: 'relative',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      boxShadow: '0 10px 30px rgba(0,0,0,0.14)'
                     }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -837,7 +886,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                           alignItems: 'center',
                           justifyContent: 'center',
                           color: '#fff',
-                          fontSize: '1.2rem',
+                          fontSize: '2rem',
                           fontWeight: 700
                         }}
                       >
@@ -994,37 +1043,39 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
           {/* ═════════ VENUE CONTENT ═════════ */}
           <div style={{ padding: '24px 20px 0', textAlign: 'center' }}>
-            <p
-              style={{
-                fontSize: '0.85rem',
-                color: textDark,
-                fontWeight: 500,
-                lineHeight: 1.6,
-                marginBottom: 16
-              }}
-            >
-              {address}
-            </p>
-            {/* Google Maps embed */}
-            <div
-              style={{
-                width: '100%',
-                borderRadius: 12,
-                overflow: 'hidden',
-                marginBottom: 0,
-                boxShadow: '0 8px 16px rgba(0,0,0,0.08)'
-              }}
-            >
-              <iframe
-                title='wedding-venue-map'
-                width='100%'
-                height='380'
-                style={{ border: 0, display: 'block' }}
-                loading='lazy'
-                allowFullScreen
-                referrerPolicy='no-referrer-when-downgrade'
-                src={mapUrl}
-              />
+            <div style={{ maxWidth: 620, margin: '0 auto' }}>
+              <p
+                style={{
+                  fontSize: '0.85rem',
+                  color: textDark,
+                  fontWeight: 500,
+                  lineHeight: 1.6,
+                  marginBottom: 16
+                }}
+              >
+                {address}
+              </p>
+              {/* Google Maps embed */}
+              <div
+                style={{
+                  width: '100%',
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  marginBottom: 0,
+                  boxShadow: '0 8px 16px rgba(0,0,0,0.08)'
+                }}
+              >
+                <iframe
+                  title='wedding-venue-map'
+                  width='100%'
+                  height='380'
+                  style={{ border: 0, display: 'block' }}
+                  loading='lazy'
+                  allowFullScreen
+                  referrerPolicy='no-referrer-when-downgrade'
+                  src={mapUrl}
+                />
+              </div>
             </div>
           </div>
 
@@ -1054,36 +1105,165 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             </p>
           </div>
 
-          {/* ═════════ GUESTBOOK LIST ═════════ */}
-          <div
-            style={{
-              padding: '20px 20px',
-              maxHeight: 420,
-              overflowY: 'auto',
-              ...creamPatternStyle
-            }}
-          >
-            {mockGuestbook.map((comment, i) => (
-              <div
-                key={i}
+          <div style={{ padding: '24px 20px 10px' }}>
+            <form
+              onSubmit={handleDemoRsvpSubmit}
+              style={{
+                maxWidth: 620,
+                margin: '0 auto',
+                backgroundColor: '#fff',
+                borderRadius: 12,
+                padding: '16px 20px',
+                border: '1px solid rgba(198,106,115,0.35)',
+                boxShadow: '0 6px 14px rgba(0,0,0,0.08)'
+              }}
+            >
+              <p
                 style={{
-                  backgroundColor: '#fff',
-                  borderRadius: 10,
-                  padding: '14px 16px',
-                  marginBottom: 12,
-                  boxShadow: '0 10px 4px rgba(0,0,0,0.06)',
-                  borderLeft: `4px solid ${red}`
+                  color: red,
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '1rem',
+                  marginBottom: 10,
+                  letterSpacing: 1
                 }}
               >
-                <div
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}
-                >
-                  <span style={{ fontWeight: 700, color: red, fontSize: '0.9rem' }}>{comment.name}</span>
-                  <span style={{ fontSize: '0.72rem', color: '#aaa' }}>{comment.time}</span>
+                RSVP Demo
+              </p>
+              <p style={{ color: '#8a6b6f', fontSize: '0.75rem', marginBottom: 12 }}>
+                Form này chỉ để xem giao diện, submit sẽ hiện thông báo demo.
+              </p>
+
+              <div style={{ display: 'grid', gap: 10 }}>
+                <input
+                  type='text'
+                  value={demoRsvpName}
+                  onChange={(e) => setDemoRsvpName(e.target.value)}
+                  placeholder='Tên khách mời'
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#fff7f8',
+                    color: textDark,
+                    border: '1px solid rgba(198,106,115,0.35)',
+                    borderRadius: 8,
+                    padding: '10px 12px',
+                    fontSize: '0.86rem'
+                  }}
+                />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <select
+                    value={demoAttend}
+                    onChange={(e) => setDemoAttend(e.target.value as 'yes' | 'no' | '')}
+                    style={{
+                      backgroundColor: '#fff7f8',
+                      color: textDark,
+                      border: '1px solid rgba(198,106,115,0.35)',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      fontSize: '0.84rem'
+                    }}
+                  >
+                    <option value=''>Chọn tham dự</option>
+                    <option value='yes'>Sẽ tham dự</option>
+                    <option value='no'>Không tham dự</option>
+                  </select>
+
+                  <input
+                    type='number'
+                    min={1}
+                    value={demoPartySize}
+                    onChange={(e) => setDemoPartySize(Number(e.target.value) || 1)}
+                    disabled={demoAttend !== 'yes'}
+                    placeholder='Số người'
+                    style={{
+                      backgroundColor: demoAttend === 'yes' ? '#fff7f8' : '#f3f3f3',
+                      color: textDark,
+                      border: '1px solid rgba(198,106,115,0.35)',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      fontSize: '0.84rem'
+                    }}
+                  />
                 </div>
-                <p style={{ fontSize: '0.82rem', color: '#555', lineHeight: 1.6, margin: 0 }}>{comment.message}</p>
+
+                <textarea
+                  value={demoRsvpMessage}
+                  onChange={(e) => setDemoRsvpMessage(e.target.value)}
+                  rows={3}
+                  placeholder='Lời nhắn gửi cô dâu chú rể (tuỳ chọn)'
+                  style={{
+                    width: '100%',
+                    resize: 'vertical',
+                    backgroundColor: '#fff7f8',
+                    color: textDark,
+                    border: '1px solid rgba(198,106,115,0.35)',
+                    borderRadius: 8,
+                    padding: '10px 12px',
+                    fontSize: '0.85rem',
+                    fontFamily: "'Lora', serif"
+                  }}
+                />
+
+                <button
+                  type='submit'
+                  style={{
+                    border: 'none',
+                    borderRadius: 999,
+                    background: 'linear-gradient(180deg, #d6838a, #c46a73)',
+                    color: '#fff',
+                    fontWeight: 700,
+                    letterSpacing: 0.6,
+                    padding: '10px 14px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Gửi RSVP (Demo)
+                </button>
               </div>
-            ))}
+            </form>
+          </div>
+
+          {/* ═════════ GUESTBOOK LIST ═════════ */}
+          <div style={{ padding: '24px 20px' }}>
+            <div
+              className='vintage-guestbook-scroll'
+              style={{
+                maxWidth: 620,
+                margin: '0 auto',
+                maxHeight: 450,
+                overflowY: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16,
+                ...creamPatternStyle
+              }}
+            >
+              {mockGuestbook.map((comment, i) => (
+                <div
+                  key={i}
+                  style={{
+                    backgroundColor: '#fff',
+                    borderRadius: 12,
+                    padding: '16px 20px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                    borderLeft: `4px solid ${red}`
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'baseline',
+                      marginBottom: 8
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, color: red, fontSize: '0.95rem' }}>{comment.name}</span>
+                    <span style={{ fontSize: '0.72rem', color: '#8f8f8f' }}>{comment.time}</span>
+                  </div>
+                  <p style={{ fontSize: '0.9rem', color: '#555', lineHeight: 1.6, margin: 0 }}>{comment.message}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 

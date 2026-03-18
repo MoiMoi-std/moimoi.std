@@ -2,14 +2,15 @@ import { useEffect, useRef, useState } from 'react'
 
 interface MusicPlayerProps {
   musicUrl?: string
+  hidden?: boolean
 }
 
-export default function MusicPlayer({ musicUrl }: MusicPlayerProps) {
+export default function MusicPlayer({ musicUrl, hidden = false }: MusicPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => {
-    if (!musicUrl) return
+    if (!musicUrl || hidden) return
     const audio = new Audio(musicUrl)
     audio.loop = true
     audioRef.current = audio
@@ -43,7 +44,7 @@ export default function MusicPlayer({ musicUrl }: MusicPlayerProps) {
       document.removeEventListener('click', handleInteraction)
       document.removeEventListener('touchstart', handleInteraction)
     }
-  }, [musicUrl])
+  }, [musicUrl, hidden])
 
   const togglePlay = () => {
     if (!audioRef.current) return
@@ -58,7 +59,7 @@ export default function MusicPlayer({ musicUrl }: MusicPlayerProps) {
     }
   }
 
-  if (!musicUrl) return null
+  if (!musicUrl || hidden) return null
 
   return (
     <>
