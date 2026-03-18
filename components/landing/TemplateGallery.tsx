@@ -26,7 +26,7 @@ const CATEGORY_RULES: CategoryRule[] = [
   { label: 'Luxury', keywords: ['luxury', 'gold', 'premium'] },
   { label: 'Traditional', keywords: ['traditional', 'royal', 'oriental', 'rustic'] },
   { label: 'Nature', keywords: ['nature', 'ocean', 'boho', 'garden', 'forest'] },
-  { label: 'Romantic', keywords: ['pastel', 'cherry', 'provence', 'golden-hour'] },
+  { label: 'Romantic', keywords: ['pastel', 'cherry', 'provence', 'golden-hour'] }
 ]
 
 const getCategoryLabel = (template: Template): string => {
@@ -43,15 +43,7 @@ const matchCategory = (template: Template, category: string) => {
   return getCategoryLabel(template) === category
 }
 
-function TemplatePreviewFrame({
-  branch,
-  name,
-  eager,
-}: {
-  branch: string
-  name: string
-  eager: boolean
-}) {
+function TemplatePreviewFrame({ branch, name, eager }: { branch: string; name: string; eager: boolean }) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const [shouldLoad, setShouldLoad] = useState(eager)
   const [loaded, setLoaded] = useState(false)
@@ -76,10 +68,15 @@ function TemplatePreviewFrame({
   }, [eager])
 
   return (
-    <div ref={wrapperRef} className='relative w-[142px] h-[300px] rounded-[28px] bg-gray-900 p-[6px] shadow-[0_12px_28px_rgba(15,23,42,0.25)]'>
+    <div
+      ref={wrapperRef}
+      className='relative w-[142px] h-[300px] rounded-[28px] bg-gray-900 p-[6px] shadow-[0_12px_28px_rgba(15,23,42,0.25)]'
+    >
       <div className='absolute top-[10px] left-1/2 -translate-x-1/2 w-12 h-4 rounded-full bg-gray-800 z-20' />
       <div className='relative w-full h-full rounded-[22px] overflow-hidden bg-gray-200'>
-        {!loaded && <div className='absolute inset-0 bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-pulse' />}
+        {!loaded && (
+          <div className='absolute inset-0 bg-gradient-to-r from-gray-100 via-white to-gray-100 animate-pulse' />
+        )}
         {shouldLoad && (
           <iframe
             src={`/studio/templates/preview/${encodeURIComponent(branch)}`}
@@ -100,7 +97,7 @@ function TemplatePreviewFrame({
               marginLeft: '-187.5px',
               backgroundColor: '#fff',
               opacity: loaded ? 1 : 0,
-              transition: 'opacity 0.2s ease',
+              transition: 'opacity 0.2s ease'
             }}
           />
         )}
@@ -168,7 +165,9 @@ export default function TemplateGallery({ initialTemplates }: Props) {
     [filteredTemplates, showAll]
   )
 
-  useEffect(() => { setShowAll(false) }, [activeCategory])
+  useEffect(() => {
+    setShowAll(false)
+  }, [activeCategory])
 
   return (
     <section id='templates' className='py-20 bg-white'>
@@ -181,28 +180,28 @@ export default function TemplateGallery({ initialTemplates }: Props) {
         {/* Filter Tabs */}
         <div className='mb-10 overflow-x-auto'>
           <div className='flex w-max min-w-full justify-center gap-2 px-1'>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                activeCategory === cat
-                  ? 'bg-pink-600 text-white shadow-md'
-                  : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
-              }`}
-            >
-              <span>{cat}</span>
-              {cat !== 'Tất cả' && (
-                <span
-                  className={`ml-2 inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] ${
-                    activeCategory === cat ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
-                  }`}
-                >
-                  {categoryStats[cat] || 0}
-                </span>
-              )}
-            </button>
-          ))}
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setActiveCategory(cat)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                  activeCategory === cat
+                    ? 'bg-pink-600 text-white shadow-md'
+                    : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                }`}
+              >
+                <span>{cat}</span>
+                {cat !== 'Tất cả' && (
+                  <span
+                    className={`ml-2 inline-flex min-w-6 items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] ${
+                      activeCategory === cat ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {categoryStats[cat] || 0}
+                  </span>
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -218,11 +217,7 @@ export default function TemplateGallery({ initialTemplates }: Props) {
               >
                 {/* Preview area — thumbnail first, iframe loads progressively */}
                 <div className='relative aspect-[4/3] bg-gray-100 overflow-hidden rounded-t-3xl flex items-start justify-center pt-3'>
-                  <TemplatePreviewFrame
-                    branch={template.repo_branch}
-                    name={template.name}
-                    eager={index < 2}
-                  />
+                  <TemplatePreviewFrame branch={template.repo_branch} name={template.name} eager={index < 2} />
                 </div>
 
                 {/* Info + actions */}
@@ -236,22 +231,23 @@ export default function TemplateGallery({ initialTemplates }: Props) {
                         Gói: {template.packages.map((p: any) => p.name).join(', ')}
                       </span>
                     ) : (
-                      <span className='px-2 py-1 rounded-full text-xs bg-green-50 text-green-700'>
-                        Tất cả gói
-                      </span>
+                      <span className='px-2 py-1 rounded-full text-xs bg-green-50 text-green-700'>Tất cả gói</span>
                     )}
                   </div>
 
                   {/* Xem trước button */}
                   <a
-                    href={template.repo_branch ? `/studio/templates/preview/${encodeURIComponent(template.repo_branch)}` : '/studio/login'}
+                    href={
+                      template.repo_branch
+                        ? `/studio/templates/preview/${encodeURIComponent(template.repo_branch)}`
+                        : '/studio/login'
+                    }
                     target='_blank'
                     rel='noopener noreferrer'
                     className='w-full py-2.5 bg-gradient-to-r from-violet-600 to-blue-500 text-white rounded-xl font-bold flex items-center justify-center gap-2 hover:shadow-lg shadow-blue-200 transition-all hover:scale-[1.01] active:scale-[0.99]'
                   >
                     <ExternalLink size={16} /> Xem trước
                   </a>
-
                 </div>
               </div>
             ))}
