@@ -54,7 +54,7 @@ export default function TemplatesPage() {
   const { wedding, setWedding, loading } = useWedding()
   const [templates, setTemplates] = useState<Template[]>([])
   const [templateMeta, setTemplateMeta] = useState<Record<number, TemplateAdminMeta>>({})
-  const [packages, setPackages] = useState<{ id: number; name: string }[]>([])
+  const [packages, setPackages] = useState<{ id: number; name: string; price: number }[]>([])
   const [selectedPlan, setSelectedPlan] = useState('all')
   const [loadingTemplates, setLoadingTemplates] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -124,7 +124,7 @@ export default function TemplatesPage() {
         if (!res.ok) return
         const result = await res.json()
         const plans: any[] = result.plans || []
-        setPackages(plans.map((p) => ({ id: p.id, name: p.name })))
+        setPackages(plans.map((p) => ({ id: Number(p.id) || p.id, name: p.name, price: p.price ?? 0 })))
       } catch {
         // silent — filter sẽ fallback về packages từ templates
       }
@@ -132,39 +132,58 @@ export default function TemplatesPage() {
     loadPackages()
   }, [])
 
-  // Build a map of package id → name from all loaded templates
-  const allPackagesMap = useMemo(() => {
-    const map: Record<number, string> = {}
+  // Build a map of package id → package info (including price)
+  const packageInfoMap = useMemo(() => {
+    const map: Record<number, { name: string; price: number }> = {}
+
+    // Default from loaded packages (from /api/get-packages)
+    packages.forEach((p) => {
+      map[p.id] = { name: p.name, price: p.price ?? 0 }
+    })
+
+    // Fallback/enrich from templates metadata
     templates.forEach((t: any) => {
       ;(t.packages || []).forEach((p: any) => {
-        if (p.id != null && p.name) map[Number(p.id)] = p.name
+        if (p.id != null && p.name) {
+          const id = Number(p.id)
+          if (!map[id]) {
+            map[id] = { name: p.name, price: p.original_price ?? p.price ?? 0 }
+          }
+        }
       })
     })
     return map
-  }, [templates])
+  }, [packages, templates])
 
   // The effective plan name — only set when user has actually paid (contentPlanId exists).
   // We intentionally do NOT fall back to userPackageName because wedding.package FK is
   // assigned at account creation (default free/student package) and does NOT indicate payment.
-  const effectivePackageName = contentPlanId ? (allPackagesMap[parseInt(contentPlanId)] ?? userPackageName) : null
+  const effectivePackageObj = contentPlanId ? packageInfoMap[parseInt(contentPlanId)] : undefined
+  const effectivePackageName = effectivePackageObj ? effectivePackageObj.name : (userPackageName ?? null)
+  const effectivePackagePrice = effectivePackageObj ? effectivePackageObj.price : 0
 
   // Unique plan names from packages table, sorted high → low for the dropdown.
   // Falls back to packages derived from templates if API hasn't loaded yet.
   const availablePlans = useMemo(() => {
-    const source =
-      packages.length > 0
-        ? packages.map((p) => p.name)
-        : (() => {
-            const planSet = new Set<string>()
-            templates.forEach((t: any) => {
-              ;(t.packages || []).forEach((p: any) => {
-                if (p.name) planSet.add(p.name)
-              })
-            })
-            return Array.from(planSet)
-          })()
-    return source.sort((a, b) => getPlanRank(b) - getPlanRank(a))
-  }, [packages, templates])
+    // Collect all valid unique names and determine max price for each name
+    const nameToPrice: Record<string, number> = {}
+    Object.values(packageInfoMap).forEach((pkg) => {
+      if (pkg.name) {
+        nameToPrice[pkg.name] = Math.max(nameToPrice[pkg.name] || 0, pkg.price || 0)
+      }
+    })
+
+    const source = packages.length > 0 ? packages.map((p) => p.name) : Object.keys(nameToPrice)
+
+    const uniqueNames = Array.from(new Set(source))
+    // Sort descending by price, fallback to legacy rank if same price
+    return uniqueNames.sort((a, b) => {
+      const priceA = nameToPrice[a] ?? 0
+      const priceB = nameToPrice[b] ?? 0
+      if (priceA !== priceB) return priceB - priceA
+      return getPlanRank(b) - getPlanRank(a)
+    })
+  }, [packages, packageInfoMap])
 
   const templatesWithMeta = useMemo(() => {
     return templates.map((template) => ({
@@ -244,12 +263,25 @@ export default function TemplatesPage() {
     if (pkgs.length === 0) return true // free template — accessible by all
     if (planExpired) return false // plan expired — block paid templates
     if (!effectivePlanId) return false
+
     const userRank = getPlanRank(effectivePackageName ?? '')
+    const userPrice = effectivePackagePrice
+
     return pkgs.some((p: any) => {
-      if (p.id === effectivePlanId) return true // exact match
+      // 1. exact match
+      if (p.id === effectivePlanId) return true
+
+      // 2. price comparison
+      const tplPkg = packageInfoMap[Number(p.id)]
+      const pPrice = tplPkg ? tplPkg.price : (p.original_price ?? p.price ?? 0)
+
+      // If template requires a plan that costs <= what the user paid, user can use it
+      if (pPrice >= 0 && pPrice <= userPrice) return true
+
+      // 3. legacy fallback (string-based)
       if (userRank === 0) return false
       const pRank = getPlanRank(p.name ?? '')
-      return pRank > 0 && pRank <= userRank // lower-tier plan templates also accessible
+      return pRank > 0 && pRank <= userRank
     })
   }
 
@@ -263,13 +295,13 @@ export default function TemplatesPage() {
     <StudioLayout>
       <div className='flex flex-col gap-6 md:flex-row md:items-center md:justify-between'>
         <div>
-          <h1 className='text-3xl font-serif font-bold text-gray-900'>Kho Giao Diện</h1>
+          <h1 className='font-serif text-3xl font-bold text-gray-900'>Kho Giao Diện</h1>
           <p className='text-gray-500'>Chọn mẫu thiệp phù hợp với phong cách của bạn</p>
         </div>
       </div>
 
       {planExpired && (
-        <div className='mt-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800'>
+        <div className='flex items-start gap-3 px-4 py-3 mt-4 text-sm border rounded-2xl border-amber-200 bg-amber-50 text-amber-800'>
           <span className='text-lg leading-none'>⚠️</span>
           <div className='flex-1'>
             <p className='font-semibold'>Gói dịch vụ của bạn đã hết hạn</p>
@@ -286,17 +318,17 @@ export default function TemplatesPage() {
         </div>
       )}
 
-      <div className='mt-6 flex flex-wrap items-center gap-3'>
+      <div className='flex flex-wrap items-center gap-3 mt-6'>
         <div className='relative'>
           <Search size={16} className='absolute left-3 top-2.5 text-gray-400' />
           <input
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder='Tìm mẫu theo tên hoặc tag...'
-            className='pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-100'
+            className='py-2 pr-4 text-sm border border-gray-200 pl-9 rounded-xl focus:outline-none focus:ring-2 focus:ring-pink-100'
           />
         </div>
-        <div className='flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-4 py-2'>
+        <div className='flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl'>
           <LayoutTemplate size={16} className='text-gray-400' />
           <select
             value={selectedPlan}
@@ -318,7 +350,7 @@ export default function TemplatesPage() {
             <span className='font-semibold'>{effectivePackageName}</span>
           </div>
         )}
-        <div className='flex items-center bg-gray-100 p-1 rounded-xl ml-auto'>
+        <div className='flex items-center p-1 ml-auto bg-gray-100 rounded-xl'>
           <button
             onClick={() => setViewMode('desktop')}
             className={`p-1.5 rounded-lg transition-colors ${viewMode === 'desktop' ? 'bg-white shadow-sm text-pink-600' : 'text-gray-400 hover:text-gray-600'}`}
@@ -336,7 +368,7 @@ export default function TemplatesPage() {
         </div>
       </div>
 
-      <div className='mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+      <div className='grid grid-cols-1 gap-6 mt-6 sm:grid-cols-2 lg:grid-cols-3'>
         {pagedTemplates.map((template) => {
           const meta = template.meta
           // Only show "Đang dùng" when a template_id is explicitly set (not null).
@@ -346,7 +378,7 @@ export default function TemplatesPage() {
           return (
             <div
               key={template.id}
-              className='bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow'
+              className='overflow-hidden transition-shadow bg-white border border-gray-100 shadow-sm rounded-3xl hover:shadow-md'
             >
               {/* Live iframe thumbnail — lazy loaded */}
               {(template as any).repo_branch ? (
@@ -364,7 +396,7 @@ export default function TemplatesPage() {
                 <div className='flex items-center justify-between'>
                   <h3 className='font-bold text-gray-900'>{template.name}</h3>
                   {isActive && (
-                    <span className='inline-flex items-center gap-1 text-xs font-bold text-green-600 bg-green-50 px-2 py-1 rounded-full'>
+                    <span className='inline-flex items-center gap-1 px-2 py-1 text-xs font-bold text-green-600 rounded-full bg-green-50'>
                       <Check size={12} /> Đang dùng
                     </span>
                   )}
@@ -402,7 +434,7 @@ export default function TemplatesPage() {
                     >
                       ⚡ {planExpired ? 'Gia hạn gói' : 'Nâng cấp gói'}
                     </button>
-                    <p className='mt-2 text-xs text-center text-amber-600 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2'>
+                    <p className='px-3 py-2 mt-2 text-xs text-center border rounded-lg text-amber-600 bg-amber-50 border-amber-100'>
                       {planExpired ? (
                         <>Gói của bạn đã hết hạn. Vui lòng gia hạn để sử dụng mẫu này.</>
                       ) : !contentPlanId && isStudentPromoPlan(userPackageName) ? (

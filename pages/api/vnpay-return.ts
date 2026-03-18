@@ -1,6 +1,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { VNPay, HashAlgorithm } from 'vnpay'
-import { supabase } from '@/lib/initSupabase'
+import { createClient } from '@supabase/supabase-js'
+
+// Sử dụng Service Role Key để có quyền Admin bypass RLS khi chạy webhook
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL || '', process.env.SUPABASE_SERVICE_ROLE_KEY || '')
+// import { supabase } from '@/lib/initSupabase'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -95,6 +99,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             await supabase
               .from('weddings')
               .update({
+                package_id: order.package_id,
                 content: {
                   ...content,
                   plan: planId,
