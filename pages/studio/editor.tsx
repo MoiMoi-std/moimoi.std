@@ -80,6 +80,7 @@ const Editor = () => {
   const [originalQrImage, setOriginalQrImage] = useState<string | null>(null)
   const [originalMusicId, setOriginalMusicId] = useState<number | null>(null)
   const [isDirty, setIsDirty] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const { success, error } = useToast()
 
   // Store original images when wedding loads
@@ -162,29 +163,51 @@ const Editor = () => {
   const handleSave = async () => {
     if (!wedding) return
     setSaving(true)
+    setUploadProgress(null)
     try {
       const previousImages = originalImages
       const currentImages = wedding.content.images || []
       const coverIsBase64 = Boolean(wedding.content.cover_image?.startsWith('data:'))
       const qrIsBase64 = Boolean(wedding.content.qr_image?.startsWith('data:'))
 
+      // Count total images to upload for progress tracking
+      const imagesToUploadCount = currentImages.filter((img) => img.startsWith('data:')).length
+      const totalToUpload = imagesToUploadCount + (coverIsBase64 ? 1 : 0) + (qrIsBase64 ? 1 : 0)
+
+      if (totalToUpload > 0) {
+        setUploadProgress({ current: 0, total: totalToUpload })
+      }
+
       const { newImages, uploadedCount, deletedCount, failedCount } = await processImages(
         currentImages,
         previousImages,
-        wedding.slug ?? undefined
+        wedding.slug ?? undefined,
+        (current, total) => {
+          setUploadProgress({ current, total: totalToUpload })
+        }
       )
+
+      let progressCurrent = imagesToUploadCount
 
       const newCoverImage = await processSingleImage(
         wedding.content.cover_image,
         originalCoverImage,
         wedding.slug ?? undefined
       )
+      if (coverIsBase64) {
+        progressCurrent++
+        setUploadProgress({ current: progressCurrent, total: totalToUpload })
+      }
 
       const newQrImage = await processSingleImage(
         wedding.content.qr_image ?? null,
         originalQrImage,
         wedding.slug ?? undefined
       )
+      if (qrIsBase64) {
+        progressCurrent++
+        setUploadProgress({ current: progressCurrent, total: totalToUpload })
+      }
 
       const coverUploadFailed = coverIsBase64 && !newCoverImage
       const qrUploadFailed = qrIsBase64 && !newQrImage
@@ -220,6 +243,7 @@ const Editor = () => {
       error('Lưu thất bại. Vui lòng thử lại.')
     } finally {
       setSaving(false)
+      setUploadProgress(null)
     }
   }
 
@@ -503,11 +527,15 @@ const Editor = () => {
           </button>
           <button
             onClick={handleSave}
-            disabled={saving || publishing}
+            disabled={saving || publishing || uploadProgress !== null}
             className='flex items-center justify-center px-6 py-3 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-xl hover:from-indigo-600 hover:to-violet-700 transition-all shadow-lg shadow-indigo-200 disabled:opacity-50 font-medium'
           >
             {saving ? (
-              'Đang lưu...'
+              uploadProgress ? (
+                `Đang tải (${uploadProgress.current}/${uploadProgress.total})...`
+              ) : (
+                'Đang lưu...'
+              )
             ) : (
               <>
                 <Save size={18} className='mr-2' /> Lưu
@@ -516,6 +544,25 @@ const Editor = () => {
           </button>
         </div>
       </div>
+
+      {/* Upload Progress Bar */}
+      {uploadProgress && (
+        <div className='mb-4 bg-gradient-to-r from-indigo-50 to-violet-50 border border-indigo-200 rounded-xl p-4 shadow-sm'>
+          <div className='flex items-center justify-between mb-2'>
+            <span className='text-sm font-semibold text-indigo-900'>Đang tải ảnh lên Cloudinary...</span>
+            <span className='text-sm font-bold text-indigo-700'>
+              {uploadProgress.current}/{uploadProgress.total}
+            </span>
+          </div>
+          <div className='w-full bg-indigo-200 rounded-full h-2.5 overflow-hidden shadow-inner'>
+            <div
+              className='bg-gradient-to-r from-indigo-500 to-violet-600 h-full transition-all duration-500 ease-out shadow-md'
+              style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+            />
+          </div>
+          <p className='text-xs text-indigo-600 mt-2'>Vui lòng không đóng trang...</p>
+        </div>
+      )}
 
       <div
         className={`grid gap-8 ${isAdminMode && !adminSelectedWedding ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]'}`}
