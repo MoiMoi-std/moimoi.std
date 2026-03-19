@@ -411,10 +411,110 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             25% { transform: rotate(-1.1deg) translateY(-1px); }
             75% { transform: rotate(1.1deg) translateY(-1px); }
           }
+          @keyframes giftCardLightPulse {
+            0%, 100% { box-shadow: 0 16px 34px rgba(0,0,0,0.28), 0 0 0 rgba(233,206,158,0), 0 0 0 rgba(233,206,158,0); }
+            50% { box-shadow: 0 22px 46px rgba(0,0,0,0.38), 0 0 28px ${textDark}66, 0 0 56px ${textDark}33; }
+          }
+          @keyframes splashCardShakeFast {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-1px) rotate(-0.85deg); }
+            50% { transform: translateY(0) rotate(0.55deg); }
+            75% { transform: translateY(-1px) rotate(-0.65deg); }
+          }
+          @keyframes splashCardLightPulse {
+            0%, 100% { box-shadow: 0 18px 38px rgba(0,0,0,0.34), 0 0 0 rgba(233,206,158,0), 0 0 0 rgba(233,206,158,0); }
+            50% { box-shadow: 0 24px 52px rgba(0,0,0,0.46), 0 0 34px ${textDark}66, 0 0 64px ${textDark}30; }
+          }
+          .splash-card-motion {
+            width: 100%;
+            max-width: 480px;
+            animation: splashCardShakeFast 1.25s ease-in-out 1s infinite;
+            transform-origin: center 85%;
+          }
           .splash-card { animation: fadeInUp 0.85s cubic-bezier(.22,.68,0,1.2) both; }
+          .splash-card-glow {
+            animation: splashCardLightPulse 2s ease-in-out 1s infinite;
+            filter: drop-shadow(0 10px 22px rgba(0,0,0,0.38));
+          }
+          .splash-hy-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+          }
+          .splash-hy-symbol {
+            font-size: 2.55rem;
+            color: ${textDark};
+            letter-spacing: 6px;
+            line-height: 1;
+            font-weight: 700;
+          }
+          .splash-hy-ornament {
+            display: none;
+            position: absolute;
+            top: 50%;
+            width: 62px;
+            height: auto;
+            opacity: 0.72;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.26));
+            pointer-events: none;
+          }
+          .splash-hy-ornament-left {
+            left: 50%;
+            transform: translate(-124px, -50%);
+          }
+          .splash-hy-ornament-right {
+            left: 50%;
+            transform: translate(62px, -50%);
+          }
+          .splash-decor-wrap {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+          }
+          .splash-ornament {
+            position: absolute;
+            width: clamp(170px, 20vw, 270px);
+            height: auto;
+            opacity: 0.72;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.25));
+          }
+          .splash-ornament-left {
+            left: max(8px, calc(50% - 508px));
+            top: 50%;
+            transform: translateY(-54%) rotate(-2deg);
+          }
+          .splash-ornament-right {
+            right: max(8px, calc(50% - 508px));
+            top: 50%;
+            transform: translateY(-52%) rotate(2deg) scaleX(-1);
+          }
+          .splash-flower {
+            position: absolute;
+            width: clamp(84px, 8vw, 126px);
+            height: clamp(84px, 8vw, 126px);
+            opacity: 0.26;
+            filter: drop-shadow(0 8px 18px rgba(0,0,0,0.25));
+          }
+          .splash-flower-left {
+            left: max(4px, calc(50% - 330px));
+            top: calc(50% - 246px);
+            transform: rotate(-18deg);
+          }
+          .splash-flower-right {
+            right: max(4px, calc(50% - 330px));
+            bottom: calc(50% - 246px);
+            transform: rotate(18deg) scaleX(-1);
+          }
           .btn-open { animation: sealPulse 2.2s ease-out infinite; }
           .btn-calendar:hover { opacity: 0.9; transform: scale(1.02); }
-          .gift-mini-card { animation: cardGlow 3.2s ease-in-out infinite, giftWiggle 2.6s ease-in-out infinite; transition: transform .24s ease; }
+          .gift-mini-card {
+            animation: splashCardShakeFast 1.25s ease-in-out 1s infinite, giftCardLightPulse 2s ease-in-out 1s infinite;
+            transform-origin: center 85%;
+            transition: transform .24s ease;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+          }
           .gift-mini-card:hover { transform: translateY(-4px); }
           .modern-card-content { position: relative; z-index: 2; }
           .modern-flower {
@@ -520,6 +620,12 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             .modern-album-grid { grid-template-columns: repeat(2, 1fr) !important; }
             .modern-section-padding { padding-left: 16px !important; padding-right: 16px !important; }
             .modern-flower-soft { display: none !important; }
+            .splash-decor-wrap { display: none !important; }
+            .splash-hy-wrap { margin-bottom: 28px; }
+            .splash-hy-symbol { font-size: 2.32rem; letter-spacing: 5px; }
+            .splash-hy-ornament { display: block; width: 68px; }
+            .splash-hy-ornament-left { transform: translate(-132px, -50%); }
+            .splash-hy-ornament-right { transform: translate(64px, -50%); }
             .modern-section-floral::before,
             .modern-section-floral::after {
               width: 82px;
@@ -547,6 +653,34 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
               font-size: 1.34rem !important;
               letter-spacing: 1.5px !important;
             }
+            .splash-hy-wrap { margin-bottom: 24px; }
+            .splash-hy-symbol { font-size: 2.14rem; letter-spacing: 4px; }
+            .splash-hy-ornament { width: 62px; opacity: 0.72; }
+            .splash-hy-ornament-left { transform: translate(-114px, -50%); }
+            .splash-hy-ornament-right { transform: translate(56px, -50%); }
+            .splash-ornament {
+              width: clamp(124px, 28vw, 170px);
+              opacity: 0.56;
+            }
+            .splash-ornament-left {
+              left: max(0px, calc(50% - 446px));
+            }
+            .splash-ornament-right {
+              right: max(0px, calc(50% - 466px));
+            }
+            .splash-flower {
+              width: 74px;
+              height: 74px;
+              opacity: 0.2;
+            }
+            .splash-flower-left {
+              left: max(0px, calc(50% - 192px));
+              top: calc(50% - 226px);
+            }
+            .splash-flower-right {
+              right: max(0px, calc(50% - 192px));
+              bottom: calc(50% - 226px);
+            }
             .modern-section-floral::before,
             .modern-section-floral::after {
               width: 70px;
@@ -564,7 +698,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             position: 'fixed',
             inset: 0,
             zIndex: 9997,
-            backgroundColor: cream,
+            backgroundColor: 'rgba(110, 37, 37, 1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -572,161 +706,183 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             opacity: splashFading ? 0 : 1,
             transition: 'opacity 0.6s ease',
             fontFamily: "'Lora', serif",
-            padding: 20
+            padding: 20,
+            overflow: 'hidden'
           }}
         >
-          <div className='splash-card' style={{ width: '100%', maxWidth: 480, textAlign: 'center' }}>
+          <div aria-hidden='true' className='splash-decor-wrap'>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className='splash-ornament splash-ornament-left' src='/image/rong.webp' alt='' />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className='splash-ornament splash-ornament-right' src='/image/phung.webp' alt='' />
+            <div className='splash-flower splash-flower-left' style={flowerMaskBase} />
+            <div className='splash-flower splash-flower-right' style={flowerMaskBase} />
+          </div>
+
+          <div className='splash-card-motion'>
             <div
-              style={{
-                backgroundColor: rose,
-                height: 90,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
+              className='splash-card splash-card-glow'
+              style={{ textAlign: 'center', position: 'relative', zIndex: 2 }}
             >
-              <p
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  letterSpacing: 5,
-                  color: 'rgba(255,255,255,0.9)',
-                  textTransform: 'uppercase'
-                }}
-              >
-                Thiệp Cưới
-              </p>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.65)',
-                border: `1px solid ${rose}25`,
-                borderTop: 'none',
-                borderBottom: 'none',
-                padding: '40px 32px 32px'
-              }}
-            >
-              <p style={{ fontSize: '2.4rem', color: textDark, marginBottom: 18, letterSpacing: 8 }}>囍</p>
-
-              <p
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: '0.6rem',
-                  letterSpacing: '0.45em',
-                  color: textDark,
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  marginBottom: 20
-                }}
-              >
-                Trân trọng kính báo
-              </p>
-
-              {guestName && (
-                <p style={{ fontSize: '0.7rem', color: textDark, marginBottom: 16 }}>
-                  Kính mời: <strong>{guestName}</strong>
-                </p>
-              )}
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <div style={{ flex: 1, height: 1, backgroundColor: `${rose}35` }} />
-                <span style={{ color: textDark, fontSize: '0.55rem', letterSpacing: 6 }}>✦ ✦ ✦</span>
-                <div style={{ flex: 1, height: 1, backgroundColor: `${rose}35` }} />
-              </div>
-
-              <p style={{ fontSize: '0.72rem', color: textDark, fontStyle: 'italic', marginBottom: 16 }}>
-                Lễ thành hôn của
-              </p>
-
-              <h3
-                style={{
-                  fontFamily: "'Great Vibes', cursive",
-                  fontSize: '3rem',
-                  color: textDark,
-                  fontWeight: 400,
-                  lineHeight: 1.1
-                }}
-              >
-                {groomName}
-              </h3>
-              <p style={{ fontFamily: "'Great Vibes', cursive", fontSize: '2rem', color: textDark, lineHeight: 1 }}>
-                &amp;
-              </p>
-              <h3
-                style={{
-                  fontFamily: "'Great Vibes', cursive",
-                  fontSize: '3rem',
-                  color: textDark,
-                  fontWeight: 400,
-                  lineHeight: 1.1,
-                  marginBottom: 24
-                }}
-              >
-                {brideName}
-              </h3>
-
               <div
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 30 }}
-              >
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
-                  {dayName}
-                </span>
-                <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
-                <span
-                  style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: '1.8rem',
-                    fontWeight: 700,
-                    color: textDark,
-                    lineHeight: 1
-                  }}
-                >
-                  {day}
-                </span>
-                <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
-                  THÁNG {month}
-                </span>
-                <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
-                <span
-                  style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: '1rem',
-                    fontWeight: 700,
-                    color: textDark
-                  }}
-                >
-                  {year}
-                </span>
-              </div>
-
-              <button
-                className='btn-open'
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleOpenInvitation()
-                }}
                 style={{
                   backgroundColor: rose,
-                  color: textDark,
-                  border: 'none',
-                  padding: '13px 44px',
-                  borderRadius: 2,
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.35em',
-                  textTransform: 'uppercase',
-                  cursor: 'pointer',
-                  fontFamily: "'Playfair Display', serif"
+                  height: 90,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
               >
-                Mở Thiệp
-              </button>
-            </div>
+                <p
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    letterSpacing: 5,
+                    color: 'rgba(255,255,255,0.9)',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  Thiệp Cưới
+                </p>
+              </div>
 
-            <div style={{ height: 8, backgroundColor: rose }} />
+              <div
+                style={{
+                  backgroundColor: '#6a131a',
+                  border: `1px solid ${textDark}2f`,
+                  borderTop: 'none',
+                  borderBottom: 'none',
+                  padding: '40px 32px 32px'
+                }}
+              >
+                <div className='splash-hy-wrap'>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className='splash-hy-ornament splash-hy-ornament-left' src='/image/rong.webp' alt='' />
+                  <p className='splash-hy-symbol'>囍</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className='splash-hy-ornament splash-hy-ornament-right' src='/image/phung.webp' alt='' />
+                </div>
+
+                <p
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '0.6rem',
+                    letterSpacing: '0.45em',
+                    color: textDark,
+                    textTransform: 'uppercase',
+                    fontWeight: 600,
+                    marginTop: 30,
+                    marginBottom: 20
+                  }}
+                >
+                  Trân trọng kính báo
+                </p>
+
+                {guestName && (
+                  <p style={{ fontSize: '0.7rem', color: textDark, marginBottom: 16 }}>
+                    Kính mời: <strong>{guestName}</strong>
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                  <div style={{ flex: 1, height: 1, backgroundColor: `${rose}35` }} />
+                  <span style={{ color: textDark, fontSize: '0.55rem', letterSpacing: 6 }}>✦ ✦ ✦</span>
+                  <div style={{ flex: 1, height: 1, backgroundColor: `${rose}35` }} />
+                </div>
+
+                <p style={{ fontSize: '0.72rem', color: textDark, fontStyle: 'italic', marginBottom: 16 }}>
+                  Lễ thành hôn của
+                </p>
+
+                <h3
+                  style={{
+                    fontFamily: "'Great Vibes', cursive",
+                    fontSize: '3rem',
+                    color: textDark,
+                    fontWeight: 400,
+                    lineHeight: 1.1
+                  }}
+                >
+                  {groomName}
+                </h3>
+                <p style={{ fontFamily: "'Great Vibes', cursive", fontSize: '2rem', color: textDark, lineHeight: 1 }}>
+                  &amp;
+                </p>
+                <h3
+                  style={{
+                    fontFamily: "'Great Vibes', cursive",
+                    fontSize: '3rem',
+                    color: textDark,
+                    fontWeight: 400,
+                    lineHeight: 1.1,
+                    marginBottom: 24
+                  }}
+                >
+                  {brideName}
+                </h3>
+
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 30 }}
+                >
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+                    {dayName}
+                  </span>
+                  <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
+                  <span
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: '1.8rem',
+                      fontWeight: 700,
+                      color: textDark,
+                      lineHeight: 1
+                    }}
+                  >
+                    {day}
+                  </span>
+                  <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+                    THÁNG {month}
+                  </span>
+                  <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
+                  <span
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      color: textDark
+                    }}
+                  >
+                    {year}
+                  </span>
+                </div>
+
+                <button
+                  className='btn-open'
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    handleOpenInvitation()
+                  }}
+                  style={{
+                    backgroundColor: rose,
+                    color: textDark,
+                    border: 'none',
+                    padding: '13px 44px',
+                    borderRadius: 2,
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.35em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    fontFamily: "'Playfair Display', serif"
+                  }}
+                >
+                  Mở Thiệp
+                </button>
+              </div>
+
+              <div style={{ height: 8, backgroundColor: rose }} />
+            </div>
           </div>
         </div>
       )}
@@ -1809,8 +1965,8 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                 style={{
                   padding: '30px 18px 44px',
                   textAlign: 'center',
-                  backgroundColor: '#862626',
-                  backgroundImage: `radial-gradient(circle at 12% 18%, ${textDark}22 0, transparent 130px), radial-gradient(circle at 78% 20%, ${textDark}18 0, transparent 170px), radial-gradient(circle at 84% 75%, ${textDark}12 0, transparent 210px)`
+                  backgroundColor: cream,
+                  backgroundImage: `radial-gradient(circle at 12% 18%, ${textDark}1a 0, transparent 130px), radial-gradient(circle at 78% 20%, ${textDark}14 0, transparent 170px), radial-gradient(circle at 84% 75%, ${textDark}10 0, transparent 210px)`
                 }}
               >
                 <p
@@ -1918,7 +2074,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
         <div className='modern-side-panel' style={{ flex: 1, minHeight: '100vh', background: '#fff' }} />
       </div>
 
-      <MusicPlayer musicUrl={musicUrl} hidden={showSplash} />
+      {!showSplash && <MusicPlayer musicUrl={musicUrl} />}
 
       {lightboxIndex !== null && (
         <div
