@@ -7,6 +7,10 @@ export interface ProcessImagesResult {
   failedCount: number
 }
 
+export interface ProgressCallback {
+  (current: number, total: number): void
+}
+
 /**
  * Upload a single base64 image directly to Cloudinary from the client.
  * The API route only generates a signature (lightweight, like delete-image),
@@ -58,64 +62,101 @@ async function uploadImageDirectly(base64: string, slug?: string): Promise<strin
 }
 
 /**
- * Process images: upload base64 to Cloudinary, delete removed Cloudinary images
+ * Process images: upload base64 to Cloudinary in parallel, delete removed Cloudinary images
  * @param currentImages - Current images array (may contain base64 and URLs)
  * @param previousImages - Previous images array from Supabase (URLs only)
+ * @param onProgress - Optional callback for upload progress
  * @returns Processed images array with all Cloudinary URLs
  */
 export async function processImages(
   currentImages: string[],
   previousImages: string[] = [],
-  slug?: string
+  slug?: string,
+  onProgress?: ProgressCallback
 ): Promise<ProcessImagesResult> {
   const newImages: string[] = []
   let uploadedCount = 0
-  let deletedCount = 0
   let failedCount = 0
 
-  for (const img of currentImages) {
+  // Separate base64 images and existing URLs
+  const imagesToUpload: { index: number; base64: string }[] = []
+  const existingUrls: { index: number; url: string }[] = []
+
+  currentImages.forEach((img, index) => {
     if (img.startsWith('data:')) {
+      imagesToUpload.push({ index, base64: img })
+    } else {
+      existingUrls.push({ index, url: img })
+    }
+  })
+
+  // Upload all base64 images in parallel with progress tracking
+  if (imagesToUpload.length > 0) {
+    const uploadPromises = imagesToUpload.map(async ({ index, base64 }, arrayIndex) => {
       try {
-        const url = await uploadImageDirectly(img, slug)
-        if (url) {
-          newImages.push(url)
-          uploadedCount++
-        } else {
-          failedCount++
+        const url = await uploadImageDirectly(base64, slug)
+        // Report progress after each upload completes
+        if (onProgress) {
+          onProgress(arrayIndex + 1, imagesToUpload.length)
         }
+        return { index, url, success: url !== null }
       } catch (error) {
         console.error('Error uploading base64 image:', error)
+        if (onProgress) {
+          onProgress(arrayIndex + 1, imagesToUpload.length)
+        }
+        return { index, url: null, success: false }
+      }
+    })
+
+    const results = await Promise.all(uploadPromises)
+
+    // Process results
+    results.forEach(({ index, url, success }) => {
+      if (success && url) {
+        newImages[index] = url
+        uploadedCount++
+      } else {
         failedCount++
       }
-    } else {
-      newImages.push(img)
-    }
+    })
   }
 
+  // Add existing URLs back
+  existingUrls.forEach(({ index, url }) => {
+    newImages[index] = url
+  })
+
+  // Filter out undefined entries (failed uploads)
+  const finalImages = newImages.filter(Boolean)
+
+  // Delete removed images in parallel
   const removedImages = previousImages.filter(
-    (oldImg) => !newImages.includes(oldImg) && (oldImg.startsWith('http://') || oldImg.startsWith('https://'))
+    (oldImg) => !finalImages.includes(oldImg) && (oldImg.startsWith('http://') || oldImg.startsWith('https://'))
   )
 
-  for (const imageUrl of removedImages) {
-    try {
-      const response = await fetch('/api/delete-image', {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ imageUrl })
-      })
-
-      if (response.ok) {
-        deletedCount++
+  let deletedCount = 0
+  if (removedImages.length > 0) {
+    const deletePromises = removedImages.map(async (imageUrl) => {
+      try {
+        const response = await fetch('/api/delete-image', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ imageUrl })
+        })
+        return response.ok
+      } catch (error) {
+        console.error('Error deleting image:', error)
+        return false
       }
-    } catch (error) {
-      console.error('Error deleting image:', error)
-    }
+    })
+
+    const deleteResults = await Promise.all(deletePromises)
+    deletedCount = deleteResults.filter(Boolean).length
   }
 
   return {
-    newImages,
+    newImages: finalImages,
     uploadedCount,
     deletedCount,
     failedCount
