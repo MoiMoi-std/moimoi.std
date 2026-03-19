@@ -5,6 +5,8 @@ import MusicPlayer from '@/components/MusicPlayer'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
+const peachDecorUrl = new URL('./anh_dao_1.png', import.meta.url).toString()
+
 // Mock data album ảnh cưới
 const mockAlbum = [
   'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=500&fit=crop',
@@ -76,6 +78,8 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
   const cream = '#fde3e9'
   const creamLight = '#feedf1'
   const textDark = '#111111'
+  const splashTextPrimary = '#fff6ef'
+  const splashTextSecondary = '#f3d6df'
 
   if (!wedding) {
     return (
@@ -192,9 +196,105 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           body { background: #fff; -webkit-font-smoothing: antialiased; }
           @keyframes fadeInUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
           @keyframes sealPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(214,131,138,0.45); } 70% { box-shadow: 0 0 0 14px rgba(214,131,138,0); } }
+          @keyframes splashCardShakeFast {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-1px) rotate(-0.85deg); }
+            50% { transform: translateY(0) rotate(0.55deg); }
+            75% { transform: translateY(-1px) rotate(-0.65deg); }
+          }
+          @keyframes splashCardPinkPulse {
+            0%, 100% {
+              box-shadow: 0 14px 30px rgba(198,106,115,0.28), 0 0 0 rgba(214,131,138,0), 0 0 0 rgba(214,131,138,0);
+            }
+            50% {
+              box-shadow: 0 20px 44px rgba(198,106,115,0.36), 0 0 30px rgba(214,131,138,0.42), 0 0 58px rgba(214,131,138,0.24);
+            }
+          }
+          .splash-card-motion {
+            width: 100%;
+            max-width: 480px;
+            animation: splashCardShakeFast 1.25s ease-in-out 1s infinite;
+            transform-origin: center 85%;
+          }
           .splash-card { animation: fadeInUp 0.85s cubic-bezier(.22,.68,0,1.2) both; }
+          .splash-card-glow {
+            animation: splashCardPinkPulse 2s ease-in-out 1s infinite;
+            filter: drop-shadow(0 10px 22px rgba(214,131,138,0.34));
+          }
           .btn-open { animation: sealPulse 2.2s ease-out infinite; }
           .btn-calendar:hover { opacity: 0.9; transform: scale(1.02); }
+          .vintage-splash-decor-wrap {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+          }
+          .vintage-splash-dao {
+            position: absolute;
+            top: 50%;
+            width: clamp(270px, 33vw, 460px);
+            height: auto;
+            opacity: 0.8;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+          }
+          .vintage-splash-dao-left {
+            left: max(0px, calc(50% - 680px));
+            transform: translateY(-54%);
+          }
+          .vintage-splash-dao-right {
+            right: max(0px, calc(50% - 680px));
+            transform: translateY(-54%) scaleX(-1);
+          }
+          .vintage-splash-hy-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 18px;
+          }
+          .vintage-splash-hy-symbol {
+            font-size: 2.4rem;
+            color: ${red};
+            letter-spacing: 8px;
+            line-height: 1;
+          }
+          .vintage-splash-hy-ornament {
+            display: none;
+            position: absolute;
+            top: 50%;
+            width: 62px;
+            height: auto;
+            opacity: 0.72;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.26));
+            pointer-events: none;
+          }
+          .vintage-splash-hy-ornament-left {
+            left: 50%;
+            transform: translate(-124px, -50%);
+          }
+          .vintage-splash-hy-ornament-right {
+            left: 50%;
+            transform: translate(62px, -50%) scaleX(-1);
+          }
+          .vintage-ornament {
+            position: absolute;
+            width: auto;
+            pointer-events: none;
+          }
+          .vintage-ornament-left {
+            left: 1%;
+            top: -132px;
+            height: clamp(180px, 26vw, 290px);
+            opacity: 0.88;
+            z-index: 1;
+          }
+          .vintage-ornament-right {
+            right: 1%;
+            top: -132px;
+            height: clamp(180px, 26vw, 290px);
+            opacity: 0.88;
+            z-index: 1;
+          }
           .vintage-guestbook-scroll {
             scrollbar-width: thin;
             scrollbar-color: #e2a5ab #f3c8cd;
@@ -223,6 +323,35 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             .vintage-date-flex { gap: 8px !important; }
             .vintage-date-day { font-size: 2rem !important; }
             .vintage-album-grid { grid-template-columns: repeat(2, 1fr) !important; }
+            .vintage-splash-decor-wrap { display: none !important; }
+            .vintage-splash-hy-wrap { margin-bottom: 28px; }
+            .vintage-splash-hy-symbol { font-size: 2.32rem; letter-spacing: 5px; }
+            .vintage-splash-hy-ornament { display: block; width: 68px; }
+            .vintage-splash-hy-ornament-left { transform: translate(-132px, -50%); }
+            .vintage-splash-hy-ornament-right { transform: translate(64px, -50%) scaleX(-1); }
+            .vintage-ornament {
+              display: block !important;
+              top: -72px !important;
+              height: clamp(122px, 31vw, 162px) !important;
+              opacity: 1 !important;
+              z-index: 2 !important;
+            }
+            .vintage-ornament-left { left: 3% !important; right: auto !important; }
+            .vintage-ornament-right { right: 3% !important; left: auto !important; }
+          }
+          @media (max-width: 420px) {
+            .vintage-splash-hy-wrap { margin-bottom: 24px; }
+            .vintage-splash-hy-symbol { font-size: 2.14rem; letter-spacing: 4px; }
+            .vintage-splash-hy-ornament { width: 62px; opacity: 1; }
+            .vintage-splash-hy-ornament-left { transform: translate(-114px, -50%); }
+            .vintage-splash-hy-ornament-right { transform: translate(56px, -50%) scaleX(-1); }
+            .vintage-ornament {
+              top: -68px !important;
+              height: clamp(106px, 30vw, 132px) !important;
+              opacity: 1 !important;
+            }
+            .vintage-ornament-left { left: 2% !important; }
+            .vintage-ornament-right { right: 2% !important; }
           }
         `}</style>
       </Head>
@@ -235,7 +364,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             position: 'fixed',
             inset: 0,
             zIndex: 9997,
-            backgroundColor: cream,
+            backgroundColor: '#fde3e9',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -243,18 +372,30 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             opacity: splashFading ? 0 : 1,
             transition: 'opacity 0.6s ease',
             fontFamily: "'Lora', serif",
-            padding: 20
+            padding: 20,
+            overflow: 'hidden'
           }}
         >
-          <div className='splash-card' style={{ width: '100%', maxWidth: 480, textAlign: 'center' }}>
+          <div aria-hidden='true' className='vintage-splash-decor-wrap'>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className='vintage-splash-dao vintage-splash-dao-left' src={peachDecorUrl} alt='' />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className='vintage-splash-dao vintage-splash-dao-right' src={peachDecorUrl} alt='' />
+          </div>
+
+          <div className='splash-card-motion'>
+            <div className='splash-card splash-card-glow' style={{ textAlign: 'center', position: 'relative' }}>
+
             {/* Top banner */}
             <div
               style={{
                 backgroundColor: red,
                 height: 90,
                 display: 'flex',
+                flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                gap: 6
               }}
             >
               <p
@@ -269,6 +410,9 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
               >
                 Thiệp Cưới
               </p>
+              <div
+                style={{ width: 168, height: 1, marginTop: 4, backgroundColor: 'rgba(255,255,255,0.9)' }}
+              />
             </div>
 
             {/* Card body */}
@@ -281,7 +425,13 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 padding: '40px 32px 32px'
               }}
             >
-              <p style={{ fontSize: '2.4rem', color: red, marginBottom: 18, letterSpacing: 8 }}>囍</p>
+              <div className='vintage-splash-hy-wrap'>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className='vintage-splash-hy-ornament vintage-splash-hy-ornament-left' src={peachDecorUrl} alt='' />
+                <p className='vintage-splash-hy-symbol'>囍</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img className='vintage-splash-hy-ornament vintage-splash-hy-ornament-right' src={peachDecorUrl} alt='' />
+              </div>
 
               <p
                 style={{
@@ -402,6 +552,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
             {/* Bottom bar */}
             <div style={{ height: 8, backgroundColor: red }} />
+            </div>
           </div>
         </div>
       )}
@@ -450,8 +601,23 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 alignItems: 'flex-start'
               }}
             >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className='vintage-ornament vintage-ornament-left'
+                src={peachDecorUrl}
+                alt='Trang tri hoa dao ben trai'
+              />
+
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                className='vintage-ornament vintage-ornament-right'
+                src={peachDecorUrl}
+                alt='Trang tri hoa dao ben phai'
+                style={{ transform: 'scaleX(-1)' }}
+              />
+
               {/* Groom */}
-              <div style={{ textAlign: 'center', width: '40%' }}>
+              <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
                 <div
                   className='vintage-avatar'
                   style={{
@@ -498,7 +664,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 style={{
                   position: 'absolute',
                   left: '50%',
-                  top: '38%',
+                  top: '48px',
                   transform: 'translate(-50%, -50%)',
                   width: 56,
                   height: 56,
@@ -514,7 +680,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
               </div>
 
               {/* Bride */}
-              <div style={{ textAlign: 'center', width: '40%' }}>
+              <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
                 <div
                   className='vintage-avatar'
                   style={{
