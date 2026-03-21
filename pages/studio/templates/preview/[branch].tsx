@@ -90,17 +90,17 @@ function getPreviewBannerTheme(branch: string): PreviewBannerTheme {
 
   if (key.includes('vintage')) {
     return {
-      background: 'linear-gradient(145deg, rgba(76,57,44,0.95) 0%, rgba(112,84,66,0.94) 100%)',
-      textColor: '#f2dec2',
-      subTextColor: 'rgba(242,222,194,.8)',
-      branchColor: '#ffe8cb',
-      badgeBackground: 'rgba(242,222,194,.14)',
-      badgeBorder: 'rgba(242,222,194,.34)',
-      buttonBackground: 'rgba(242,222,194,.1)',
-      buttonBackgroundHover: 'rgba(242,222,194,.2)',
-      buttonBorder: 'rgba(242,222,194,.32)',
-      borderColor: 'rgba(242,222,194,.2)',
-      boxShadow: '0 8px 26px rgba(0,0,0,.34), 0 0 24px rgba(242,222,194,.12)',
+      background: 'linear-gradient(145deg, rgba(214,131,138,0.96) 0%, rgba(228,157,165,0.95) 100%)',
+      textColor: '#fff7f8',
+      subTextColor: 'rgba(255,245,246,.86)',
+      branchColor: '#fff0f2',
+      badgeBackground: 'rgba(255,255,255,.2)',
+      badgeBorder: 'rgba(255,255,255,.34)',
+      buttonBackground: 'rgba(255,255,255,.16)',
+      buttonBackgroundHover: 'rgba(255,255,255,.28)',
+      buttonBorder: 'rgba(255,255,255,.34)',
+      borderColor: 'rgba(255,255,255,.24)',
+      boxShadow: '0 8px 26px rgba(0,0,0,.26), 0 0 24px rgba(255,214,222,.22)',
       fontFamily: "'Playfair Display', 'Lora', serif"
     }
   }

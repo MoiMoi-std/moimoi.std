@@ -6,6 +6,18 @@ import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
 const peachDecorUrl = new URL('./anh_dao_1.png', import.meta.url).toString()
+const hoaDao1Url = new URL('./hoa_dao_1.png', import.meta.url).toString()
+
+const BANK_MAP: Record<string, string> = {
+  Vietcombank: 'VCB',
+  Techcombank: 'TCB',
+  MBBank: 'MB',
+  ACB: 'ACB',
+  Vietinbank: 'ICB',
+  BIDV: 'BIDV',
+  VPBank: 'VPB',
+  TPBank: 'TPB'
+}
 
 // Mock data album ảnh cưới
 const mockAlbum = [
@@ -38,6 +50,7 @@ const mockGuestbook = [
 
 export default function VintageGeneralView({ wedding, disableSplash, musicUrl }: TemplateProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [showGiftQr, setShowGiftQr] = useState(false)
   const [showSplash, setShowSplash] = useState(!disableSplash)
   const [splashFading, setSplashFading] = useState(false)
   const [demoRsvpName, setDemoRsvpName] = useState('')
@@ -74,10 +87,10 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
     )
   }
 
-  const red = '#d6838a'
-  const cream = '#fde3e9'
-  const creamLight = '#feedf1'
-  const textDark = '#111111'
+  const red = '#9a2c35'
+  const cream = '#f7ecee'
+  const creamLight = '#f2e3e5'
+  const textDark = '#9a2c35'
   const splashTextPrimary = '#fff6ef'
   const splashTextSecondary = '#f3d6df'
 
@@ -109,12 +122,8 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
   // Mock data cho phần chưa có trong DB
   const groomName = mergedContent.groom_name || 'Hoàng Nam'
   const brideName = mergedContent.bride_name || 'Thanh Tú'
-  const groomImage =
-    mergedContent.groom_image ||
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face'
-  const brideImage =
-    mergedContent.bride_image ||
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face'
+  const groomImage = mergedContent.groom_image || peachDecorUrl
+  const brideImage = mergedContent.bride_image || peachDecorUrl
   const groomRole = mergedContent.groom_role || 'Trưởng nam'
   const brideRole = mergedContent.bride_role || 'Trưởng nữ'
   const groomParents = mergedContent.groom_parents || 'Nguyễn Văn Tuấn\nTrần Thị Mai'
@@ -127,6 +136,18 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
   const eventDate = mergedContent.event_date || '01/02/2026'
   const lunarDate = mergedContent.lunar_date || '14/12 Ất Tỵ'
   const address = mergedContent.address || 'Queen Plaza Kỳ Hòa, 16A Lê Hồng Phong, Phường 12, Quận 10, TP. Hồ Chí Minh'
+  const bankName = mergedContent.bank_name || ''
+  const accountNumber = mergedContent.account_number || ''
+  const accountName = mergedContent.account_name || ''
+  const customQrImage = mergedContent.qr_image || mergedContent.qrImage || ''
+  const transferNote = `Mung cuoi ${groomName} ${brideName}`.trim()
+  const bankCode = BANK_MAP[bankName] || bankName
+  const generatedQrUrl =
+    bankCode && accountNumber
+      ? `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=0&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(accountName)}`
+      : ''
+  const displayQrUrl = customQrImage || generatedQrUrl
+  const hasGiftInfo = Boolean(displayQrUrl || accountNumber || bankName || accountName)
 
   // Xử lý mapUrl: Ưu tiên dùng dữ liệu map_url do user nhập, nếu không có thì fallback Google q
   let mapUrl = ''
@@ -170,7 +191,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
   const dayName = 'CHỦ NHẬT'
 
   const redPatternStyle = {
-    backgroundColor: red
+    backgroundColor: cream
   }
 
   const creamPatternStyle = {
@@ -223,27 +244,59 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           }
           .btn-open { animation: sealPulse 2.2s ease-out infinite; }
           .btn-calendar:hover { opacity: 0.9; transform: scale(1.02); }
+          @keyframes petalFall {
+            0% { transform: translateY(-40px) rotate(0deg) scale(1); opacity: 0; }
+            5% { opacity: 1; }
+            85% { opacity: 0.8; }
+            100% { transform: translateY(110vh) rotate(720deg) scale(0.6); opacity: 0; }
+          }
+          @keyframes petalSway {
+            0%, 100% { margin-left: 0px; }
+            25% { margin-left: 18px; }
+            75% { margin-left: -14px; }
+          }
+          .petal {
+            position: absolute;
+            top: -40px;
+            border-radius: 150% 0 150% 0;
+            background: radial-gradient(ellipse at 30% 30%, #ffb8cc, #e8748a);
+            opacity: 0;
+            pointer-events: none;
+            animation: petalFall linear infinite, petalSway ease-in-out infinite;
+            box-shadow: inset 0 0 4px rgba(255,255,255,0.4);
+          }
           .vintage-splash-decor-wrap {
             position: absolute;
             inset: 0;
             pointer-events: none;
             overflow: hidden;
           }
+          @keyframes splashDaoSwayLeft {
+            0%, 100% { transform: translateY(-54%) rotate(0deg); }
+            30% { transform: translateY(-54%) rotate(-2.5deg); }
+            70% { transform: translateY(-54%) rotate(1.8deg); }
+          }
+          @keyframes splashDaoSwayRight {
+            0%, 100% { transform: translateY(-54%) scaleX(-1) rotate(0deg); }
+            30% { transform: translateY(-54%) scaleX(-1) rotate(-2.5deg); }
+            70% { transform: translateY(-54%) scaleX(-1) rotate(1.8deg); }
+          }
           .vintage-splash-dao {
             position: absolute;
             top: 50%;
             width: clamp(270px, 33vw, 460px);
             height: auto;
-            opacity: 0.8;
-            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+            opacity: 0.92;
+            filter: saturate(1.12) contrast(1.06) drop-shadow(0 10px 20px rgba(0,0,0,0.24));
+            transform-origin: bottom center;
           }
           .vintage-splash-dao-left {
             left: max(0px, calc(50% - 680px));
-            transform: translateY(-54%);
+            animation: splashDaoSwayLeft 5s ease-in-out infinite;
           }
           .vintage-splash-dao-right {
             right: max(0px, calc(50% - 680px));
-            transform: translateY(-54%) scaleX(-1);
+            animation: splashDaoSwayRight 5.8s ease-in-out 0.6s infinite;
           }
           .vintage-splash-hy-wrap {
             position: relative;
@@ -264,8 +317,8 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             top: 50%;
             width: 62px;
             height: auto;
-            opacity: 0.72;
-            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.26));
+            opacity: 0.84;
+            filter: saturate(1.1) contrast(1.04) drop-shadow(0 4px 10px rgba(0,0,0,0.26));
             pointer-events: none;
           }
           .vintage-splash-hy-ornament-left {
@@ -287,6 +340,8 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             height: clamp(180px, 26vw, 290px);
             opacity: 0.88;
             z-index: 1;
+            transform-origin: bottom center;
+            animation: ornamentSwayLeft 5s ease-in-out infinite;
           }
           .vintage-ornament-right {
             right: 1%;
@@ -294,31 +349,185 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             height: clamp(180px, 26vw, 290px);
             opacity: 0.88;
             z-index: 1;
+            transform-origin: bottom center;
+            animation: ornamentSwayRight 5.8s ease-in-out 0.7s infinite;
+          }
+          @keyframes ornamentSwayLeft {
+            0%, 100% { transform: rotate(0deg); }
+            30% { transform: rotate(-3deg); }
+            70% { transform: rotate(2deg); }
+          }
+          @keyframes ornamentSwayRight {
+            0%, 100% { transform: rotate(0deg) scaleX(-1); }
+            30% { transform: rotate(3deg) scaleX(-1); }
+            70% { transform: rotate(-2deg) scaleX(-1); }
+          }
+          @keyframes avatarSway {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(-2.5deg); }
+            75% { transform: rotate(2deg); }
+          }
+          .vintage-avatar {
+            transform-origin: bottom center;
+            animation: avatarSway 5.5s ease-in-out infinite;
+          }
+          .card-petal-wrap {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 10;
           }
           .vintage-guestbook-scroll {
             scrollbar-width: thin;
-            scrollbar-color: #e2a5ab #f3c8cd;
+            scrollbar-color: #bb7a82 #f1e3e6;
           }
           .vintage-guestbook-scroll::-webkit-scrollbar { width: 10px; }
           .vintage-guestbook-scroll::-webkit-scrollbar-track {
-            background: #f3c8cd;
+            background: #f1e3e6;
             border-radius: 999px;
           }
           .vintage-guestbook-scroll::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #d6838a, #c46a73);
+            background: linear-gradient(180deg, #cf9aa1, #bb7a82);
             border-radius: 999px;
             border: 1px solid #ffffff66;
           }
+          @keyframes vuquyBadgeSway {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            25% { transform: translate(-50%, calc(-50% - 1px)) rotate(-0.85deg); }
+            50% { transform: translate(-50%, -50%) rotate(0.55deg); }
+            75% { transform: translate(-50%, calc(-50% - 1px)) rotate(-0.65deg); }
+          }
+          @keyframes vuquyBadgeGlow {
+            0%, 100% { box-shadow: 0 12px 24px rgba(0,0,0,0.18), 0 0 0 rgba(214,131,138,0); }
+            50% { box-shadow: 0 14px 30px rgba(0,0,0,0.24), 0 0 18px rgba(214,131,138,0.33); }
+          }
+          .vintage-vuquy-badge {
+            animation: vuquyBadgeSway 1.25s ease-in-out 1s infinite, vuquyBadgeGlow 2s ease-in-out 1s infinite;
+          }
+          .gift-mini-card {
+            animation: splashCardShakeFast 1.25s ease-in-out 1s infinite, splashCardPinkPulse 2s ease-in-out 1s infinite;
+            transform-origin: center 85%;
+            transition: transform .24s ease;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
+          }
+          .gift-mini-card:hover { transform: translateY(-4px); }
+          .gift-card-wrap {
+            position: relative;
+            width: fit-content;
+            margin: 0 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          }
+          @keyframes giftOrnamentSwayLeft {
+            0%, 100% { transform: translateY(-55%) rotate(-4deg); }
+            30% { transform: translateY(-55%) rotate(-7deg); }
+            70% { transform: translateY(-55%) rotate(-2deg); }
+          }
+          @keyframes giftOrnamentSwayRight {
+            0%, 100% { transform: translateY(-55%) rotate(4deg) scaleX(-1); }
+            30% { transform: translateY(-55%) rotate(7deg) scaleX(-1); }
+            70% { transform: translateY(-55%) rotate(2deg) scaleX(-1); }
+          }
+          .gift-card-ornament {
+            position: absolute;
+            top: 50%;
+            width: clamp(188px, 24vw, 320px);
+            height: auto;
+            transform: translateY(-55%);
+            opacity: 0.98;
+            pointer-events: none;
+            filter: saturate(1.18) contrast(1.08) brightness(0.98) drop-shadow(0 10px 18px rgba(0,0,0,0.26));
+            z-index: 1;
+          }
+          .gift-card-ornament-left {
+            left: -278px;
+            transform: translateY(-55%) rotate(-4deg);
+            animation: giftOrnamentSwayLeft 4.8s ease-in-out infinite;
+            transform-origin: bottom center;
+          }
+          .gift-card-ornament-right {
+            right: -278px;
+            transform: translateY(-55%) rotate(4deg) scaleX(-1);
+            animation: giftOrnamentSwayRight 5.2s ease-in-out 0.35s infinite;
+            transform-origin: bottom center;
+          }
+          @keyframes splashBannerPetalFall {
+            0% { transform: translateY(-12px) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            85% { opacity: 0.92; }
+            100% { transform: translateY(82px) rotate(360deg); opacity: 0; }
+          }
+          @keyframes splashBannerPetalSway {
+            0%, 100% { margin-left: 0; }
+            50% { margin-left: 8px; }
+          }
+          .splash-banner-petal {
+            position: absolute;
+            top: -12px;
+            border-radius: 150% 0 150% 0;
+            background: radial-gradient(ellipse at 30% 30%, #ffd5e0, #ee96ab);
+            pointer-events: none;
+            opacity: 0;
+            animation: splashBannerPetalFall linear infinite, splashBannerPetalSway ease-in-out infinite;
+            box-shadow: inset 0 0 3px rgba(255,255,255,0.44);
+          }
+          @keyframes giftPetalFall {
+            0% { transform: translateY(-18px) rotate(0deg) scale(1); opacity: 0; }
+            12% { opacity: 1; }
+            88% { opacity: 0.9; }
+            100% { transform: translateY(230px) rotate(420deg) scale(0.72); opacity: 0; }
+          }
+          @keyframes giftPetalSway {
+            0%, 100% { margin-left: 0; }
+            50% { margin-left: 10px; }
+          }
+          .gift-petal-wrap {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+          }
+          .gift-petal {
+            position: absolute;
+            top: -18px;
+            border-radius: 150% 0 150% 0;
+            background: radial-gradient(ellipse at 30% 30%, #ffd0dc, #e9889e);
+            opacity: 0;
+            pointer-events: none;
+            animation: giftPetalFall linear infinite, giftPetalSway ease-in-out infinite;
+            box-shadow: inset 0 0 3px rgba(255,255,255,0.45);
+          }
+          .vintage-rsvp-control {
+            width: 100%;
+            min-height: 42px;
+            line-height: 1.25;
+          }
+          .vintage-rsvp-submit {
+            width: 100%;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+          }
+          .vintage-guestbook-item-name { font-weight: 700; color: #9a2c35; font-size: 0.95rem; }
+          .vintage-guestbook-item-time { font-size: 0.72rem; color: #8f8f8f; }
+          .vintage-guestbook-item-message { font-size: 0.9rem; color: #555; line-height: 1.6; margin: 0; }
         `}</style>
         <style>{`
           @media (max-width: 768px) {
             .vintage-side-panel { display: none !important; }
             .vintage-card { width: 100% !important; max-width: 100% !important; }
+            .vintage-card { overflow-x: hidden !important; }
             .vintage-avatar { width: 120px !important; height: 120px !important; }
             .vintage-couple-name { font-size: 1.8rem !important; }
             .vintage-couple-name-lg { font-size: 2rem !important; }
             .vintage-section-padding { padding-left: 16px !important; padding-right: 16px !important; }
             .vintage-parents-flex { flex-direction: column !important; gap: 20px !important; }
+            .vintage-parents-flex > div { padding: 0 !important; width: 100% !important; }
             .vintage-parents-divider { display: none !important; }
             .vintage-date-flex { gap: 8px !important; }
             .vintage-date-day { font-size: 2rem !important; }
@@ -338,6 +547,52 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             }
             .vintage-ornament-left { left: 3% !important; right: auto !important; }
             .vintage-ornament-right { right: 3% !important; left: auto !important; }
+            .gift-card-ornament {
+              width: clamp(112px, 28vw, 158px);
+              opacity: 0.96;
+              z-index: 3;
+              display: block;
+            }
+            .gift-card-ornament-left { left: -118px; }
+            .gift-card-ornament-right { right: -118px; }
+            .gift-mini-card {
+              width: 196px !important;
+              height: 136px !important;
+            }
+            .vintage-rsvp-form {
+              max-width: 540px !important;
+              padding: 14px 16px !important;
+            }
+            .vintage-rsvp-control {
+              min-height: 40px !important;
+              font-size: 0.82rem !important;
+            }
+            .vintage-rsvp-row {
+              grid-template-columns: 1fr 1fr !important;
+            }
+            .vintage-date-flex {
+              flex-wrap: wrap !important;
+              justify-content: center !important;
+              row-gap: 6px !important;
+            }
+            .vintage-date-divider { height: 22px !important; }
+            .vintage-date-label {
+              font-size: 0.76rem !important;
+              letter-spacing: 1.2px !important;
+            }
+            .vintage-map-wrap,
+            .vintage-guestbook-wrap {
+              max-width: 540px !important;
+            }
+            .vintage-map-frame {
+              height: 340px !important;
+            }
+            .vintage-guestbook-wrap {
+              max-height: 410px !important;
+            }
+            .vintage-guestbook-item-name { font-size: 0.9rem !important; }
+            .vintage-guestbook-item-time { font-size: 0.69rem !important; }
+            .vintage-guestbook-item-message { font-size: 0.84rem !important; line-height: 1.5 !important; }
           }
           @media (max-width: 420px) {
             .vintage-splash-hy-wrap { margin-bottom: 24px; }
@@ -352,6 +607,55 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             }
             .vintage-ornament-left { left: 2% !important; }
             .vintage-ornament-right { right: 2% !important; }
+            .gift-card-ornament {
+              width: clamp(98px, 30vw, 132px);
+              opacity: 0.94;
+              z-index: 3;
+              display: block;
+            }
+            .gift-card-ornament-left { left: -92px; }
+            .gift-card-ornament-right { right: -92px; }
+            .gift-mini-card {
+              width: 184px !important;
+              height: 128px !important;
+            }
+            .vintage-rsvp-form {
+              max-width: 340px !important;
+              padding: 12px !important;
+            }
+            .vintage-rsvp-row {
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+            .vintage-rsvp-submit {
+              border-radius: 12px !important;
+              padding: 10px 12px !important;
+              font-size: 0.84rem !important;
+              letter-spacing: 0.3px !important;
+            }
+            .vintage-rsvp-control {
+              min-height: 38px !important;
+              font-size: 0.79rem !important;
+            }
+            .vintage-date-flex {
+              flex-direction: column !important;
+              gap: 6px !important;
+            }
+            .vintage-date-divider { display: none !important; }
+            .vintage-date-label { letter-spacing: 1px !important; }
+            .vintage-map-wrap,
+            .vintage-guestbook-wrap {
+              max-width: 320px !important;
+            }
+            .vintage-map-frame {
+              height: 300px !important;
+            }
+            .vintage-guestbook-wrap {
+              max-height: 360px !important;
+            }
+            .vintage-guestbook-item-name { font-size: 0.86rem !important; }
+            .vintage-guestbook-item-time { font-size: 0.66rem !important; }
+            .vintage-guestbook-item-message { font-size: 0.8rem !important; line-height: 1.45 !important; }
           }
         `}</style>
       </Head>
@@ -364,7 +668,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             position: 'fixed',
             inset: 0,
             zIndex: 9997,
-            backgroundColor: '#fde3e9',
+            backgroundColor: '#f8ecef',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -381,183 +685,266 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             <img className='vintage-splash-dao vintage-splash-dao-left' src={peachDecorUrl} alt='' />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img className='vintage-splash-dao vintage-splash-dao-right' src={peachDecorUrl} alt='' />
+            {/* Falling petals */}
+            {[
+              { left: '2%',  size: 10, dur: 6.2, delay: 0 },
+              { left: '7%',  size: 8,  dur: 7.1, delay: 1.2 },
+              { left: '12%', size: 12, dur: 5.8, delay: 0.5 },
+              { left: '17%', size: 7,  dur: 8.0, delay: 2.1 },
+              { left: '22%', size: 9,  dur: 6.5, delay: 0.8 },
+              { left: '27%', size: 11, dur: 7.4, delay: 1.6 },
+              { left: '32%', size: 8,  dur: 5.5, delay: 3.0 },
+              { left: '37%', size: 13, dur: 6.8, delay: 0.3 },
+              { left: '42%', size: 7,  dur: 7.9, delay: 1.9 },
+              { left: '47%', size: 10, dur: 6.1, delay: 0.7 },
+              { left: '52%', size: 9,  dur: 8.3, delay: 2.5 },
+              { left: '57%', size: 11, dur: 5.9, delay: 1.1 },
+              { left: '62%', size: 8,  dur: 7.2, delay: 0.4 },
+              { left: '67%', size: 12, dur: 6.6, delay: 3.5 },
+              { left: '72%', size: 7,  dur: 8.1, delay: 2.8 },
+              { left: '77%', size: 10, dur: 5.7, delay: 1.4 },
+              { left: '82%', size: 8,  dur: 7.6, delay: 0.9 },
+              { left: '87%', size: 11, dur: 6.3, delay: 4.1 },
+              { left: '92%', size: 9,  dur: 7.8, delay: 2.3 },
+              { left: '97%', size: 13, dur: 6.0, delay: 3.2 },
+              { left: '4%',  size: 9,  dur: 6.9, delay: 4.8 },
+              { left: '10%', size: 11, dur: 7.5, delay: 5.2 },
+              { left: '15%', size: 8,  dur: 5.6, delay: 3.7 },
+              { left: '24%', size: 13, dur: 8.2, delay: 0.6 },
+              { left: '30%', size: 7,  dur: 6.4, delay: 5.9 },
+              { left: '38%', size: 10, dur: 7.3, delay: 4.4 },
+              { left: '45%', size: 12, dur: 5.4, delay: 2.0 },
+              { left: '53%', size: 8,  dur: 8.5, delay: 1.3 },
+              { left: '60%', size: 9,  dur: 6.7, delay: 5.5 },
+              { left: '68%', size: 11, dur: 7.0, delay: 3.8 },
+              { left: '75%', size: 7,  dur: 5.3, delay: 4.6 },
+              { left: '83%', size: 13, dur: 8.4, delay: 0.2 },
+              { left: '90%', size: 10, dur: 6.9, delay: 5.1 },
+              { left: '95%', size: 8,  dur: 7.7, delay: 3.4 },
+              { left: '19%', size: 11, dur: 6.2, delay: 4.9 },
+              { left: '35%', size: 9,  dur: 8.6, delay: 1.7 },
+              { left: '49%', size: 12, dur: 5.1, delay: 5.6 },
+              { left: '64%', size: 7,  dur: 7.2, delay: 2.6 },
+              { left: '79%', size: 10, dur: 6.8, delay: 4.3 },
+              { left: '85%', size: 8,  dur: 8.0, delay: 0.1 },
+              { left: '25%', size: 13, dur: 5.9, delay: 3.9 },
+            ].map((p, i) => (
+              <div
+                key={i}
+                className='petal'
+                style={{
+                  left: p.left,
+                  width: p.size,
+                  height: p.size * 0.7,
+                  animationDuration: `${p.dur}s, ${p.dur * 0.6}s`,
+                  animationDelay: `${p.delay}s, ${p.delay}s`,
+                }}
+              />
+            ))}
           </div>
 
           <div className='splash-card-motion'>
             <div className='splash-card splash-card-glow' style={{ textAlign: 'center', position: 'relative' }}>
-
-            {/* Top banner */}
-            <div
-              style={{
-                backgroundColor: red,
-                height: 90,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6
-              }}
-            >
-              <p
-                style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  letterSpacing: 5,
-                  color: 'rgba(255,255,255,0.9)',
-                  textTransform: 'uppercase'
-                }}
-              >
-                Thiệp Cưới
-              </p>
+              {/* Top banner */}
               <div
-                style={{ width: 168, height: 1, marginTop: 4, backgroundColor: 'rgba(255,255,255,0.9)' }}
-              />
-            </div>
-
-            {/* Card body */}
-            <div
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.65)',
-                border: `1px solid ${red}25`,
-                borderTop: 'none',
-                borderBottom: 'none',
-                padding: '40px 32px 32px'
-              }}
-            >
-              <div className='vintage-splash-hy-wrap'>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className='vintage-splash-hy-ornament vintage-splash-hy-ornament-left' src={peachDecorUrl} alt='' />
-                <p className='vintage-splash-hy-symbol'>囍</p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img className='vintage-splash-hy-ornament vintage-splash-hy-ornament-right' src={peachDecorUrl} alt='' />
-              </div>
-
-              <p
                 style={{
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: '0.6rem',
-                  letterSpacing: '0.45em',
-                  color: red,
-                  textTransform: 'uppercase',
-                  fontWeight: 600,
-                  marginBottom: 20
+                  backgroundColor: '#d6838a',
+                  height: 90,
+                  position: 'relative',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6
                 }}
               >
-                Trân trọng kính báo
-              </p>
-
-              {/* Ornamental divider */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-                <div style={{ flex: 1, height: 1, backgroundColor: `${red}35` }} />
-                <span style={{ color: red, fontSize: '0.55rem', letterSpacing: 6 }}>✦ ✦ ✦</span>
-                <div style={{ flex: 1, height: 1, backgroundColor: `${red}35` }} />
-              </div>
-
-              <p style={{ fontSize: '0.72rem', color: textDark, fontStyle: 'italic', marginBottom: 16 }}>
-                Lễ thành hôn của
-              </p>
-
-              <h3
-                style={{
-                  fontFamily: "'Great Vibes', cursive",
-                  fontSize: '3rem',
-                  color: red,
-                  fontWeight: 400,
-                  lineHeight: 1.1
-                }}
-              >
-                {groomName}
-              </h3>
-              <p style={{ fontFamily: "'Great Vibes', cursive", fontSize: '2rem', color: textDark, lineHeight: 1 }}>
-                &amp;
-              </p>
-              <h3
-                style={{
-                  fontFamily: "'Great Vibes', cursive",
-                  fontSize: '3rem',
-                  color: red,
-                  fontWeight: 400,
-                  lineHeight: 1.1,
-                  marginBottom: 24
-                }}
-              >
-                {brideName}
-              </h3>
-
-              {/* Date */}
-              <div
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 30 }}
-              >
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
-                  {dayName}
-                </span>
-                <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
-                <span
+                {[
+                  { left: '8%', size: 7, dur: 2.9, delay: 0.15 },
+                  { left: '21%', size: 6, dur: 3.2, delay: 1.1 },
+                  { left: '37%', size: 8, dur: 2.8, delay: 0.55 },
+                  { left: '53%', size: 7, dur: 3.1, delay: 1.45 },
+                  { left: '68%', size: 6, dur: 2.7, delay: 0.85 },
+                  { left: '84%', size: 8, dur: 3.3, delay: 1.95 }
+                ].map((p, i) => (
+                  <div
+                    key={`splash-banner-petal-${i}`}
+                    className='splash-banner-petal'
+                    style={{
+                      left: p.left,
+                      width: p.size,
+                      height: p.size * 0.7,
+                      animationDuration: `${p.dur}s, ${p.dur * 0.65}s`,
+                      animationDelay: `${p.delay}s, ${p.delay}s`
+                    }}
+                  />
+                ))}
+                <p
                   style={{
                     fontFamily: "'Playfair Display', serif",
-                    fontSize: '1.8rem',
+                    fontSize: '0.75rem',
                     fontWeight: 700,
+                    letterSpacing: 5,
+                    color: 'rgba(255,255,255,0.9)',
+                    textTransform: 'uppercase'
+                  }}
+                >
+                  Thiệp Cưới
+                </p>
+                <div style={{ width: 168, height: 1, marginTop: 4, backgroundColor: 'rgba(255,255,255,0.9)' }} />
+              </div>
+
+              {/* Card body */}
+              <div
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.78)',
+                  border: `1px solid ${red}25`,
+                  borderTop: 'none',
+                  borderBottom: 'none',
+                  padding: '40px 32px 32px'
+                }}
+              >
+                <div className='vintage-splash-hy-wrap'>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className='vintage-splash-hy-ornament vintage-splash-hy-ornament-left'
+                    src={peachDecorUrl}
+                    alt=''
+                  />
+                  <p className='vintage-splash-hy-symbol'>囍</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    className='vintage-splash-hy-ornament vintage-splash-hy-ornament-right'
+                    src={peachDecorUrl}
+                    alt=''
+                  />
+                </div>
+
+                <p
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '0.6rem',
+                    letterSpacing: '0.45em',
                     color: red,
-                    lineHeight: 1
-                  }}
-                >
-                  {day}
-                </span>
-                <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
-                  THÁNG {month}
-                </span>
-                <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
-                <span
-                  style={{
-                    fontFamily: "'Playfair Display', serif",
-                    fontSize: '1rem',
-                    fontWeight: 700,
-                    color: textDark
-                  }}
-                >
-                  {year}
-                </span>
-              </div>
-
-              <div>
-                <button
-                  className='btn-open'
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    handleOpenInvitation()
-                  }}
-                  style={{
-                    backgroundColor: red,
-                    color: '#fff',
-                    border: 'none',
-                    padding: '13px 44px',
-                    borderRadius: 2,
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.35em',
                     textTransform: 'uppercase',
-                    cursor: 'pointer',
-                    fontFamily: "'Playfair Display', serif"
+                    fontWeight: 600,
+                    marginBottom: 20
                   }}
                 >
-                  Mở Thiệp
-                </button>
-              </div>
-              <p style={{ fontSize: '0.6rem', color: '#bbb', letterSpacing: '0.08em', marginTop: 16 }}>
-                hoặc chạm vào bất kỳ đâu để mở
-              </p>
-            </div>
+                  Trân trọng kính báo
+                </p>
 
-            {/* Bottom bar */}
-            <div style={{ height: 8, backgroundColor: red }} />
+                {/* Ornamental divider */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                  <div style={{ flex: 1, height: 1, backgroundColor: `${red}35` }} />
+                  <span style={{ color: red, fontSize: '0.55rem', letterSpacing: 6 }}>✦ ✦ ✦</span>
+                  <div style={{ flex: 1, height: 1, backgroundColor: `${red}35` }} />
+                </div>
+
+                <p style={{ fontSize: '0.84rem', color: textDark, fontStyle: 'italic', marginBottom: 16 }}>
+                  Lễ thành hôn của
+                </p>
+
+                <h3
+                  style={{
+                    fontFamily: "'Great Vibes', cursive",
+                    fontSize: '3rem',
+                    color: red,
+                    fontWeight: 400,
+                    lineHeight: 1.1
+                  }}
+                >
+                  {groomName}
+                </h3>
+                <p style={{ fontFamily: "'Great Vibes', cursive", fontSize: '2rem', color: textDark, lineHeight: 1 }}>
+                  &amp;
+                </p>
+                <h3
+                  style={{
+                    fontFamily: "'Great Vibes', cursive",
+                    fontSize: '3rem',
+                    color: red,
+                    fontWeight: 400,
+                    lineHeight: 1.1,
+                    marginBottom: 24
+                  }}
+                >
+                  {brideName}
+                </h3>
+
+                {/* Date */}
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 30 }}
+                >
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+                    {dayName}
+                  </span>
+                  <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
+                  <span
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: '1.8rem',
+                      fontWeight: 700,
+                      color: red,
+                      lineHeight: 1
+                    }}
+                  >
+                    {day}
+                  </span>
+                  <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+                    THÁNG {month}
+                  </span>
+                  <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
+                  <span
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: '1.08rem',
+                      fontWeight: 700,
+                      color: textDark
+                    }}
+                  >
+                    {year}
+                  </span>
+                </div>
+
+                <div>
+                  <button
+                    className='btn-open'
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleOpenInvitation()
+                    }}
+                    style={{
+                      backgroundColor: '#d6838a',
+                      color: '#fff',
+                      border: 'none',
+                      padding: '13px 44px',
+                      borderRadius: 2,
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      letterSpacing: '0.35em',
+                      textTransform: 'uppercase',
+                      cursor: 'pointer',
+                      fontFamily: "'Playfair Display', serif"
+                    }}
+                  >
+                    Mở Thiệp
+                  </button>
+                </div>
+                <p style={{ fontSize: '0.6rem', color: '#bbb', letterSpacing: '0.08em', marginTop: 16 }}>
+                  hoặc chạm vào bất kỳ đâu để mở
+                </p>
+              </div>
+
+              {/* Bottom bar */}
+              <div style={{ height: 8, backgroundColor: '#d6838a' }} />
             </div>
           </div>
         </div>
       )}
 
-      <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', alignItems: 'stretch' }}>
+      <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', alignItems: 'stretch', overflowX: 'hidden' }}>
         {/* ═════════ LEFT PANEL ═════════ */}
         <div className='vintage-side-panel' style={{ flex: 1, minHeight: '100vh', background: '#fff' }} />
 
@@ -573,9 +960,52 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             fontFamily: "'Lora', serif",
             color: textDark,
             paddingBottom: 60,
-            boxShadow: '0 0 40px rgba(0,0,0,0.08)'
+            boxShadow: '0 0 40px rgba(0,0,0,0.08)',
+            position: 'relative'
           }}
         >
+          {/* ═════════ CARD FALLING PETALS ═════════ */}
+          <div className='card-petal-wrap'>
+            {[
+              { left: '3%',  size: 9,  dur: 7.2, delay: 0 },
+              { left: '10%', size: 7,  dur: 6.5, delay: 1.4 },
+              { left: '18%', size: 11, dur: 8.1, delay: 0.6 },
+              { left: '26%', size: 8,  dur: 6.9, delay: 2.3 },
+              { left: '34%', size: 10, dur: 7.6, delay: 0.9 },
+              { left: '42%', size: 7,  dur: 5.8, delay: 3.1 },
+              { left: '50%', size: 12, dur: 7.3, delay: 1.7 },
+              { left: '58%', size: 8,  dur: 8.4, delay: 0.3 },
+              { left: '66%', size: 10, dur: 6.7, delay: 2.8 },
+              { left: '74%', size: 7,  dur: 7.9, delay: 1.1 },
+              { left: '82%', size: 11, dur: 6.2, delay: 3.6 },
+              { left: '90%', size: 9,  dur: 8.0, delay: 0.5 },
+              { left: '96%', size: 8,  dur: 7.1, delay: 2.0 },
+              { left: '7%',  size: 10, dur: 6.4, delay: 4.2 },
+              { left: '22%', size: 7,  dur: 8.3, delay: 1.5 },
+              { left: '40%', size: 12, dur: 6.8, delay: 3.8 },
+              { left: '55%', size: 9,  dur: 7.5, delay: 0.8 },
+              { left: '70%', size: 8,  dur: 6.1, delay: 4.5 },
+              { left: '85%', size: 11, dur: 7.8, delay: 2.2 },
+              { left: '14%', size: 9,  dur: 5.9, delay: 3.4 },
+              { left: '30%', size: 7,  dur: 8.2, delay: 1.9 },
+              { left: '47%', size: 10, dur: 7.0, delay: 4.8 },
+              { left: '63%', size: 12, dur: 6.3, delay: 0.7 },
+              { left: '78%', size: 8,  dur: 7.7, delay: 3.2 },
+              { left: '93%', size: 9,  dur: 6.6, delay: 5.0 },
+            ].map((p, i) => (
+              <div
+                key={i}
+                className='petal'
+                style={{
+                  left: p.left,
+                  width: p.size,
+                  height: p.size * 0.7,
+                  animationDuration: `${p.dur}s, ${p.dur * 0.6}s`,
+                  animationDelay: `${p.delay}s, ${p.delay}s`,
+                }}
+              />
+            ))}
+          </div>
           {/* ═════════ HERO SECTION ═════════ */}
           <div style={{ width: '100%', height: 128, ...redPatternStyle }} />
 
@@ -604,38 +1034,32 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className='vintage-ornament vintage-ornament-left'
-                src={peachDecorUrl}
+                src={hoaDao1Url}
                 alt='Trang tri hoa dao ben trai'
               />
 
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 className='vintage-ornament vintage-ornament-right'
-                src={peachDecorUrl}
+                src={hoaDao1Url}
                 alt='Trang tri hoa dao ben phai'
                 style={{ transform: 'scaleX(-1)' }}
               />
 
               {/* Groom */}
               <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
-                <div
-                  className='vintage-avatar'
-                  style={{
-                    width: 240,
-                    height: 240,
-                    borderRadius: '50%',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                    overflow: 'hidden',
-                    margin: '0 auto 12px'
-                  }}
-                >
+                <div className='vintage-avatar' style={{ width: 300, height: 300, margin: '0 auto 12px' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={groomImage} alt={groomName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img
+                    src={groomImage}
+                    alt={groomName}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
                 </div>
                 {/* Label */}
                 <p
                   style={{
-                    fontSize: '0.65rem',
+                    fontSize: '0.8rem',
                     color: textDark,
                     letterSpacing: 2,
                     textTransform: 'uppercase',
@@ -659,46 +1083,63 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 <div style={{ width: '60%', height: 1, backgroundColor: 'rgba(214,131,138,0.35)', margin: '0 auto' }} />
               </div>
 
-              {/* Center 囍 band — absolute giữa hai avatar */}
+              {/* Center Lễ Vu Quy badge */}
               <div
+                className='vintage-vuquy-badge'
                 style={{
                   position: 'absolute',
                   left: '50%',
                   top: '48px',
                   transform: 'translate(-50%, -50%)',
-                  width: 56,
-                  height: 56,
+                  minWidth: 260,
+                  padding: '12px 28px 10px',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: 'rgba(214,131,138,0.2)',
-                  borderRadius: 4,
-                  zIndex: 2
+                  gap: 6,
+                  borderRadius: 999,
+                  background: `linear-gradient(145deg, ${red}cc 0%, #7b1f2ae6 100%)`,
+                  border: `1px solid rgba(255,255,255,0.5)`,
+                  boxShadow: '0 12px 24px rgba(0,0,0,0.18)',
+                  zIndex: 5
                 }}
               >
-                <span style={{ fontSize: '2rem', color: '#c46a73' }}>囍</span>
+                <div
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '1.7rem',
+                    color: '#fff',
+                    lineHeight: 1,
+                    fontWeight: 700,
+                    letterSpacing: 2.6,
+                    textTransform: 'uppercase',
+                    textShadow: '0 1px 0 rgba(0,0,0,0.15)'
+                  }}
+                >
+                  Lễ Vu Quy
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                  <span style={{ width: 28, height: 1, backgroundColor: 'rgba(255,255,255,0.7)' }} />
+                  <span style={{ fontSize: '1.1rem', color: '#fff', lineHeight: 1 }}>囍</span>
+                  <span style={{ width: 28, height: 1, backgroundColor: 'rgba(255,255,255,0.7)' }} />
+                </div>
               </div>
 
               {/* Bride */}
               <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
-                <div
-                  className='vintage-avatar'
-                  style={{
-                    width: 240,
-                    height: 240,
-                    borderRadius: '50%',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                    overflow: 'hidden',
-                    margin: '0 auto 12px'
-                  }}
-                >
+                <div className='vintage-avatar' style={{ width: 300, height: 300, margin: '0 auto 12px' }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={brideImage} alt={brideName} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img
+                    src={brideImage}
+                    alt={brideName}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
                 </div>
                 {/* Label */}
                 <p
                   style={{
-                    fontSize: '0.65rem',
+                    fontSize: '0.8rem',
                     color: textDark,
                     letterSpacing: 2,
                     textTransform: 'uppercase',
@@ -725,23 +1166,14 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           </div>
 
           {/* ═════════ THONG TIN LE CUOI BANNER ═════════ */}
-          <div
-            style={{
-              width: '100%',
-              height: 68,
-              ...redPatternStyle,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
+          <div style={{ width: '100%', padding: '16px 0 4px', textAlign: 'center' }}>
             <p
               style={{
                 fontFamily: "'Playfair Display', serif",
                 fontSize: '0.85rem',
                 fontWeight: 700,
                 letterSpacing: 4,
-                color: '#fff',
+                color: red,
                 textTransform: 'uppercase'
               }}
             >
@@ -763,7 +1195,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           >
             {/* Groom Parents */}
             <div style={{ flex: 1, padding: '0 16px 0 0' }}>
-              <p style={{ fontSize: '0.75rem', color: textDark, marginBottom: 6 }}>Ông bà</p>
+              <p style={{ fontSize: '0.86rem', color: textDark, marginBottom: 6 }}>Ông bà</p>
               <div
                 style={{
                   fontFamily: "'Playfair Display', serif",
@@ -776,7 +1208,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 {formatParents(groomParents)}
               </div>
               <p
-                style={{ fontSize: '0.72rem', color: textDark, lineHeight: 1.5, marginTop: 8, whiteSpace: 'pre-line' }}
+                style={{ fontSize: '0.84rem', color: textDark, lineHeight: 1.5, marginTop: 8, whiteSpace: 'pre-line', wordBreak: 'break-word' }}
               >
                 {groomAddress}
               </p>
@@ -790,7 +1222,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
             {/* Bride Parents */}
             <div style={{ flex: 1, padding: '0 0 0 16px' }}>
-              <p style={{ fontSize: '0.75rem', color: textDark, marginBottom: 6 }}>Ông bà</p>
+              <p style={{ fontSize: '0.86rem', color: textDark, marginBottom: 6 }}>Ông bà</p>
               <div
                 style={{
                   fontFamily: "'Playfair Display', serif",
@@ -803,7 +1235,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 {formatParents(brideParents)}
               </div>
               <p
-                style={{ fontSize: '0.72rem', color: textDark, lineHeight: 1.5, marginTop: 8, whiteSpace: 'pre-line' }}
+                style={{ fontSize: '0.84rem', color: textDark, lineHeight: 1.5, marginTop: 8, whiteSpace: 'pre-line', wordBreak: 'break-word' }}
               >
                 {brideAddress}
               </p>
@@ -853,7 +1285,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             </h2>
             <p
               style={{
-                fontSize: '0.65rem',
+                fontSize: '0.8rem',
                 color: textDark,
                 letterSpacing: 4,
                 textTransform: 'uppercase',
@@ -892,7 +1324,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             </h2>
             <p
               style={{
-                fontSize: '0.65rem',
+                fontSize: '0.8rem',
                 color: textDark,
                 letterSpacing: 4,
                 textTransform: 'uppercase',
@@ -927,15 +1359,16 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             >
               Tư Gia
             </p>
-            <p style={{ fontSize: '0.8rem', color: textDark, letterSpacing: 1, marginBottom: 20 }}>
+            <p style={{ fontSize: '0.94rem', color: textDark, letterSpacing: 1, marginBottom: 20 }}>
               Vào lúc {weddingTime}
             </p>
 
             {/* Date: CHỦ NHẬT | 01 | THÁNG 02 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 12 }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>{dayName}</span>
-              <div style={{ width: 1, height: 28, backgroundColor: '#c8b6a6' }} />
+            <div className='vintage-date-flex' style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 12 }}>
+              <span className='vintage-date-label' style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>{dayName}</span>
+              <div className='vintage-date-divider' style={{ width: 1, height: 28, backgroundColor: '#c8b6a6' }} />
               <span
+                className='vintage-date-day'
                 style={{
                   fontSize: '2.8rem',
                   fontWeight: 700,
@@ -946,8 +1379,8 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
               >
                 {day}
               </span>
-              <div style={{ width: 1, height: 28, backgroundColor: '#c8b6a6' }} />
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+              <div className='vintage-date-divider' style={{ width: 1, height: 28, backgroundColor: '#c8b6a6' }} />
+              <span className='vintage-date-label' style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
                 THÁNG {month}
               </span>
             </div>
@@ -978,23 +1411,14 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           </div>
 
           {/* ═════════ ALBUM BANNER ═════════ */}
-          <div
-            style={{
-              width: '100%',
-              height: 68,
-              ...redPatternStyle,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
+          <div style={{ width: '100%', padding: '16px 0 4px', textAlign: 'center' }}>
             <p
               style={{
                 fontFamily: "'Playfair Display', serif",
                 fontSize: '0.85rem',
                 fontWeight: 700,
                 letterSpacing: 4,
-                color: '#fff',
+                color: red,
                 textTransform: 'uppercase'
               }}
             >
@@ -1066,23 +1490,14 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           </div>
 
           {/* ═════════ THONG TIN TIEC CUOI BANNER ═════════ */}
-          <div
-            style={{
-              width: '100%',
-              height: 68,
-              ...redPatternStyle,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
+          <div style={{ width: '100%', padding: '16px 0 4px', textAlign: 'center' }}>
             <p
               style={{
                 fontFamily: "'Playfair Display', serif",
                 fontSize: '0.85rem',
                 fontWeight: 700,
                 letterSpacing: 4,
-                color: '#fff',
+                color: red,
                 textTransform: 'uppercase'
               }}
             >
@@ -1091,7 +1506,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           </div>
 
           {/* ═════════ PARTY EVENT ═════════ */}
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{ textAlign: 'center', marginBottom: 40, padding: '24px 20px' }}>
             <h2
               style={{
                 fontFamily: "'Great Vibes', cursive",
@@ -1167,7 +1582,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
             <button
               className='btn-calendar'
               style={{
-                backgroundColor: '#c46a73',
+                backgroundColor: '#9a2c35',
                 color: '#fff',
                 border: 'none',
                 padding: '10px 24px',
@@ -1183,23 +1598,14 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           </div>
 
           {/* ═════════ VENUE BANNER ═════════ */}
-          <div
-            style={{
-              width: '100%',
-              height: 68,
-              ...redPatternStyle,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
-          >
+          <div style={{ width: '100%', padding: '16px 0 4px', textAlign: 'center' }}>
             <p
               style={{
                 fontFamily: "'Playfair Display', serif",
                 fontSize: '0.85rem',
                 fontWeight: 700,
                 letterSpacing: 4,
-                color: '#fff',
+                color: red,
                 textTransform: 'uppercase'
               }}
             >
@@ -1209,10 +1615,10 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
           {/* ═════════ VENUE CONTENT ═════════ */}
           <div style={{ padding: '24px 20px 0', textAlign: 'center' }}>
-            <div style={{ maxWidth: 620, margin: '0 auto' }}>
+            <div className='vintage-map-wrap' style={{ maxWidth: 620, margin: '0 auto' }}>
               <p
                 style={{
-                  fontSize: '0.85rem',
+                  fontSize: '0.98rem',
                   color: textDark,
                   fontWeight: 500,
                   lineHeight: 1.6,
@@ -1232,6 +1638,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 }}
               >
                 <iframe
+                  className='vintage-map-frame'
                   title='wedding-venue-map'
                   width='100%'
                   height='380'
@@ -1246,24 +1653,14 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           </div>
 
           {/* ═════════ SO LUU BUT BANNER ═════════ */}
-          <div
-            style={{
-              width: '100%',
-              height: 68,
-              ...redPatternStyle,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginTop: 0
-            }}
-          >
+          <div style={{ width: '100%', padding: '16px 0 4px', textAlign: 'center', marginTop: 0 }}>
             <p
               style={{
                 fontFamily: "'Playfair Display', serif",
                 fontSize: '0.85rem',
                 fontWeight: 700,
                 letterSpacing: 4,
-                color: '#fff',
+                color: red,
                 textTransform: 'uppercase'
               }}
             >
@@ -1273,15 +1670,16 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
           <div style={{ padding: '24px 20px 10px' }}>
             <form
+              className='vintage-rsvp-form'
               onSubmit={handleDemoRsvpSubmit}
               style={{
                 maxWidth: 620,
                 margin: '0 auto',
-                backgroundColor: '#fff',
+                backgroundColor: '#eed7db',
                 borderRadius: 12,
                 padding: '16px 20px',
-                border: '1px solid rgba(198,106,115,0.35)',
-                boxShadow: '0 6px 14px rgba(0,0,0,0.08)'
+                border: '1px solid rgba(154,44,53,0.28)',
+                boxShadow: '0 8px 18px rgba(0,0,0,0.12)'
               }}
             >
               <p
@@ -1295,19 +1693,20 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
               >
                 RSVP Demo
               </p>
-              <p style={{ color: '#8a6b6f', fontSize: '0.75rem', marginBottom: 12 }}>
+              <p style={{ color: '#5a232a', fontSize: '0.75rem', marginBottom: 12 }}>
                 Form này chỉ để xem giao diện, submit sẽ hiện thông báo demo.
               </p>
 
               <div style={{ display: 'grid', gap: 10 }}>
                 <input
+                  className='vintage-rsvp-control'
                   type='text'
                   value={demoRsvpName}
                   onChange={(e) => setDemoRsvpName(e.target.value)}
                   placeholder='Tên khách mời'
                   style={{
                     width: '100%',
-                    backgroundColor: '#fff7f8',
+                    backgroundColor: '#fdf7f8',
                     color: textDark,
                     border: '1px solid rgba(198,106,115,0.35)',
                     borderRadius: 8,
@@ -1316,12 +1715,13 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                   }}
                 />
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className='vintage-rsvp-row' style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <select
+                    className='vintage-rsvp-control'
                     value={demoAttend}
                     onChange={(e) => setDemoAttend(e.target.value as 'yes' | 'no' | '')}
                     style={{
-                      backgroundColor: '#fff7f8',
+                      backgroundColor: '#fdf7f8',
                       color: textDark,
                       border: '1px solid rgba(198,106,115,0.35)',
                       borderRadius: 8,
@@ -1335,6 +1735,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                   </select>
 
                   <input
+                    className='vintage-rsvp-control'
                     type='number'
                     min={1}
                     value={demoPartySize}
@@ -1342,7 +1743,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                     disabled={demoAttend !== 'yes'}
                     placeholder='Số người'
                     style={{
-                      backgroundColor: demoAttend === 'yes' ? '#fff7f8' : '#f3f3f3',
+                      backgroundColor: demoAttend === 'yes' ? '#fdf7f8' : '#f3f3f3',
                       color: textDark,
                       border: '1px solid rgba(198,106,115,0.35)',
                       borderRadius: 8,
@@ -1353,6 +1754,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 </div>
 
                 <textarea
+                  className='vintage-rsvp-control'
                   value={demoRsvpMessage}
                   onChange={(e) => setDemoRsvpMessage(e.target.value)}
                   rows={3}
@@ -1360,7 +1762,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                   style={{
                     width: '100%',
                     resize: 'vertical',
-                    backgroundColor: '#fff7f8',
+                    backgroundColor: '#fdf7f8',
                     color: textDark,
                     border: '1px solid rgba(198,106,115,0.35)',
                     borderRadius: 8,
@@ -1371,11 +1773,12 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                 />
 
                 <button
+                  className='vintage-rsvp-submit'
                   type='submit'
                   style={{
                     border: 'none',
                     borderRadius: 999,
-                    background: 'linear-gradient(180deg, #d6838a, #c46a73)',
+                    background: 'linear-gradient(180deg, #cb8b92, #b97880)',
                     color: '#fff',
                     fontWeight: 700,
                     letterSpacing: 0.6,
@@ -1392,7 +1795,7 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
           {/* ═════════ GUESTBOOK LIST ═════════ */}
           <div style={{ padding: '24px 20px' }}>
             <div
-              className='vintage-guestbook-scroll'
+              className='vintage-guestbook-scroll vintage-guestbook-wrap'
               style={{
                 maxWidth: 620,
                 margin: '0 auto',
@@ -1423,14 +1826,166 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
                       marginBottom: 8
                     }}
                   >
-                    <span style={{ fontWeight: 700, color: red, fontSize: '0.95rem' }}>{comment.name}</span>
-                    <span style={{ fontSize: '0.72rem', color: '#8f8f8f' }}>{comment.time}</span>
+                    <span className='vintage-guestbook-item-name'>{comment.name}</span>
+                    <span className='vintage-guestbook-item-time'>{comment.time}</span>
                   </div>
-                  <p style={{ fontSize: '0.9rem', color: '#555', lineHeight: 1.6, margin: 0 }}>{comment.message}</p>
+                  <p className='vintage-guestbook-item-message'>{comment.message}</p>
                 </div>
               ))}
             </div>
           </div>
+
+          {hasGiftInfo && (
+            <div
+              className='vintage-section-padding'
+              style={{
+                padding: '30px 18px 44px',
+                position: 'relative',
+                overflow: 'hidden',
+                textAlign: 'center',
+                backgroundColor: '#fdf6f7',
+                backgroundImage: `radial-gradient(circle at 12% 18%, ${red}0f 0, transparent 130px), radial-gradient(circle at 78% 20%, ${red}0c 0, transparent 170px), radial-gradient(circle at 84% 75%, ${red}0a 0, transparent 210px)`
+              }}
+            >
+              <div aria-hidden='true' className='gift-petal-wrap'>
+                {[
+                  { left: '5%', size: 7, dur: 3.0, delay: 0.1 },
+                  { left: '11%', size: 8, dur: 3.4, delay: 0.55 },
+                  { left: '18%', size: 7, dur: 3.2, delay: 1.05 },
+                  { left: '24%', size: 9, dur: 3.6, delay: 0.25 },
+                  { left: '31%', size: 8, dur: 3.1, delay: 1.35 },
+                  { left: '38%', size: 7, dur: 3.5, delay: 0.8 },
+                  { left: '45%', size: 9, dur: 3.0, delay: 1.65 },
+                  { left: '52%', size: 8, dur: 3.7, delay: 0.45 },
+                  { left: '59%', size: 7, dur: 3.3, delay: 1.15 },
+                  { left: '66%', size: 9, dur: 3.2, delay: 0.7 },
+                  { left: '73%', size: 8, dur: 3.8, delay: 1.85 },
+                  { left: '80%', size: 7, dur: 3.1, delay: 0.35 },
+                  { left: '87%', size: 9, dur: 3.6, delay: 1.45 },
+                  { left: '94%', size: 8, dur: 3.0, delay: 0.95 }
+                ].map((p, i) => (
+                  <div
+                    key={`gift-petal-${i}`}
+                    className='gift-petal'
+                    style={{
+                      left: p.left,
+                      width: p.size,
+                      height: p.size * 0.72,
+                      animationDuration: `${p.dur}s, ${p.dur * 0.52}s`,
+                      animationDelay: `${p.delay}s, ${p.delay}s`
+                    }}
+                  />
+                ))}
+              </div>
+              <p
+                style={{
+                  color: red,
+                  fontSize: '1.9rem',
+                  fontFamily: "'Playfair Display', serif",
+                  marginBottom: 18,
+                  letterSpacing: 1,
+                  position: 'relative',
+                  zIndex: 1
+                }}
+              >
+                Hộp Mừng Cưới
+              </p>
+
+              <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
+                <div className='gift-card-wrap'>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className='gift-card-ornament gift-card-ornament-left' src={peachDecorUrl} alt='' />
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className='gift-card-ornament gift-card-ornament-right' src={peachDecorUrl} alt='' />
+
+                  <button
+                    onClick={() => setShowGiftQr(true)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      padding: 0,
+                      cursor: 'pointer',
+                      position: 'relative',
+                      zIndex: 2
+                    }}
+                    aria-label='Mở hộp mừng cưới'
+                  >
+                    <div
+                      className='gift-mini-card'
+                      style={{
+                        width: 210,
+                        height: 144,
+                        background: 'linear-gradient(150deg, #d69298 0%, #b55d67 100%)',
+                        borderRadius: 14,
+                        position: 'relative',
+                        border: '1px solid rgba(255,255,255,0.45)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '0 18px'
+                      }}
+                    >
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 10,
+                          borderRadius: 10,
+                          border: '1px dashed rgba(255,255,255,0.56)',
+                          pointerEvents: 'none'
+                        }}
+                      />
+
+                      <div
+                        style={{
+                          width: 52,
+                          height: 52,
+                          borderRadius: '50%',
+                          backgroundColor: 'rgba(255,255,255,0.16)',
+                          border: '2px solid rgba(255,255,255,0.7)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#fff',
+                          fontSize: '1.7rem',
+                          fontWeight: 700
+                        }}
+                      >
+                        囍
+                      </div>
+
+                      <p
+                        style={{
+                          marginLeft: 12,
+                          color: '#fff',
+                          fontFamily: "'Playfair Display', serif",
+                          fontSize: '0.95rem',
+                          letterSpacing: 1.4,
+                          textTransform: 'uppercase',
+                          textAlign: 'left',
+                          lineHeight: 1.35
+                        }}
+                      >
+                        Mở Thiệp
+                        <br />
+                        Mừng Cưới
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <p
+                style={{
+                  marginTop: 16,
+                  color: 'rgba(255,255,255,0.82)',
+                  fontSize: '0.95rem',
+                  fontFamily: "'Lora', serif"
+                }}
+              >
+                Nhấn vào tấm thiệp nhỏ để mở mã QR
+              </p>
+            </div>
+          )}
         </div>
 
         {/* ═════════ RIGHT PANEL ═════════ */}
@@ -1531,6 +2086,104 @@ export default function VintageGeneralView({ wedding, disableSplash, musicUrl }:
 
           <div style={{ color: '#fff', marginTop: 16, fontSize: '0.9rem', letterSpacing: 2 }}>
             {lightboxIndex + 1} / {albumImages.length}
+          </div>
+        </div>
+      )}
+
+      {showGiftQr && hasGiftInfo && (
+        <div
+          onClick={() => setShowGiftQr(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.74)',
+            zIndex: 9998,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              backgroundColor: '#cc747d',
+              borderRadius: 18,
+              border: '1px solid rgba(255,255,255,0.3)',
+              boxShadow: '0 24px 60px rgba(0,0,0,0.42)',
+              padding: '22px 20px'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <p
+                style={{
+                  color: '#fff',
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '1rem',
+                  letterSpacing: 1.4,
+                  textTransform: 'uppercase',
+                  fontWeight: 700
+                }}
+              >
+                QR Mừng Cưới
+              </p>
+              <button
+                onClick={() => setShowGiftQr(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#fff',
+                  fontSize: '1.6rem',
+                  cursor: 'pointer',
+                  lineHeight: 1
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {displayQrUrl && (
+              <div
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: 14,
+                  padding: 12,
+                  marginBottom: 14,
+                  display: 'flex',
+                  justifyContent: 'center'
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={displayQrUrl}
+                  alt='QR mừng cưới'
+                  style={{ width: '100%', maxWidth: 260, aspectRatio: '1 / 1', objectFit: 'contain' }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gap: 8, color: '#fff' }}>
+              {bankName && (
+                <p style={{ fontSize: '0.82rem' }}>
+                  Ngân hàng: <strong>{bankName}</strong>
+                </p>
+              )}
+              {accountName && (
+                <p style={{ fontSize: '0.82rem' }}>
+                  Chủ tài khoản: <strong>{accountName}</strong>
+                </p>
+              )}
+              {accountNumber && (
+                <p style={{ fontSize: '0.82rem' }}>
+                  Số tài khoản: <strong>{accountNumber}</strong>
+                </p>
+              )}
+              <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.82)', marginTop: 4 }}>
+                Nội dung chuyển khoản: {transferNote}
+              </p>
+            </div>
           </div>
         </div>
       )}
