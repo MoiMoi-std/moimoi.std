@@ -425,6 +425,20 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             0%, 100% { box-shadow: 0 18px 38px rgba(0,0,0,0.34), 0 0 0 rgba(233,206,158,0), 0 0 0 rgba(233,206,158,0); }
             50% { box-shadow: 0 24px 52px rgba(0,0,0,0.46), 0 0 34px ${textDark}66, 0 0 64px ${textDark}30; }
           }
+          @keyframes vuquyBadgeSway {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            25% { transform: translate(-50%, calc(-50% - 1px)) rotate(-0.85deg); }
+            50% { transform: translate(-50%, -50%) rotate(0.55deg); }
+            75% { transform: translate(-50%, calc(-50% - 1px)) rotate(-0.65deg); }
+          }
+          @keyframes vuquyBadgeGlow {
+            0%, 100% {
+              box-shadow: 0 12px 24px rgba(0,0,0,0.18), 0 0 0 rgba(233,206,158,0), inset 0 0 0 rgba(233,206,158,0);
+            }
+            50% {
+              box-shadow: 0 14px 30px rgba(0,0,0,0.24), 0 0 18px ${textDark}33, inset 0 0 12px ${textDark}1a;
+            }
+          }
           .splash-card-motion {
             width: 100%;
             max-width: 480px;
@@ -516,6 +530,65 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
           }
           .gift-mini-card:hover { transform: translateY(-4px); }
+          .gift-card-wrap {
+            position: relative;
+            width: fit-content;
+            margin: 0 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .gift-card-ornament {
+            position: absolute;
+            top: 50%;
+            width: clamp(102px, 13vw, 146px);
+            height: auto;
+            transform: translateY(-55%);
+            opacity: 0.8;
+            pointer-events: none;
+            filter: drop-shadow(0 8px 14px rgba(0,0,0,0.28));
+            z-index: 1;
+          }
+          .gift-card-ornament-left {
+            left: -158px;
+            transform: translateY(-55%) rotate(-4deg);
+          }
+          .gift-card-ornament-right {
+            right: -158px;
+            transform: translateY(-55%) rotate(4deg) scaleX(-1);
+          }
+          .gift-card-flower {
+            position: absolute;
+            width: clamp(52px, 6.8vw, 82px);
+            height: clamp(52px, 6.8vw, 82px);
+            opacity: 0.28;
+            pointer-events: none;
+            filter: drop-shadow(0 6px 12px rgba(0,0,0,0.24));
+            z-index: 1;
+          }
+          .gift-card-flower-left {
+            left: -44px;
+            top: -24px;
+            transform: rotate(-24deg);
+          }
+          .gift-card-flower-right {
+            right: -44px;
+            bottom: -24px;
+            transform: rotate(24deg) scaleX(-1);
+          }
+          .modern-rsvp-control {
+            width: 100%;
+            min-height: 42px;
+            line-height: 1.25;
+          }
+          .modern-rsvp-submit {
+            width: 100%;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+          }
           .modern-card-content { position: relative; z-index: 2; }
           .modern-flower {
             position: absolute;
@@ -580,6 +653,31 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             position: relative;
             z-index: 1;
           }
+          .modern-vuquy-flower {
+            position: absolute;
+            top: 50%;
+            width: 50px;
+            height: 50px;
+            background-color: ${textDark};
+            opacity: 0.26;
+            pointer-events: none;
+            -webkit-mask-image: url(${flowerDecorUrl});
+            mask-image: url(${flowerDecorUrl});
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+          }
+          .modern-vuquy-flower-left {
+            left: 14px;
+            transform: translateY(-50%) rotate(-20deg);
+          }
+          .modern-vuquy-flower-right {
+            right: 14px;
+            transform: translateY(-50%) rotate(20deg) scaleX(-1);
+          }
 
           @media (max-width: 768px) {
             .modern-side-panel { display: none !important; }
@@ -587,15 +685,15 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             .modern-avatar { width: 120px !important; height: 120px !important; }
             .modern-ornament {
               display: block !important;
-              top: -96px !important;
-              height: clamp(96px, 24vw, 124px) !important;
+              top: -72px !important;
+              height: clamp(122px, 31vw, 162px) !important;
               opacity: 0.76 !important;
               z-index: 2 !important;
             }
             .modern-ornament-left { left: 3% !important; right: auto !important; }
             .modern-ornament-right { right: 3% !important; left: auto !important; }
             .modern-vuquy-badge {
-              top: 58px !important;
+              top: 75px !important;
               min-width: 238px !important;
               padding: 10px 22px 8px !important;
             }
@@ -603,6 +701,13 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
               font-size: 1.55rem !important;
               letter-spacing: 2px !important;
             }
+            .modern-vuquy-flower {
+              width: 34px;
+              height: 34px;
+              opacity: 0.22;
+            }
+            .modern-vuquy-flower-left { left: 10px; }
+            .modern-vuquy-flower-right { right: 10px; }
             .modern-parents-flex {
               flex-direction: column !important;
               gap: 20px !important;
@@ -634,18 +739,52 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             }
             .modern-section-floral::before { left: -24px; }
             .modern-section-floral::after { right: -24px; }
+            .gift-card-ornament {
+              width: clamp(90px, 22vw, 124px);
+              opacity: 0.74;
+            }
+            .gift-card-ornament-left { left: -88px; }
+            .gift-card-ornament-right { right: -88px; }
+            .gift-mini-card {
+              width: 196px !important;
+              height: 136px !important;
+            }
+            .gift-card-flower {
+              width: clamp(50px, 11vw, 72px);
+              height: clamp(50px, 11vw, 72px);
+              opacity: 0.24;
+            }
+            .gift-card-flower-left { left: -36px; top: -20px; }
+            .gift-card-flower-right { right: -36px; bottom: -20px; }
+            .modern-rsvp-form {
+              max-width: 540px !important;
+              padding: 14px 16px !important;
+            }
+            .modern-rsvp-row {
+              grid-template-columns: 1fr 1fr !important;
+            }
+            .modern-map-wrap,
+            .modern-guestbook-wrap {
+              max-width: 540px !important;
+            }
+            .modern-map-frame {
+              height: 340px !important;
+            }
+            .modern-guestbook-wrap {
+              max-height: 410px !important;
+            }
           }
 
           @media (max-width: 420px) {
             .modern-ornament {
-              top: -88px !important;
-              height: clamp(82px, 23vw, 102px) !important;
+              top: -68px !important;
+              height: clamp(106px, 30vw, 132px) !important;
               opacity: 0.68 !important;
             }
             .modern-ornament-left { left: 2% !important; }
             .modern-ornament-right { right: 2% !important; }
             .modern-vuquy-badge {
-              top: 54px !important;
+              top: 75px !important;
               min-width: 218px !important;
               padding: 9px 18px 8px !important;
             }
@@ -653,6 +792,13 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
               font-size: 1.34rem !important;
               letter-spacing: 1.5px !important;
             }
+            .modern-vuquy-flower {
+              width: 30px;
+              height: 30px;
+              opacity: 0.2;
+            }
+            .modern-vuquy-flower-left { left: 8px; }
+            .modern-vuquy-flower-right { right: 8px; }
             .splash-hy-wrap { margin-bottom: 24px; }
             .splash-hy-symbol { font-size: 2.14rem; letter-spacing: 4px; }
             .splash-hy-ornament { width: 62px; opacity: 0.72; }
@@ -686,6 +832,48 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
               width: 70px;
               height: 70px;
               opacity: 0.1;
+            }
+            .gift-card-ornament {
+              width: 78px;
+              opacity: 0.68;
+              top: 52%;
+            }
+            .gift-card-ornament-left { left: -78px; }
+            .gift-card-ornament-right { right: -78px; }
+            .gift-mini-card {
+              width: 182px !important;
+              height: 126px !important;
+            }
+            .gift-card-flower {
+              width: 46px;
+              height: 46px;
+              opacity: 0.2;
+            }
+            .gift-card-flower-left { left: -28px; top: -16px; }
+            .gift-card-flower-right { right: -28px; bottom: -16px; }
+            .modern-rsvp-form {
+              max-width: 340px !important;
+              padding: 12px !important;
+            }
+            .modern-rsvp-row {
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+            .modern-rsvp-submit {
+              border-radius: 12px !important;
+              padding: 10px 12px !important;
+              font-size: 0.84rem !important;
+              letter-spacing: 0.3px !important;
+            }
+            .modern-map-wrap,
+            .modern-guestbook-wrap {
+              max-width: 320px !important;
+            }
+            .modern-map-frame {
+              height: 300px !important;
+            }
+            .modern-guestbook-wrap {
+              max-height: 360px !important;
             }
           }
         `}</style>
@@ -1132,10 +1320,14 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     gap: 6,
                     borderRadius: 999,
                     background: `linear-gradient(145deg, ${rose}dd 0%, ${creamLight}e6 100%)`,
-                    boxShadow: '0 12px 24px rgba(0,0,0,0.18)',
+                    border: `1px solid ${textDark}66`,
+                    boxShadow: '0 12px 24px rgba(0,0,0,0.18), 0 0 14px rgba(233,206,158,0.18)',
+                    animation: 'vuquyBadgeSway 1.25s ease-in-out 1s infinite, vuquyBadgeGlow 2s ease-in-out 1s infinite',
                     zIndex: 5
                   }}
                 >
+                  <span className='modern-vuquy-flower modern-vuquy-flower-left' aria-hidden='true' />
+                  <span className='modern-vuquy-flower modern-vuquy-flower-right' aria-hidden='true' />
                   <div
                     className='modern-vuquy-title'
                     style={{
@@ -1146,7 +1338,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                       fontWeight: 700,
                       letterSpacing: 2.6,
                       textTransform: 'uppercase',
-                      textShadow: '0 1px 0 rgba(0,0,0,0.15)'
+                      textShadow: `0 1px 0 rgba(0,0,0,0.15), 0 0 10px ${textDark}33`
                     }}
                   >
                     Lễ Vu Quy
@@ -1690,7 +1882,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             </div>
 
             <div className='modern-section-floral' style={{ padding: '24px 20px 0', textAlign: 'center' }}>
-              <div style={{ maxWidth: 620, margin: '0 auto' }}>
+              <div className='modern-map-wrap' style={{ maxWidth: 620, margin: '0 auto' }}>
                 <p
                   style={{
                     fontSize: '0.85rem',
@@ -1712,6 +1904,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                   }}
                 >
                   <iframe
+                    className='modern-map-frame'
                     title='wedding-venue-map'
                     width='100%'
                     height='380'
@@ -1752,6 +1945,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
 
             <div className='modern-section-floral' style={{ padding: '24px 20px 10px' }}>
               <form
+                className='modern-rsvp-form'
                 onSubmit={handleDemoRsvpSubmit}
                 style={{
                   maxWidth: 620,
@@ -1780,6 +1974,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
 
                 <div style={{ display: 'grid', gap: 10 }}>
                   <input
+                    className='modern-rsvp-control'
                     type='text'
                     value={demoRsvpName}
                     onChange={(e) => setDemoRsvpName(e.target.value)}
@@ -1795,8 +1990,9 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     }}
                   />
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div className='modern-rsvp-row' style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <select
+                      className='modern-rsvp-control'
                       value={demoAttend}
                       onChange={(e) => setDemoAttend(e.target.value as 'yes' | 'no' | '')}
                       style={{
@@ -1814,6 +2010,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     </select>
 
                     <input
+                      className='modern-rsvp-control'
                       type='number'
                       min={1}
                       value={demoPartySize}
@@ -1832,6 +2029,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                   </div>
 
                   <textarea
+                    className='modern-rsvp-control'
                     value={demoRsvpMessage}
                     onChange={(e) => setDemoRsvpMessage(e.target.value)}
                     rows={3}
@@ -1850,6 +2048,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                   />
 
                   <button
+                    className='modern-rsvp-submit'
                     type='submit'
                     style={{
                       border: 'none',
@@ -1870,7 +2069,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
 
             <div className='modern-section-floral' style={{ padding: '24px 20px' }}>
               <div
-                className='modern-guestbook-scroll'
+                className='modern-guestbook-scroll modern-guestbook-wrap'
                 style={{
                   maxWidth: 620,
                   margin: '0 auto',
@@ -1982,78 +2181,88 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                 </p>
 
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <button
-                    onClick={() => setShowGiftQr(true)}
-                    style={{
-                      background: 'transparent',
-                      border: 'none',
-                      padding: 0,
-                      cursor: 'pointer',
-                      position: 'relative'
-                    }}
-                    aria-label='Mở hộp mừng cưới'
-                  >
-                    <div
-                      className='gift-mini-card'
+                  <div className='gift-card-wrap'>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className='gift-card-ornament gift-card-ornament-left' src='/image/rong.webp' alt='' />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className='gift-card-ornament gift-card-ornament-right' src='/image/phung.webp' alt='' />
+                    <div aria-hidden='true' className='gift-card-flower gift-card-flower-left' style={flowerMaskBase} />
+                    <div aria-hidden='true' className='gift-card-flower gift-card-flower-right' style={flowerMaskBase} />
+
+                    <button
+                      onClick={() => setShowGiftQr(true)}
                       style={{
-                        width: 210,
-                        height: 144,
-                        background: 'linear-gradient(150deg, #7e1717 0%, #a14343 100%)',
-                        borderRadius: 14,
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
                         position: 'relative',
-                        border: `1px solid ${textDark}44`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '0 18px'
+                        zIndex: 2
                       }}
+                      aria-label='Mở hộp mừng cưới'
                     >
                       <div
+                        className='gift-mini-card'
                         style={{
-                          position: 'absolute',
-                          inset: 10,
-                          borderRadius: 10,
-                          border: `1px dashed ${textDark}66`,
-                          pointerEvents: 'none'
-                        }}
-                      />
-
-                      <div
-                        style={{
-                          width: 52,
-                          height: 52,
-                          borderRadius: '50%',
-                          backgroundColor: `${textDark}20`,
-                          border: `2px solid ${textDark}88`,
+                          width: 210,
+                          height: 144,
+                          background: 'linear-gradient(150deg, #7e1717 0%, #a14343 100%)',
+                          borderRadius: 14,
+                          position: 'relative',
+                          border: `1px solid ${textDark}44`,
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          color: textDark,
-                          fontSize: '1.7rem',
-                          fontWeight: 700
+                          padding: '0 18px'
                         }}
                       >
-                        囍
-                      </div>
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 10,
+                            borderRadius: 10,
+                            border: `1px dashed ${textDark}66`,
+                            pointerEvents: 'none'
+                          }}
+                        />
 
-                      <p
-                        style={{
-                          marginLeft: 12,
-                          color: textDark,
-                          fontFamily: "'Playfair Display', serif",
-                          fontSize: '0.95rem',
-                          letterSpacing: 1.4,
-                          textTransform: 'uppercase',
-                          textAlign: 'left',
-                          lineHeight: 1.35
-                        }}
-                      >
-                        Mở Thiệp
-                        <br />
-                        Mừng Cưới
-                      </p>
-                    </div>
-                  </button>
+                        <div
+                          style={{
+                            width: 52,
+                            height: 52,
+                            borderRadius: '50%',
+                            backgroundColor: `${textDark}20`,
+                            border: `2px solid ${textDark}88`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: textDark,
+                            fontSize: '1.7rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          囍
+                        </div>
+
+                        <p
+                          style={{
+                            marginLeft: 12,
+                            color: textDark,
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: '0.95rem',
+                            letterSpacing: 1.4,
+                            textTransform: 'uppercase',
+                            textAlign: 'left',
+                            lineHeight: 1.35
+                          }}
+                        >
+                          Mở Thiệp
+                          <br />
+                          Mừng Cưới
+                        </p>
+                      </div>
+                    </button>
+                  </div>
                 </div>
 
                 <p
