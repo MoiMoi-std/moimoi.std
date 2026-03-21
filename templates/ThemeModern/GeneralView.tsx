@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
 import { useEffect, useMemo, useState } from 'react'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useMapEmbed } from '../../lib/useMapEmbed'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 import { TemplateProps } from '../TemplateRegistry'
 
@@ -175,22 +176,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
 
   const { day, month, year, dayName } = useMemo(() => parseWeddingDate(weddingDateRaw), [weddingDateRaw])
 
-  let mapUrl = ''
-  if (mergedContent.map_url?.trim()) {
-    const raw = mergedContent.map_url.trim()
-    if (raw.includes('<iframe')) {
-      // User paste iframe HTML - extract src, decode &amp;
-      const srcMatch = raw.match(/src=["']([^"']+)["']/)
-      mapUrl = srcMatch ? srcMatch[1].replace(/&amp;/g, '&') : ''
-    } else if (raw.includes('google.com/maps/embed') || raw.includes('output=embed')) {
-      // Đã là embed URL hợp lệ - dùng trực tiếp
-      mapUrl = raw
-    }
-    // Link chia sẻ thường (maps.app.goo.gl, google.com/maps/place...) không nhúng được iframe
-    // → bỏ qua, dùng fallback bên dưới
-  }
-  if (!mapUrl)
-    mapUrl = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=B&output=embed`
+  const mapUrl = useMapEmbed(mergedContent.map_url, address)
 
   const albumImages = (mergedContent.images?.length > 0 ? mergedContent.images : mockAlbum).slice(0, 15)
 
@@ -323,9 +309,12 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
   }
 
   const rose = '#680e0e'
-  const cream = '#680e0e'
+  const cream = rose
   const creamLight = '#7a1a1a'
-  const textDark = '#e9ce9e'
+  const textDark = mergedContent.primary_color || '#e9ce9e'
+  const fontFamily = mergedContent.font_family || "'Lora', serif"
+  const headingFontFamily = mergedContent.heading_font_family || "'Great Vibes', cursive"
+  const sectionFontFamily = mergedContent.section_font_family || "'Playfair Display', serif"
   const displayedGuestWishes = guestWishes.length > 0 ? guestWishes : mockGuestbook
   const bankName = mergedContent.bank_name || ''
   const accountNumber = mergedContent.account_number || ''
@@ -774,8 +763,68 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
               max-height: 410px !important;
             }
           }
+          
+          .modern-container {
+            container-type: inline-size;
+          }
 
-          @media (max-width: 420px) {
+          @container (max-width: 896px) {
+             .modern-side-panel { display: none !important; }
+             .modern-card { width: 100% !important; max-width: 100% !important; border: none !important; border-radius: 0 !important; }
+             .modern-avatar { width: 120px !important; height: 120px !important; }
+             .modern-ornament {
+                display: block !important;
+                top: -96px !important;
+                height: clamp(96px, 24vw, 124px) !important;
+                opacity: 0.76 !important;
+                z-index: 2 !important;
+             }
+             .modern-ornament-left { left: 3% !important; right: auto !important; }
+             .modern-ornament-right { right: 3% !important; left: auto !important; }
+             .modern-vuquy-badge {
+                top: 58px !important;
+                min-width: 238px !important;
+                padding: 10px 22px 8px !important;
+             }
+             .modern-vuquy-title {
+                font-size: 1.55rem !important;
+                letter-spacing: 2px !important;
+             }
+             .modern-parents-flex {
+                flex-direction: column !important;
+                gap: 20px !important;
+                align-items: center !important;
+                text-align: center !important;
+             }
+             .modern-parents-col {
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 320px;
+                margin: 0 auto;
+                text-align: center;
+             }
+             .modern-parents-divider { display: none !important; }
+             .modern-album-grid { grid-template-columns: repeat(2, 1fr) !important; }
+             .modern-section-padding { padding-left: 16px !important; padding-right: 16px !important; }
+             .modern-flower-soft { display: none !important; }
+             .splash-decor-wrap { display: none !important; }
+             .splash-hy-wrap { margin-bottom: 28px; }
+             .splash-hy-symbol { font-size: 2.32rem; letter-spacing: 5px; }
+             .splash-hy-ornament { display: block; width: 68px; }
+             .splash-hy-ornament-left { transform: translate(-132px, -50%); }
+             .splash-hy-ornament-right { transform: translate(64px, -50%); }
+             .modern-rsvp-grid { grid-template-columns: 1fr !important; }
+             .modern-section-floral::before,
+             .modern-section-floral::after {
+                width: 82px;
+                height: 82px;
+                opacity: 0.11;
+             }
+             .modern-section-floral::before { left: -24px; }
+             .modern-section-floral::after { right: -24px; }
+          }
+
+          @container (max-width: 440px) {
             .modern-ornament {
               top: -68px !important;
               height: clamp(106px, 30vw, 132px) !important;
@@ -1075,7 +1124,10 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
         </div>
       )}
 
-      <div style={{ minHeight: '100vh', background: '#fff', display: 'flex', alignItems: 'stretch' }}>
+      <div
+        className='modern-container'
+        style={{ minHeight: '100vh', background: '#fff', display: 'flex', alignItems: 'stretch' }}
+      >
         <div className='modern-side-panel' style={{ flex: 1, minHeight: '100vh', background: '#fff' }} />
 
         <div
@@ -1086,7 +1138,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             flexShrink: 0,
             background: cream,
             minHeight: '100vh',
-            fontFamily: "'Lora', serif",
+            fontFamily: fontFamily,
             color: textDark,
             paddingBottom: 60,
             boxShadow: '0 0 40px rgba(0,0,0,0.08)',
@@ -1235,7 +1287,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     position: 'absolute',
                     left: '1%',
                     top: '-132px',
-                    height: 'clamp(180px, 26vw, 290px)',
+                    height: 240,
                     width: 'auto',
                     pointerEvents: 'none',
                     opacity: 0.88,
@@ -1252,7 +1304,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     position: 'absolute',
                     right: '1%',
                     top: '-132px',
-                    height: 'clamp(180px, 26vw, 290px)',
+                    height: 240,
                     width: 'auto',
                     pointerEvents: 'none',
                     opacity: 0.88,
@@ -1276,7 +1328,11 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     <img
                       src={groomImage}
                       alt={groomName}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.groom_image_position, viewport))
+                      }}
                     />
                   </div>
                   <p
@@ -1292,7 +1348,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                   </p>
                   <h3
                     style={{
-                      fontFamily: "'Great Vibes', cursive",
+                      fontFamily: headingFontFamily,
                       fontSize: '2rem',
                       color: textDark,
                       fontWeight: 400,
@@ -1366,7 +1422,11 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     <img
                       src={brideImage}
                       alt={brideName}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.bride_image_position, viewport))
+                      }}
                     />
                   </div>
                   <p
@@ -1382,7 +1442,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                   </p>
                   <h3
                     style={{
-                      fontFamily: "'Great Vibes', cursive",
+                      fontFamily: headingFontFamily,
                       fontSize: '2rem',
                       color: textDark,
                       fontWeight: 400,
@@ -1408,7 +1468,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             >
               <p
                 style={{
-                  fontFamily: "'Playfair Display', serif",
+                  fontFamily: sectionFontFamily,
                   fontSize: '0.85rem',
                   fontWeight: 700,
                   letterSpacing: 4,
@@ -1520,7 +1580,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
 
               <h2
                 style={{
-                  fontFamily: "'Playfair Display', serif",
+                  fontFamily: sectionFontFamily,
                   fontSize: '2.6rem',
                   fontWeight: 400,
                   color: textDark,
@@ -1544,7 +1604,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
 
               <p
                 style={{
-                  fontFamily: "'Great Vibes', cursive",
+                  fontFamily: headingFontFamily,
                   fontSize: '3rem',
                   color: textDark,
                   fontWeight: 400,
@@ -1557,7 +1617,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
 
               <h2
                 style={{
-                  fontFamily: "'Playfair Display', serif",
+                  fontFamily: sectionFontFamily,
                   fontSize: '2.6rem',
                   fontWeight: 400,
                   color: textDark,
@@ -1667,7 +1727,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             >
               <p
                 style={{
-                  fontFamily: "'Playfair Display', serif",
+                  fontFamily: sectionFontFamily,
                   fontSize: '0.85rem',
                   fontWeight: 700,
                   letterSpacing: 4,
@@ -1869,7 +1929,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
             >
               <p
                 style={{
-                  fontFamily: "'Playfair Display', serif",
+                  fontFamily: sectionFontFamily,
                   fontSize: '0.85rem',
                   fontWeight: 700,
                   letterSpacing: 4,
@@ -1990,7 +2050,10 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     }}
                   />
 
-                  <div className='modern-rsvp-row' style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <div
+                    className='modern-rsvp-grid'
+                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}
+                  >
                     <select
                       className='modern-rsvp-control'
                       value={demoAttend}
@@ -2472,6 +2535,8 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
           </div>
         </div>
       )}
+
+      {musicUrl && <MusicPlayer musicUrl={musicUrl} />}
     </>
   )
 }

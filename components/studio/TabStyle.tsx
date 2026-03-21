@@ -1,10 +1,11 @@
-import { Check, ChevronDown } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { Check, ChevronDown, RotateCcw } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 
 interface TabStyleProps {
   content?: Record<string, any>
   onChange: (key: string, value: string) => void
   onBatchChange: (changes: Record<string, string>) => void
+  onReset?: () => void
 }
 
 const COLOR_PRESETS = [
@@ -30,181 +31,175 @@ const COLOR_PRESETS = [
   { label: 'Đen tuyền', value: '#1a1a1a' }
 ]
 
+// ──────────────────────────────────────────────────────────────────────────────
+// Font lists – thu gọn font trùng dáng, thêm font đám cưới hỗ trợ tiếng Việt
+// ──────────────────────────────────────────────────────────────────────────────
+
 const HEADING_FONT_OPTIONS = [
-  { label: 'Quicksand', value: 'Quicksand, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Nhẹ nhàng, lãng mạn' },
-  { label: 'Nunito', value: 'Nunito, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Mềm mại, dễ thương' },
-  { label: 'Mulish', value: 'Mulish, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Tinh tế, tiếng Việt tốt' },
-  {
-    label: 'Josefin Sans',
-    value: 'Josefin Sans, sans-serif',
-    preview: 'Nguyễn Thị Lan',
-    description: 'Thanh mảnh, hiện đại'
-  },
+  // Serif đám cưới – có dấu tiếng Việt
   {
     label: 'Cormorant Garamond',
     value: 'Cormorant Garamond, serif',
     preview: 'Nguyễn Thị Lan',
-    description: 'Cổ điển, lãng mạn'
+    description: 'Cổ điển · lãng mạn'
   },
   {
     label: 'Playfair Display',
     value: 'Playfair Display, serif',
     preview: 'Nguyễn Thị Lan',
-    description: 'Sang trọng, tinh tế'
+    description: 'Sang trọng · tinh tế'
   },
-  { label: 'Lora', value: 'Lora, serif', preview: 'Nguyễn Thị Lan', description: 'Nhẹ nhàng, thơ mộng' },
-  { label: 'EB Garamond', value: 'EB Garamond, serif', preview: 'Nguyễn Thị Lan', description: 'Cổ điển, thanh lịch' },
-  { label: 'Montserrat', value: 'Montserrat, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Hiện đại, mạnh mẽ' },
-  { label: 'Outfit', value: 'Outfit, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Trẻ trung, năng động' },
-  { label: 'Inter', value: 'Inter, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Hiện đại, tối giản' },
+  {
+    label: 'Lora',
+    value: 'Lora, serif',
+    preview: 'Nguyễn Thị Lan',
+    description: 'Nhẹ nhàng · thơ mộng'
+  },
+  {
+    label: 'Libre Baskerville',
+    value: 'Libre Baskerville, serif',
+    preview: 'Nguyễn Thị Lan',
+    description: 'Uy nghiêm · thanh lịch'
+  },
+  // Script / hand-lettered – đẹp cho tên cô dâu chú rể
+  {
+    label: 'Great Vibes',
+    value: 'Great Vibes, cursive',
+    preview: 'Nguyễn Thị Lan',
+    description: 'Chữ thảo · sang trọng'
+  },
+  {
+    label: 'Dancing Script',
+    value: 'Dancing Script, cursive',
+    preview: 'Nguyễn Thị Lan',
+    description: 'Uyển chuyển · lãng mạn'
+  },
+  {
+    label: 'Parisienne',
+    value: 'Parisienne, cursive',
+    preview: 'Nguyễn Thị Lan',
+    description: 'Pháp · tinh tế'
+  },
+  {
+    label: 'Alex Brush',
+    value: 'Alex Brush, cursive',
+    preview: 'Nguyễn Thị Lan',
+    description: 'Thư pháp · nhẹ nhàng'
+  },
+  // Sans-serif hiện đại – hỗ trợ tốt tiếng Việt
   {
     label: 'Be Vietnam Pro',
     value: 'Be Vietnam Pro, sans-serif',
     preview: 'Nguyễn Thị Lan',
-    description: 'Tiếng Việt, hiện đại'
+    description: 'Tiếng Việt · hiện đại'
   },
-  { label: 'Open Sans', value: 'Open Sans, sans-serif', preview: 'Nguyễn Thị Lan', description: 'Phổ biến, dễ đọc' }
+  {
+    label: 'Josefin Sans',
+    value: 'Josefin Sans, sans-serif',
+    preview: 'Nguyễn Thị Lan',
+    description: 'Thanh mảnh · hiện đại'
+  },
+  {
+    label: 'Montserrat',
+    value: 'Montserrat, sans-serif',
+    preview: 'Nguyễn Thị Lan',
+    description: 'Mạnh mẽ · hiện đại'
+  }
 ]
 
 const SECTION_FONT_OPTIONS = [
   {
-    label: 'Playfair Display',
-    value: 'Playfair Display, serif',
-    preview: 'GIA ĐÌNH · THÔNG TIN',
-    description: 'Sang trọng, tinh tế'
-  },
-  {
     label: 'Cormorant Garamond',
     value: 'Cormorant Garamond, serif',
     preview: 'GIA ĐÌNH · THÔNG TIN',
-    description: 'Cổ điển, lãng mạn'
+    description: 'Cổ điển · lãng mạn'
   },
-  { label: 'Lora', value: 'Lora, serif', preview: 'GIA ĐÌNH · THÔNG TIN', description: 'Nhẹ nhàng, thơ mộng' },
   {
-    label: 'EB Garamond',
-    value: 'EB Garamond, serif',
+    label: 'Playfair Display',
+    value: 'Playfair Display, serif',
     preview: 'GIA ĐÌNH · THÔNG TIN',
-    description: 'Cổ điển, thanh lịch'
+    description: 'Sang trọng · tinh tế'
+  },
+  {
+    label: 'Libre Baskerville',
+    value: 'Libre Baskerville, serif',
+    preview: 'GIA ĐÌNH · THÔNG TIN',
+    description: 'Uy nghiêm · thanh lịch'
+  },
+  {
+    label: 'Dancing Script',
+    value: 'Dancing Script, cursive',
+    preview: 'Gia đình · Thông tin',
+    description: 'Uyển chuyển · lãng mạn'
   },
   {
     label: 'Josefin Sans',
     value: 'Josefin Sans, sans-serif',
     preview: 'GIA ĐÌNH · THÔNG TIN',
-    description: 'Thanh mảnh, hiện đại'
+    description: 'Thanh mảnh · hiện đại'
   },
   {
     label: 'Montserrat',
     value: 'Montserrat, sans-serif',
     preview: 'GIA ĐÌNH · THÔNG TIN',
-    description: 'Hiện đại, mạnh mẽ'
+    description: 'Mạnh mẽ · hiện đại'
   },
-  {
-    label: 'Outfit',
-    value: 'Outfit, sans-serif',
-    preview: 'GIA ĐÌNH · THÔNG TIN',
-    description: 'Trẻ trung, năng động'
-  },
-  { label: 'Inter', value: 'Inter, sans-serif', preview: 'GIA ĐÌNH · THÔNG TIN', description: 'Hiện đại, tối giản' },
   {
     label: 'Be Vietnam Pro',
     value: 'Be Vietnam Pro, sans-serif',
     preview: 'GIA ĐÌNH · THÔNG TIN',
-    description: 'Tiếng Việt, hiện đại'
+    description: 'Tiếng Việt · hiện đại'
   },
   {
-    label: 'Quicksand',
-    value: 'Quicksand, sans-serif',
+    label: 'Lora',
+    value: 'Lora, serif',
     preview: 'GIA ĐÌNH · THÔNG TIN',
-    description: 'Nhẹ nhàng, thanh thoát'
-  },
-  { label: 'Nunito', value: 'Nunito, sans-serif', preview: 'GIA ĐÌNH · THÔNG TIN', description: 'Mềm mại, thân thiện' },
-  {
-    label: 'Mulish',
-    value: 'Mulish, sans-serif',
-    preview: 'GIA ĐÌNH · THÔNG TIN',
-    description: 'Tinh tế, tiếng Việt tốt'
-  },
-  {
-    label: 'Open Sans',
-    value: 'Open Sans, sans-serif',
-    preview: 'GIA ĐÌNH · THÔNG TIN',
-    description: 'Phổ biến, dễ đọc'
+    description: 'Nhẹ nhàng · thơ mộng'
   }
 ]
 
 const BODY_FONT_OPTIONS = [
   {
+    label: 'Lora',
+    value: 'Lora, serif',
+    preview: 'Trân trọng kính mời quý vị',
+    description: 'Nhẹ nhàng · thơ mộng'
+  },
+  {
     label: 'Cormorant Garamond',
     value: 'Cormorant Garamond, serif',
     preview: 'Trân trọng kính mời quý vị',
-    description: 'Cổ điển, lãng mạn'
+    description: 'Cổ điển · lãng mạn'
   },
   {
-    label: 'Playfair Display',
-    value: 'Playfair Display, serif',
+    label: 'Libre Baskerville',
+    value: 'Libre Baskerville, serif',
     preview: 'Trân trọng kính mời quý vị',
-    description: 'Sang trọng, tinh tế'
-  },
-  { label: 'Lora', value: 'Lora, serif', preview: 'Trân trọng kính mời quý vị', description: 'Nhẹ nhàng, thơ mộng' },
-  {
-    label: 'EB Garamond',
-    value: 'EB Garamond, serif',
-    preview: 'Trân trọng kính mời quý vị',
-    description: 'Cổ điển, thanh lịch'
-  },
-  {
-    label: 'Quicksand',
-    value: 'Quicksand, sans-serif',
-    preview: 'Trân trọng kính mời quý vị',
-    description: 'Nhẹ nhàng, thanh thoát'
-  },
-  {
-    label: 'Nunito',
-    value: 'Nunito, sans-serif',
-    preview: 'Trân trọng kính mời quý vị',
-    description: 'Mềm mại, thân thiện'
-  },
-  {
-    label: 'Mulish',
-    value: 'Mulish, sans-serif',
-    preview: 'Trân trọng kính mời quý vị',
-    description: 'Tinh tế, tiếng Việt tốt'
-  },
-  {
-    label: 'Josefin Sans',
-    value: 'Josefin Sans, sans-serif',
-    preview: 'Trân trọng kính mời quý vị',
-    description: 'Thanh mảnh, hiện đại'
-  },
-  {
-    label: 'Montserrat',
-    value: 'Montserrat, sans-serif',
-    preview: 'Trân trọng kính mời quý vị',
-    description: 'Hiện đại, mạnh mẽ'
-  },
-  {
-    label: 'Outfit',
-    value: 'Outfit, sans-serif',
-    preview: 'Trân trọng kính mời quý vị',
-    description: 'Trẻ trung, năng động'
-  },
-  {
-    label: 'Inter',
-    value: 'Inter, sans-serif',
-    preview: 'Trân trọng kính mời quý vị',
-    description: 'Hiện đại, tối giản'
+    description: 'Uy nghiêm · thanh lịch'
   },
   {
     label: 'Be Vietnam Pro',
     value: 'Be Vietnam Pro, sans-serif',
     preview: 'Trân trọng kính mời quý vị',
-    description: 'Tiếng Việt, hiện đại'
+    description: 'Tiếng Việt · hiện đại'
+  },
+  {
+    label: 'Montserrat',
+    value: 'Montserrat, sans-serif',
+    preview: 'Trân trọng kính mời quý vị',
+    description: 'Mạnh mẽ · hiện đại'
+  },
+  {
+    label: 'Josefin Sans',
+    value: 'Josefin Sans, sans-serif',
+    preview: 'Trân trọng kính mời quý vị',
+    description: 'Thanh mảnh · hiện đại'
   },
   {
     label: 'Open Sans',
     value: 'Open Sans, sans-serif',
     preview: 'Trân trọng kính mời quý vị',
-    description: 'Phổ biến, dễ đọc'
+    description: 'Phổ biến · dễ đọc'
   }
 ]
 
@@ -221,27 +216,27 @@ const STYLE_PRESETS = [
   {
     label: 'Lãng Mạn',
     primary_color: '#e91e8c',
-    heading_font_family: 'Quicksand, sans-serif',
+    heading_font_family: 'Dancing Script, cursive',
     section_font_family: 'Cormorant Garamond, serif',
-    font_family: 'Cormorant Garamond, serif',
-    description: 'Hồng ngọt · nhẹ nhàng · lãng mạn',
+    font_family: 'Lora, serif',
+    description: 'Hồng ngọt · chữ thảo · lãng mạn',
     swatch: ['#e91e8c', '#fff0f5']
   },
   {
     label: 'Sang Trọng',
     primary_color: '#C9A84C',
-    heading_font_family: 'Cormorant Garamond, serif',
+    heading_font_family: 'Great Vibes, cursive',
     section_font_family: 'Cormorant Garamond, serif',
     font_family: 'Cormorant Garamond, serif',
-    description: 'Vàng gold · cổ điển · tinh tế',
+    description: 'Vàng gold · chữ thảo · tinh tế',
     swatch: ['#C9A84C', '#141414']
   },
   {
     label: 'Hiện Đại',
     primary_color: '#6366f1',
-    heading_font_family: 'Inter, sans-serif',
-    section_font_family: 'Inter, sans-serif',
-    font_family: 'Inter, sans-serif',
+    heading_font_family: 'Montserrat, sans-serif',
+    section_font_family: 'Josefin Sans, sans-serif',
+    font_family: 'Be Vietnam Pro, sans-serif',
     description: 'Tím indigo · tối giản · hiện đại',
     swatch: ['#6366f1', '#0f0f23']
   },
@@ -266,32 +261,33 @@ const STYLE_PRESETS = [
   {
     label: 'Hoàng Gia',
     primary_color: '#1e3a8a',
-    heading_font_family: 'Nunito, sans-serif',
-    section_font_family: 'Nunito, sans-serif',
-    font_family: 'Cormorant Garamond, serif',
+    heading_font_family: 'Libre Baskerville, serif',
+    section_font_family: 'Cormorant Garamond, serif',
+    font_family: 'Lora, serif',
     description: 'Xanh navy · thanh lịch · hoàng gia',
     swatch: ['#1e3a8a', '#f0f4ff']
   },
   {
     label: 'Đào Hoa',
     primary_color: '#c07a85',
-    heading_font_family: 'Mulish, sans-serif',
-    section_font_family: 'Mulish, sans-serif',
+    heading_font_family: 'Parisienne, cursive',
+    section_font_family: 'Cormorant Garamond, serif',
     font_family: 'Lora, serif',
-    description: 'Hồng đất · thanh mảnh · mộng mơ',
+    description: 'Hồng đất · chữ Pháp · mộng mơ',
     swatch: ['#c07a85', '#fff5f7']
   },
   {
     label: 'Đại Dương',
     primary_color: '#2a9d8f',
-    heading_font_family: 'Outfit, sans-serif',
-    section_font_family: 'Outfit, sans-serif',
-    font_family: 'Outfit, sans-serif',
-    description: 'Xanh teal · hiện đại · tươi mát',
+    heading_font_family: 'Alex Brush, cursive',
+    section_font_family: 'Montserrat, sans-serif',
+    font_family: 'Be Vietnam Pro, sans-serif',
+    description: 'Xanh teal · chữ thảo · tươi mát',
     swatch: ['#2a9d8f', '#f0fdfa']
   }
 ]
 
+// Tab order: Chữ chính → Chữ mục lớn → Chữ phụ
 type FontTab = 'heading' | 'section' | 'body'
 
 const FONT_TABS: {
@@ -308,16 +304,25 @@ const FONT_TABS: {
     options: HEADING_FONT_OPTIONS,
     previewSize: 'text-xl'
   },
-  { key: 'body', label: 'Chữ phụ', contentKey: 'font_family', options: BODY_FONT_OPTIONS, previewSize: 'text-sm' },
   {
     key: 'section',
     label: 'Chữ mục lớn',
     contentKey: 'section_font_family',
     options: SECTION_FONT_OPTIONS,
     previewSize: 'text-sm'
+  },
+  {
+    key: 'body',
+    label: 'Chữ phụ',
+    contentKey: 'font_family',
+    options: BODY_FONT_OPTIONS,
+    previewSize: 'text-sm'
   }
 ]
 
+// ──────────────────────────────────────────────────────────────────────────────
+// FontTabsSelector
+// ──────────────────────────────────────────────────────────────────────────────
 function FontTabsSelector({
   content,
   onChange
@@ -327,12 +332,25 @@ function FontTabsSelector({
 }) {
   const [activeTab, setActiveTab] = useState<FontTab | null>(null)
   const listRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const currentValues: Record<FontTab, string> = {
     heading: content?.heading_font_family || '',
     body: content?.font_family || '',
     section: content?.section_font_family || ''
   }
+
+  // Close on click outside
+  useEffect(() => {
+    if (!activeTab) return
+    function handleClick(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setActiveTab(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [activeTab])
 
   function getLabelFor(tab: FontTab) {
     const val = currentValues[tab]
@@ -349,7 +367,7 @@ function FontTabsSelector({
   const activeTabData = activeTab ? FONT_TABS.find((t) => t.key === activeTab) : null
 
   return (
-    <div>
+    <div ref={containerRef}>
       {/* 3 horizontal tab buttons */}
       <div className='grid grid-cols-3 gap-1.5 mb-2'>
         {FONT_TABS.map((tab) => {
@@ -429,6 +447,9 @@ function FontTabsSelector({
   )
 }
 
+// ──────────────────────────────────────────────────────────────────────────────
+// StylePresetSelect – click outside đóng dropdown
+// ──────────────────────────────────────────────────────────────────────────────
 function StylePresetSelect({
   presets,
   isPresetActive,
@@ -439,10 +460,22 @@ function StylePresetSelect({
   onApply: (p: (typeof STYLE_PRESETS)[0]) => void
 }) {
   const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
   const active = presets.find(isPresetActive)
 
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
   return (
-    <div className='relative'>
+    <div className='relative' ref={wrapRef}>
       <button
         type='button'
         onClick={() => setOpen(!open)}
@@ -471,7 +504,10 @@ function StylePresetSelect({
       </button>
 
       {open && (
-        <div className='absolute z-10 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden'>
+        <div
+          className='absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden'
+          style={{ maxHeight: 220, overflowY: 'auto' }}
+        >
           {presets.map((preset) => (
             <button
               key={preset.label}
@@ -506,44 +542,110 @@ function StylePresetSelect({
   )
 }
 
-function CollapsibleSection({
-  title,
-  description,
-  summary,
-  children
+// ──────────────────────────────────────────────────────────────────────────────
+// ColorSelect – overlay dropdown, click outside đóng
+// ──────────────────────────────────────────────────────────────────────────────
+function ColorSelect({
+  currentColor,
+  onChange
 }: {
-  title: string
-  description: string
-  summary?: React.ReactNode
-  children: React.ReactNode
+  currentColor: string
+  onChange: (key: string, value: string) => void
 }) {
   const [open, setOpen] = useState(false)
+  const wrapRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    function handleClick(e: MouseEvent) {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [open])
+
   return (
-    <div>
+    <div className='relative flex-1 min-w-0' ref={wrapRef}>
       <button
         type='button'
         onClick={() => setOpen(!open)}
-        className='w-full flex items-center justify-between text-left group'
+        className='w-full flex items-center gap-2 px-3 py-2.5 rounded-xl border-2 border-gray-100 bg-white hover:border-pink-200 text-left transition-all'
       >
-        <div className='min-w-0 flex-1'>
-          <h3 className='text-base font-semibold text-gray-900'>{title}</h3>
-          {open ? (
-            <p className='text-sm text-gray-500 mt-0.5'>{description}</p>
-          ) : (
-            summary && <div className='text-sm text-gray-500 mt-0.5 truncate'>{summary}</div>
-          )}
-        </div>
-        <ChevronDown
-          size={18}
-          className={`text-gray-400 transition-transform shrink-0 ml-2 ${open ? 'rotate-180' : ''}`}
+        <span
+          className='w-5 h-5 rounded-full border border-gray-200 shadow-sm shrink-0'
+          style={{ background: currentColor }}
         />
+        <span className='text-sm font-mono text-gray-700 truncate flex-1'>{currentColor}</span>
+        <ChevronDown size={16} className={`text-gray-400 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
-      {open && <div className='mt-3'>{children}</div>}
+
+      {open && (
+        <div
+          className='absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg p-3'
+          onWheel={(e) => e.stopPropagation()}
+        >
+          {/* Color swatches */}
+          <div className='flex flex-wrap gap-2 mb-3'>
+            {COLOR_PRESETS.map((c) => (
+              <button
+                key={c.value}
+                type='button'
+                title={c.label}
+                onClick={() => {
+                  onChange('primary_color', c.value)
+                  setOpen(false)
+                }}
+                className={`w-7 h-7 rounded-full border-2 transition-all hover:scale-110 ${
+                  currentColor === c.value ? 'border-gray-800 scale-110' : 'border-white shadow-sm hover:shadow'
+                }`}
+                style={{ background: c.value }}
+              />
+            ))}
+          </div>
+
+          {/* Custom color picker */}
+          <div className='flex items-center gap-3 p-2.5 rounded-xl border border-gray-200 bg-gray-50'>
+            <div className='relative shrink-0'>
+              <div
+                className='w-9 h-9 rounded-lg border border-gray-200 shadow-sm cursor-pointer'
+                style={{ background: currentColor }}
+                onClick={() => document.getElementById('color-picker-input')?.click()}
+              />
+              <input
+                id='color-picker-input'
+                type='color'
+                value={currentColor}
+                onChange={(e) => onChange('primary_color', e.target.value)}
+                className='absolute inset-0 opacity-0 cursor-pointer w-full h-full'
+              />
+            </div>
+            <div className='flex-1'>
+              <div className='text-xs text-gray-500 mb-1'>Màu tùy chỉnh</div>
+              <input
+                type='text'
+                value={currentColor}
+                onChange={(e) => {
+                  if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)) {
+                    onChange('primary_color', e.target.value)
+                  }
+                }}
+                className='w-full text-sm font-mono rounded-lg border border-gray-200 bg-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pink-200'
+                placeholder='#d97706'
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-export default function TabStyle({ content, onChange, onBatchChange }: TabStyleProps) {
+// ──────────────────────────────────────────────────────────────────────────────
+// Main export
+// ──────────────────────────────────────────────────────────────────────────────
+export default function TabStyle({ content, onChange, onBatchChange, onReset }: TabStyleProps) {
   const currentColor = content?.primary_color || '#d97706'
 
   const applyPreset = (preset: (typeof STYLE_PRESETS)[0]) => {
@@ -563,78 +665,34 @@ export default function TabStyle({ content, onChange, onBatchChange }: TabStyleP
 
   return (
     <div className='space-y-6'>
-      {/* Style Presets */}
+      {/* Header row: Phong cách nhanh + Màu chủ đạo + Khôi phục */}
       <div>
-        <h3 className='text-base font-semibold text-gray-900 mb-1'>Phong Cách Nhanh</h3>
-        <p className='text-sm text-gray-500 mb-3'>Áp dụng cùng lúc màu sắc và kiểu chữ</p>
-        <StylePresetSelect presets={STYLE_PRESETS} isPresetActive={isPresetActive} onApply={applyPreset} />
+        <div className='flex items-center justify-between mb-1'>
+          <div className='grid grid-cols-2 gap-3 flex-1 mr-3'>
+            <h3 className='text-base font-semibold text-gray-900'>Phong Cách Nhanh</h3>
+            <h3 className='text-base font-semibold text-gray-900'>Màu Chủ Đạo</h3>
+          </div>
+          {onReset && (
+            <button
+              type='button'
+              onClick={onReset}
+              title='Khôi phục về mặc định'
+              className='flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 text-xs font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors shrink-0'
+            >
+              <RotateCcw size={13} />
+              Khôi phục
+            </button>
+          )}
+        </div>
+        <div className='grid grid-cols-2 gap-3'>
+          <StylePresetSelect presets={STYLE_PRESETS} isPresetActive={isPresetActive} onApply={applyPreset} />
+          <ColorSelect currentColor={currentColor} onChange={onChange} />
+        </div>
       </div>
 
       <div className='border-t border-gray-100' />
 
-      {/* Primary Color */}
-      <CollapsibleSection
-        title='Màu Chủ Đạo'
-        description='Màu dùng cho tiêu đề, nút bấm và các điểm nhấn'
-        summary={
-          <span className='flex items-center gap-1.5'>
-            <span
-              className='inline-block w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0'
-              style={{ background: currentColor }}
-            />
-            <span className='font-mono'>{currentColor}</span>
-          </span>
-        }
-      >
-        <div className='flex flex-wrap gap-2 mb-3'>
-          {COLOR_PRESETS.map((c) => (
-            <button
-              key={c.value}
-              type='button'
-              title={c.label}
-              onClick={() => onChange('primary_color', c.value)}
-              className={`w-8 h-8 rounded-full border-2 transition-all hover:scale-110 ${
-                currentColor === c.value ? 'border-gray-800 scale-110' : 'border-white shadow-sm hover:shadow'
-              }`}
-              style={{ background: c.value }}
-            />
-          ))}
-        </div>
-        <div className='flex items-center gap-3 p-3 rounded-xl border border-gray-200 bg-gray-50'>
-          <div className='relative shrink-0'>
-            <div
-              className='w-10 h-10 rounded-lg border border-gray-200 shadow-sm cursor-pointer'
-              style={{ background: currentColor }}
-              onClick={() => document.getElementById('color-picker-input')?.click()}
-            />
-            <input
-              id='color-picker-input'
-              type='color'
-              value={currentColor}
-              onChange={(e) => onChange('primary_color', e.target.value)}
-              className='absolute inset-0 opacity-0 cursor-pointer w-full h-full'
-            />
-          </div>
-          <div className='flex-1'>
-            <div className='text-xs text-gray-500 mb-1'>Màu tùy chỉnh</div>
-            <input
-              type='text'
-              value={currentColor}
-              onChange={(e) => {
-                if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)) {
-                  onChange('primary_color', e.target.value)
-                }
-              }}
-              className='w-full text-sm font-mono rounded-lg border border-gray-200 bg-white px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-pink-200'
-              placeholder='#d97706'
-            />
-          </div>
-        </div>
-      </CollapsibleSection>
-
-      <div className='border-t border-gray-100' />
-
-      {/* Font Tabs */}
+      {/* Kiểu chữ */}
       <div>
         <h3 className='text-base font-semibold text-gray-900 mb-1'>Kiểu Chữ</h3>
         <p className='text-sm text-gray-500 mb-3'>Chọn mục để thay đổi phông chữ tương ứng</p>

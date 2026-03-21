@@ -79,6 +79,7 @@ const Editor = () => {
   const [originalCoverImage, setOriginalCoverImage] = useState<string | null>(null)
   const [originalQrImage, setOriginalQrImage] = useState<string | null>(null)
   const [originalMusicId, setOriginalMusicId] = useState<number | null>(null)
+  const [originalStyle, setOriginalStyle] = useState<Record<string, string>>({})
   const [isDirty, setIsDirty] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const { success, error } = useToast()
@@ -91,6 +92,12 @@ const Editor = () => {
     setOriginalCoverImage(wedding?.content?.cover_image || null)
     setOriginalQrImage(wedding?.content?.qr_image || null)
     setOriginalMusicId(wedding?.music_id ?? null)
+    setOriginalStyle({
+      primary_color: wedding?.content?.primary_color || '',
+      font_family: wedding?.content?.font_family || '',
+      heading_font_family: wedding?.content?.heading_font_family || '',
+      section_font_family: wedding?.content?.section_font_family || ''
+    })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wedding?.id])
 
@@ -117,6 +124,28 @@ const Editor = () => {
     if (!wedding) return
     setIsDirty(true)
     setWedding((prev) => (prev ? { ...prev, content: { ...prev.content, [key]: value } } : prev))
+  }
+
+  const handleStyleReset = () => {
+    if (!wedding) return
+    const clearedStyle: Record<string, string | undefined> = {
+      primary_color: originalStyle.primary_color || undefined,
+      font_family: originalStyle.font_family || undefined,
+      heading_font_family: originalStyle.heading_font_family || undefined,
+      section_font_family: originalStyle.section_font_family || undefined
+    }
+    setWedding((prev) =>
+      prev
+        ? {
+            ...prev,
+            content: {
+              ...prev.content,
+              ...clearedStyle
+            }
+          }
+        : prev
+    )
+    setIsDirty(true)
   }
 
   const handleBatchChange = (changes: Record<string, string>) => {
@@ -1029,7 +1058,12 @@ const Editor = () => {
                   <TabQR qrImage={wedding?.content?.qr_image ?? null} onQrImageChange={handleQrImageChange} />
                 </div>
                 <div className={activeTab === 'style' ? 'block' : 'hidden'}>
-                  <TabStyle content={wedding?.content} onChange={handleInfoChange} onBatchChange={handleBatchChange} />
+                  <TabStyle
+                    content={wedding?.content}
+                    onChange={handleInfoChange}
+                    onBatchChange={handleBatchChange}
+                    onReset={handleStyleReset}
+                  />
                 </div>
                 <div className={activeTab === 'music' ? 'block' : 'hidden'}>
                   <div>
