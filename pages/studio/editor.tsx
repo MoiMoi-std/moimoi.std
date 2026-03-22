@@ -78,6 +78,8 @@ const Editor = () => {
   const [originalImages, setOriginalImages] = useState<string[]>([])
   const [originalCoverImage, setOriginalCoverImage] = useState<string | null>(null)
   const [originalQrImage, setOriginalQrImage] = useState<string | null>(null)
+  const [originalGroomImage, setOriginalGroomImage] = useState<string | null>(null)
+  const [originalBrideImage, setOriginalBrideImage] = useState<string | null>(null)
   const [originalMusicId, setOriginalMusicId] = useState<number | null>(null)
   const [originalStyle, setOriginalStyle] = useState<Record<string, string>>({})
   const [isDirty, setIsDirty] = useState(false)
@@ -91,6 +93,8 @@ const Editor = () => {
     }
     setOriginalCoverImage(wedding?.content?.cover_image || null)
     setOriginalQrImage(wedding?.content?.qr_image || null)
+    setOriginalGroomImage(wedding?.content?.groom_image || null)
+    setOriginalBrideImage(wedding?.content?.bride_image || null)
     setOriginalMusicId(wedding?.music_id ?? null)
     setOriginalStyle({
       primary_color: wedding?.content?.primary_color || '',
@@ -187,6 +191,9 @@ const Editor = () => {
   const handleImageDeleted = (url: string) => {
     setOriginalImages((prev) => prev.filter((img) => img !== url))
     setOriginalCoverImage((prev) => (prev === url ? null : prev))
+    setOriginalQrImage((prev) => (prev === url ? null : prev))
+    setOriginalGroomImage((prev) => (prev === url ? null : prev))
+    setOriginalBrideImage((prev) => (prev === url ? null : prev))
   }
 
   const handleSave = async () => {
@@ -198,10 +205,17 @@ const Editor = () => {
       const currentImages = wedding.content.images || []
       const coverIsBase64 = Boolean(wedding.content.cover_image?.startsWith('data:'))
       const qrIsBase64 = Boolean(wedding.content.qr_image?.startsWith('data:'))
+      const groomIsBase64 = Boolean(wedding.content.groom_image?.startsWith('data:'))
+      const brideIsBase64 = Boolean(wedding.content.bride_image?.startsWith('data:'))
 
       // Count total images to upload for progress tracking
       const imagesToUploadCount = currentImages.filter((img) => img.startsWith('data:')).length
-      const totalToUpload = imagesToUploadCount + (coverIsBase64 ? 1 : 0) + (qrIsBase64 ? 1 : 0)
+      const totalToUpload =
+        imagesToUploadCount +
+        (coverIsBase64 ? 1 : 0) +
+        (qrIsBase64 ? 1 : 0) +
+        (groomIsBase64 ? 1 : 0) +
+        (brideIsBase64 ? 1 : 0)
 
       if (totalToUpload > 0) {
         setUploadProgress({ current: 0, total: totalToUpload })
@@ -238,9 +252,31 @@ const Editor = () => {
         setUploadProgress({ current: progressCurrent, total: totalToUpload })
       }
 
+      const newGroomImage = await processSingleImage(
+        wedding.content.groom_image ?? null,
+        originalGroomImage,
+        wedding.slug ?? undefined
+      )
+      if (groomIsBase64) {
+        progressCurrent++
+        setUploadProgress({ current: progressCurrent, total: totalToUpload })
+      }
+
+      const newBrideImage = await processSingleImage(
+        wedding.content.bride_image ?? null,
+        originalBrideImage,
+        wedding.slug ?? undefined
+      )
+      if (brideIsBase64) {
+        progressCurrent++
+        setUploadProgress({ current: progressCurrent, total: totalToUpload })
+      }
+
       const coverUploadFailed = coverIsBase64 && !newCoverImage
       const qrUploadFailed = qrIsBase64 && !newQrImage
-      if (failedCount > 0 || coverUploadFailed || qrUploadFailed) {
+      const groomUploadFailed = groomIsBase64 && !newGroomImage
+      const brideUploadFailed = brideIsBase64 && !newBrideImage
+      if (failedCount > 0 || coverUploadFailed || qrUploadFailed || groomUploadFailed || brideUploadFailed) {
         error('Tải ảnh lên Cloudinary thất bại. Vui lòng kiểm tra kết nối và thử lại.')
         return
       }
@@ -249,7 +285,14 @@ const Editor = () => {
         console.log(`Images processed: +${uploadedCount} uploaded, -${deletedCount} deleted`)
       }
 
-      const updatedContent = { ...wedding.content, images: newImages, cover_image: newCoverImage, qr_image: newQrImage }
+      const updatedContent = {
+        ...wedding.content,
+        images: newImages,
+        cover_image: newCoverImage,
+        qr_image: newQrImage,
+        groom_image: newGroomImage,
+        bride_image: newBrideImage
+      }
       await dataService.updateWedding(wedding.id, updatedContent, wedding.music_id ?? null)
 
       // Update local state and original images
@@ -257,6 +300,8 @@ const Editor = () => {
       setOriginalImages(newImages)
       setOriginalCoverImage(newCoverImage)
       setOriginalQrImage(newQrImage)
+      setOriginalGroomImage(newGroomImage)
+      setOriginalBrideImage(newBrideImage)
       setOriginalMusicId(wedding.music_id ?? null)
       setIsDirty(false)
 

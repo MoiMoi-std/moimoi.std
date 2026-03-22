@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from 'react'
 interface MusicPlayerProps {
   musicUrl?: string
   hidden?: boolean
+  forceHide?: boolean
 }
 
-export default function MusicPlayer({ musicUrl, hidden = false }: MusicPlayerProps) {
+export default function MusicPlayer({ musicUrl, hidden = false, forceHide = false }: MusicPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
@@ -60,6 +61,8 @@ export default function MusicPlayer({ musicUrl, hidden = false }: MusicPlayerPro
   }
 
   if (!musicUrl || hidden) return null
+
+  if (forceHide) return null // Return null here so audio logic stays in useEffect but UI is hidden
 
   return (
     <>

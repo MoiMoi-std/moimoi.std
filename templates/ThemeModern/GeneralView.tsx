@@ -1096,8 +1096,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
 
                 <button
                   className='btn-open'
-                  onClick={(e) => {
-                    e.stopPropagation()
+                  onClick={() => {
                     handleOpenInvitation()
                   }}
                   style={{
@@ -1378,7 +1377,8 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     background: `linear-gradient(145deg, ${rose}dd 0%, ${creamLight}e6 100%)`,
                     border: `1px solid ${textDark}66`,
                     boxShadow: '0 12px 24px rgba(0,0,0,0.18), 0 0 14px rgba(233,206,158,0.18)',
-                    animation: 'vuquyBadgeSway 1.25s ease-in-out 1s infinite, vuquyBadgeGlow 2s ease-in-out 1s infinite',
+                    animation:
+                      'vuquyBadgeSway 1.25s ease-in-out 1s infinite, vuquyBadgeGlow 2s ease-in-out 1s infinite',
                     zIndex: 5
                   }}
                 >
@@ -2250,7 +2250,11 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img className='gift-card-ornament gift-card-ornament-right' src='/image/phung.webp' alt='' />
                     <div aria-hidden='true' className='gift-card-flower gift-card-flower-left' style={flowerMaskBase} />
-                    <div aria-hidden='true' className='gift-card-flower gift-card-flower-right' style={flowerMaskBase} />
+                    <div
+                      aria-hidden='true'
+                      className='gift-card-flower gift-card-flower-right'
+                      style={flowerMaskBase}
+                    />
 
                     <button
                       onClick={() => setShowGiftQr(true)}
@@ -2346,7 +2350,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
         <div className='modern-side-panel' style={{ flex: 1, minHeight: '100vh', background: '#fff' }} />
       </div>
 
-      {!showSplash && <MusicPlayer musicUrl={musicUrl} />}
+      <MusicPlayer musicUrl={musicUrl} forceHide={showSplash} />
 
       {lightboxIndex !== null && (
         <div
@@ -2535,8 +2539,6 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
           </div>
         </div>
       )}
-
-      {musicUrl && <MusicPlayer musicUrl={musicUrl} />}
     </>
   )
 }

@@ -65,8 +65,10 @@ export default function GuestWeddingPage({ wedding, guestName, slug, rsvpId }: P
 
   return (
     <>
-      <SelectedTemplate wedding={wedding} guestName={guestName} rsvpId={rsvpId} />
-      <MusicPlayer musicUrl={wedding.content?.music_url} />
+      <SelectedTemplate wedding={wedding} guestName={guestName} rsvpId={rsvpId} musicUrl={wedding.content?.music_url} />
+      {!['theme-vintage', 'theme-boho', 'theme-royal', 'theme-modern', 'theme-luxury', 'theme-nature'].includes(
+        branch
+      ) && <MusicPlayer musicUrl={wedding.content?.music_url} />}
     </>
   )
 }

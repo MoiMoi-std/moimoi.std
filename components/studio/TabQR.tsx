@@ -29,6 +29,48 @@ const TabQR: React.FC<TabQRProps> = ({ qrImage, onQrImageChange }) => {
       reader.readAsDataURL(file)
     })
 
+  // Only compress if file > 8MB — keeps quality for typical images untouched
+  const compressIfNeeded = (file: File): Promise<File> =>
+    new Promise((resolve) => {
+      const SKIP_TYPES = ['image/svg+xml', 'image/gif', 'image/heic', 'image/heif']
+      if (SKIP_TYPES.includes(file.type) || file.size <= 8 * 1024 * 1024) {
+        resolve(file)
+        return
+      }
+      const img = new window.Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        const MAX_DIM = 4096
+        let { width, height } = img
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const ratio = Math.min(MAX_DIM / width, MAX_DIM / height)
+          width = Math.round(width * ratio)
+          height = Math.round(height * ratio)
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(file)
+          return
+        }
+        ctx.drawImage(img, 0, 0, width, height)
+        canvas.toBlob(
+          (blob) =>
+            resolve(blob ? new File([blob], file.name.replace(/\.[^.]+$/, '.jpg'), { type: 'image/jpeg' }) : file),
+          'image/jpeg',
+          0.93
+        )
+      }
+      img.onerror = () => {
+        URL.revokeObjectURL(url)
+        resolve(file)
+      }
+      img.src = url
+    })
+
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
@@ -37,12 +79,19 @@ const TabQR: React.FC<TabQRProps> = ({ qrImage, onQrImageChange }) => {
       if (fileInputRef.current) fileInputRef.current.value = ''
       return
     }
-    const dataUrl = await readFileAsDataURL(file)
+    const dataUrl = await readFileAsDataURL(await compressIfNeeded(file))
     onQrImageChange(dataUrl)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleRemove = () => {
+    if (qrImage && (qrImage.startsWith('https://') || qrImage.startsWith('http://'))) {
+      fetch('/api/delete-image', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageUrl: qrImage })
+      }).catch((err) => console.error('Error deleting QR image from Cloudinary:', err))
+    }
     onQrImageChange(null)
   }
 

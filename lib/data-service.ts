@@ -20,8 +20,10 @@ export interface WeddingContent {
   groom_role?: string
   bride_name?: string
   bride_role?: string
-  groom_image?: string
-  bride_image?: string
+  groom_image?: string | null
+  bride_image?: string | null
+  cover_image?: string | null
+  qr_image?: string | null
   groom_address?: string
   bride_address?: string
   event_date?: string

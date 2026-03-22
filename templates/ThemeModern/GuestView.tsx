@@ -1,9 +1,10 @@
+import RSVPForm from '@/components/guest/RSVPForm'
+import MusicPlayer from '@/components/MusicPlayer'
 import { createClient } from '@supabase/supabase-js'
-import { Calendar, Clock, Heart, MapPin } from 'lucide-react'
 import Head from 'next/head'
-import { useEffect, useState } from 'react'
-import { WeddingCalendar } from '../../components/WeddingCalendar'
+import { useEffect, useMemo, useState } from 'react'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
+import { useMapEmbed } from '../../lib/useMapEmbed'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 import { TemplateProps } from '../TemplateRegistry'
 
@@ -12,159 +13,261 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 )
 
-export default function ModernGuestView({ wedding, guestName = '', rsvpId }: TemplateProps) {
-  const [timeRemaining, setTimeRemaining] = useState<{
-    days: number
-    hours: number
-    minutes: number
-    seconds: number
-  } | null>(null)
-  const [scrolled, setScrolled] = useState(false)
-  const [lightboxOpen, setLightboxOpen] = useState(false)
-  const [lightboxIndex, setLightboxIndex] = useState(0)
+const flowerDecorUrl = new URL('./bong_hoa.PNG', import.meta.url).toString()
 
-  // RSVP state
-  const [wish, setWish] = useState('')
-  const [phone, setPhone] = useState('')
-  const [isAttending, setIsAttending] = useState<boolean | null>(null)
-  const [partySize, setPartySize] = useState(1)
-  const [submitted, setSubmitted] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [submitError, setSubmitError] = useState('')
+const mockAlbum = [
+  'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400&h=500&fit=crop',
+  'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=400&h=500&fit=crop'
+]
+
+const mockGuestbook = [
+  {
+    guest_name: 'Thành Phát',
+    created_at: '05:31:21 8/3/2026',
+    wishes: 'Chúc em hạnh phúc nha, anh đứng từ xa vỗ tay nhiệt tình. Hẹn em kiếp sau nhớ đăng ký sớm với anh!',
+    is_attending: true,
+    party_size: 2,
+    phone: ''
+  },
+  {
+    guest_name: 'Anh Khoa',
+    created_at: '05:31:16 8/3/2026',
+    wishes: 'Chúc em trăm năm hạnh phúc, còn anh trăm năm vẫn độc thân vui tính. Kiếp sau mình làm lại ván mới nha!',
+    is_attending: true,
+    party_size: 2,
+    phone: ''
+  },
+  {
+    guest_name: 'Thành Đạt',
+    created_at: '05:31:11 8/3/2026',
+    wishes: 'Chúc em luôn cười tươi mỗi ngày, còn anh xin phép cười trừ. Hẹn gặp em ở kiếp sau bản deluxe!',
+    is_attending: true,
+    party_size: 2,
+    phone: ''
+  },
+  {
+    guest_name: 'Quốc Dửng',
+    created_at: '20:07:36 1/3/2026',
+    wishes:
+      'Chúc em hạnh phúc viên mãn, anh xin làm khách mời danh dự của tuổi trẻ. Kiếp sau anh canh giờ tỏ tình sớm hơn!',
+    is_attending: true,
+    party_size: 1,
+    phone: ''
+  },
+  {
+    guest_name: 'Hữu Thọ',
+    created_at: '12:40:14 1/3/2026',
+    wishes: 'Chúc mừng hạnh phúc!',
+    is_attending: true,
+    party_size: 1,
+    phone: ''
+  }
+]
+
+const BANK_MAP: Record<string, string> = {
+  Vietcombank: 'VCB',
+  Techcombank: 'TCB',
+  MBBank: 'MB',
+  ACB: 'ACB',
+  Vietinbank: 'ICB',
+  BIDV: 'BIDV',
+  VPBank: 'VPB',
+  TPBank: 'TPB'
+}
+
+function parseWeddingDate(rawDate: string) {
+  if (!rawDate) {
+    return {
+      day: '01',
+      month: '01',
+      year: '2026',
+      dayName: 'CHỦ NHẬT'
+    }
+  }
+
+  let d = 1
+  let m = 1
+  let y = 2026
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(rawDate)) {
+    const [yy, mm, dd] = rawDate.split('-').map(Number)
+    y = yy
+    m = mm
+    d = dd
+  } else if (/^\d{2}\/\d{2}\/\d{4}$/.test(rawDate)) {
+    const [dd, mm, yy] = rawDate.split('/').map(Number)
+    y = yy
+    m = mm
+    d = dd
+  }
+
+  const date = new Date(y, Math.max(m - 1, 0), d)
+  const weekday = date.toLocaleDateString('vi-VN', { weekday: 'long' })
+
+  return {
+    day: String(d).padStart(2, '0'),
+    month: String(m).padStart(2, '0'),
+    year: String(y),
+    dayName: (weekday || 'Chủ nhật').toUpperCase()
+  }
+}
+
+export default function ModernGuestView({ wedding, disableSplash, musicUrl, guestName = '', rsvpId }: TemplateProps) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [showGiftQr, setShowGiftQr] = useState(false)
+  const [showSplash, setShowSplash] = useState(!disableSplash)
+  const [splashFading, setSplashFading] = useState(false)
+  const [guestWishes, setGuestWishes] = useState<any[]>([])
+
+  const viewport = useTemplateViewport()
 
   const { content, template } = wedding || {}
-  const viewport = useTemplateViewport()
   const templateData = template as any
   const mergedContent = {
     ...(templateData?.default_content || {}),
     ...content
   }
 
-  const accent = mergedContent.primary_color || '#6366f1'
-  const accentLight = '#818cf8'
-  const fontFamily = mergedContent.font_family || "'Inter', sans-serif"
-  const headingFontFamily = mergedContent.heading_font_family || "'Outfit', sans-serif"
-  const sectionFontFamily = mergedContent.section_font_family || "'Outfit', sans-serif"
-  const darkBg = '#0f0f23'
-  const cardBg = 'rgba(255,255,255,0.06)'
+  const groomName = mergedContent.groom_name || 'Hoàng Nam'
+  const brideName = mergedContent.bride_name || 'Thanh Tú'
 
-  const coverImage =
-    mergedContent.cover_image || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=533&fit=crop'
-  const mockAlbumImages = [
-    'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1529443132905-8ee5f6e8ed8b?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1578730169862-749eae6bc1cc?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1513279922550-250c2129b13a?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1484863137850-59afcfe05386?w=600&h=400&fit=crop',
-    'https://images.unsplash.com/photo-1516589178581-6cd7833ae3b2?w=600&h=400&fit=crop'
-  ]
-  const albumImages = mergedContent.images?.length > 0 ? mergedContent.images : mockAlbumImages
+  const groomImage =
+    mergedContent.groom_image ||
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face'
+  const brideImage =
+    mergedContent.bride_image ||
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face'
 
-  let calYear = 0,
-    calMonth = 0,
-    calDay = 0
-  if (mergedContent.wedding_date) {
-    const parts = (mergedContent.wedding_date as string).split('-').map(Number)
-    calYear = parts[0]
-    calMonth = parts[1]
-    calDay = parts[2]
+  const groomRole = mergedContent.groom_role || 'Chú rể'
+  const brideRole = mergedContent.bride_role || 'Cô dâu'
+
+  const groomParents =
+    mergedContent.groom_parents ||
+    [mergedContent.groom_father_name, mergedContent.groom_mother_name].filter(Boolean).join('\n') ||
+    'Ông bà thông gia'
+
+  const brideParents =
+    mergedContent.bride_parents ||
+    [mergedContent.bride_father_name, mergedContent.bride_mother_name].filter(Boolean).join('\n') ||
+    'Ông bà thông gia'
+
+  const groomAddress = mergedContent.groom_address || mergedContent.groom_city || 'Gia đình chú rể'
+  const brideAddress = mergedContent.bride_address || mergedContent.bride_city || 'Gia đình cô dâu'
+
+  const weddingTime = mergedContent.wedding_time || '09:00'
+  const partyTime = mergedContent.party_time || weddingTime
+  const weddingDateRaw = mergedContent.wedding_date || mergedContent.event_date || '01/02/2026'
+  const lunarDate = mergedContent.lunar_date || '14/12 Ất Tỵ'
+  const address = mergedContent.address || 'Queen Plaza Kỳ Hòa, 16A Lê Hồng Phong, Phường 12, Quận 10, TP. Hồ Chí Minh'
+
+  const { day, month, year, dayName } = useMemo(() => parseWeddingDate(weddingDateRaw), [weddingDateRaw])
+
+  const mapUrl = useMapEmbed(mergedContent.map_url, address)
+
+  const albumImages = (mergedContent.images?.length > 0 ? mergedContent.images : mockAlbum).slice(0, 15)
+
+  const handleOpenInvitation = () => {
+    setSplashFading(true)
+    setTimeout(() => setShowSplash(false), 600)
   }
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 100)
-    window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    if (!wedding?.id) return
 
-  useEffect(() => {
-    if (mergedContent.wedding_date) {
-      const interval = setInterval(() => {
-        const weddingDate = new Date(`${mergedContent.wedding_date}T${mergedContent.wedding_time || '00:00'}`)
-        const now = new Date()
-        const diff = weddingDate.getTime() - now.getTime()
-        if (diff > 0) {
-          setTimeRemaining({
-            days: Math.floor(diff / (1000 * 60 * 60 * 24)),
-            hours: Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
-            minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-            seconds: Math.floor((diff % (1000 * 60)) / 1000)
-          })
-        } else {
-          setTimeRemaining(null)
-        }
-      }, 1000)
-      return () => clearInterval(interval)
+    const weddingId = String(wedding.id)
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(weddingId)
+
+    if (!isUuid) {
+      console.log('[ThemeModern][Guestbook] Skip RSVP fetch for non-UUID wedding id', { weddingId })
+      setGuestWishes([])
+      return
     }
-  }, [mergedContent.wedding_date, mergedContent.wedding_time])
 
-  // Pre-fill RSVP
-  useEffect(() => {
-    if (!rsvpId) return
+    console.log('[ThemeModern][Guestbook] Fetch RSVP start', { weddingId })
+
     supabase
       .from('rsvps')
-      .select('wishes, phone, is_attending, party_size')
-      .eq('id', rsvpId)
-      .single()
-      .then(({ data }) => {
-        if (!data) return
-        if (data.wishes) setWish(data.wishes)
-        if (data.phone) setPhone(data.phone)
-        if (data.is_attending != null) setIsAttending(data.is_attending)
-        if (data.party_size) setPartySize(data.party_size)
-      })
-  }, [rsvpId])
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setSubmitError('')
-    try {
-      if (rsvpId) {
-        const { error } = await supabase
-          .from('rsvps')
-          .update({
-            phone: phone.trim() || null,
-            is_attending: isAttending,
-            party_size: isAttending ? partySize : 1,
-            wishes: wish.trim() || null
+      .select('guest_name, wishes, created_at, is_attending, party_size, phone')
+      .eq('wedding_id', weddingId)
+      .order('created_at', { ascending: false })
+      .then(
+        ({ data, error }) => {
+          console.log('[ThemeModern][Guestbook] Fetch RSVP result', {
+            weddingId,
+            count: data?.length || 0,
+            data,
+            error
           })
-          .eq('id', rsvpId)
-        if (error) throw error
-      }
-      setSubmitted(true)
-    } catch (err: any) {
-      console.error('RSVP error:', err)
-      setSubmitError('Có lỗi xảy ra, vui lòng thử lại!')
-    } finally {
-      setLoading(false)
+
+          if (error) {
+            console.error('[ThemeModern][Guestbook] Fetch RSVP error', error)
+            return
+          }
+
+          if (data) setGuestWishes(data)
+        },
+        (err: unknown) => {
+          console.error('[ThemeModern][Guestbook] Unexpected fetch exception', err)
+        }
+      )
+  }, [wedding?.id])
+
+  const formatParents = (text: string) => {
+    const lines = text.split('\n').filter(Boolean)
+    if (lines.length === 2) {
+      return (
+        <>
+          <div>{lines[0]}</div>
+          <div>{lines[1]}</div>
+        </>
+      )
     }
+    return text
   }
 
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    padding: '14px 16px',
-    border: '1.5px solid rgba(255,255,255,0.1)',
-    borderRadius: 14,
-    fontSize: 15,
-    outline: 'none',
-    background: 'rgba(255,255,255,0.04)',
-    boxSizing: 'border-box',
-    fontFamily: fontFamily,
-    color: '#e2e8f0',
-    transition: 'border-color 0.3s, box-shadow 0.3s, background 0.3s'
+  const rose = '#680e0e'
+  const cream = rose
+  const creamLight = '#7a1a1a'
+  const textDark = mergedContent.primary_color || '#e9ce9e'
+  const fontFamily = mergedContent.font_family || "'Lora', serif"
+  const headingFontFamily = mergedContent.heading_font_family || "'Great Vibes', cursive"
+  const sectionFontFamily = mergedContent.section_font_family || "'Playfair Display', serif"
+  const displayedGuestWishes = guestWishes.length > 0 ? guestWishes : mockGuestbook
+  const bankName = mergedContent.bank_name || ''
+  const accountNumber = mergedContent.account_number || ''
+  const accountName = mergedContent.account_name || ''
+  const customQrImage = mergedContent.qr_image || mergedContent.qrImage || ''
+  const transferNote = `Mung cuoi ${guestName || groomName} ${brideName}`.trim()
+  const bankCode = BANK_MAP[bankName] || bankName
+  const generatedQrUrl =
+    bankCode && accountNumber
+      ? `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=0&addInfo=${encodeURIComponent(transferNote)}&accountName=${encodeURIComponent(accountName)}`
+      : ''
+  const displayQrUrl = customQrImage || generatedQrUrl
+  const hasGiftInfo = Boolean(displayQrUrl || accountNumber || bankName || accountName)
+
+  const ribbonStyle = {
+    backgroundColor: rose
   }
 
-  const labelStyle: React.CSSProperties = {
-    display: 'block',
-    marginBottom: 6,
-    fontWeight: 600,
-    fontSize: 13,
-    color: '#94a3b8',
-    letterSpacing: '0.04em'
+  const flowerMaskBase = {
+    backgroundColor: textDark,
+    WebkitMaskImage: `url(${flowerDecorUrl})`,
+    maskImage: `url(${flowerDecorUrl})`,
+    WebkitMaskRepeat: 'no-repeat',
+    maskRepeat: 'no-repeat',
+    WebkitMaskPosition: 'center',
+    maskPosition: 'center',
+    WebkitMaskSize: 'contain',
+    maskSize: 'contain'
+  }
+
+  const panelPatternStyle = {
+    backgroundColor: creamLight,
+    backgroundImage: `repeating-radial-gradient(circle at 0 0, transparent 0, ${creamLight} 10px), repeating-linear-gradient(rgba(200,100,100,0.03), rgba(200,100,100,0.03))`
   }
 
   if (!wedding) {
@@ -175,14 +278,14 @@ export default function ModernGuestView({ wedding, guestName = '', rsvpId }: Tem
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          background: darkBg,
-          color: '#fff',
-          fontFamily: "'Inter', sans-serif"
+          background: cream,
+          fontFamily: "'Playfair Display', serif"
         }}
       >
-        <div style={{ textAlign: 'center' }}>
-          <h1 style={{ fontSize: '2rem', marginBottom: 8 }}>404</h1>
-          <p style={{ color: '#64748b' }}>Không tìm thấy thiệp cưới.</p>
+        <div style={{ textAlign: 'center', padding: 40 }}>
+          <div style={{ fontSize: '3rem', marginBottom: 12 }}>💔</div>
+          <h1 style={{ color: textDark, marginBottom: 8 }}>Không tìm thấy thông tin</h1>
+          <p style={{ color: textDark }}>Thiệp mời có thể đã bị xóa hoặc không hợp lệ.</p>
         </div>
       </div>
     )
@@ -192,1196 +295,2055 @@ export default function ModernGuestView({ wedding, guestName = '', rsvpId }: Tem
     <>
       <Head>
         <title>
-          {mergedContent.groom_name} &amp; {mergedContent.bride_name} — Modern Wedding
+          Thiệp cưới - {groomName} &amp; {brideName}
         </title>
-        <meta
-          name='description'
-          content={`Thiệp cưới của ${mergedContent.groom_name} và ${mergedContent.bride_name}`}
-        />
+        <meta name='viewport' content='width=device-width, initial-scale=1' />
         <link rel='preconnect' href='https://fonts.googleapis.com' />
         <link rel='preconnect' href='https://fonts.gstatic.com' crossOrigin='anonymous' />
         <link
-          href='https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap'
+          href='https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Great+Vibes&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap'
           rel='stylesheet'
         />
         <style>{`
           *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-          body { background: ${darkBg}; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
-          html { scroll-behavior: smooth; }
-
+          body { background: #fff; -webkit-font-smoothing: antialiased; }
           input:focus, textarea:focus {
-            border-color: ${accent} !important;
-            background: rgba(255,255,255,0.08) !important;
-            box-shadow: 0 0 0 3px ${accent}25, 0 0 20px ${accent}15 !important;
+            outline: none;
+            border-color: ${rose};
+            box-shadow: 0 0 0 2px ${rose}30;
           }
-
-          @keyframes heroReveal {
-            from { opacity: 0; transform: translateY(60px) scale(0.95); filter: blur(10px); }
-            to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+          @keyframes fadeInUp { from { opacity: 0; transform: translateY(28px); } to { opacity: 1; transform: translateY(0); } }
+          @keyframes sealPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(214,131,138,0.45); } 70% { box-shadow: 0 0 0 14px rgba(214,131,138,0); } }
+          @keyframes cardGlow { 0%, 100% { box-shadow: 0 12px 26px rgba(0,0,0,0.2), 0 0 0 rgba(233,206,158,0); } 50% { box-shadow: 0 14px 28px rgba(0,0,0,0.24), 0 0 28px rgba(233,206,158,0.2); } }
+          @keyframes giftWiggle {
+            0%, 100% { transform: rotate(0deg) translateY(0); }
+            25% { transform: rotate(-1.1deg) translateY(-1px); }
+            75% { transform: rotate(1.1deg) translateY(-1px); }
           }
-          @keyframes slideInLeft {
-            from { opacity: 0; transform: translateX(-80px); }
-            to   { opacity: 1; transform: translateX(0); }
+          @keyframes giftCardLightPulse {
+            0%, 100% { box-shadow: 0 16px 34px rgba(0,0,0,0.28), 0 0 0 rgba(233,206,158,0), 0 0 0 rgba(233,206,158,0); }
+            50% { box-shadow: 0 22px 46px rgba(0,0,0,0.38), 0 0 28px ${textDark}66, 0 0 56px ${textDark}33; }
           }
-          @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(80px); }
-            to   { opacity: 1; transform: translateX(0); }
+          @keyframes splashCardShakeFast {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            25% { transform: translateY(-1px) rotate(-0.85deg); }
+            50% { transform: translateY(0) rotate(0.55deg); }
+            75% { transform: translateY(-1px) rotate(-0.65deg); }
           }
-          @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(40px); }
-            to   { opacity: 1; transform: translateY(0); }
+          @keyframes splashCardLightPulse {
+            0%, 100% { box-shadow: 0 18px 38px rgba(0,0,0,0.34), 0 0 0 rgba(233,206,158,0), 0 0 0 rgba(233,206,158,0); }
+            50% { box-shadow: 0 24px 52px rgba(0,0,0,0.46), 0 0 34px ${textDark}66, 0 0 64px ${textDark}30; }
           }
-          @keyframes glow {
-            0%, 100% { box-shadow: 0 0 20px ${accent}30, 0 0 60px ${accent}10; }
-            50%      { box-shadow: 0 0 40px ${accent}50, 0 0 80px ${accent}20; }
+          @keyframes vuquyBadgeSway {
+            0%, 100% { transform: translate(-50%, -50%) rotate(0deg); }
+            25% { transform: translate(-50%, calc(-50% - 1px)) rotate(-0.85deg); }
+            50% { transform: translate(-50%, -50%) rotate(0.55deg); }
+            75% { transform: translate(-50%, calc(-50% - 1px)) rotate(-0.65deg); }
           }
-          @keyframes pulse3d {
-            0%, 100% { transform: scale(1) rotateZ(0deg); }
-            25%  { transform: scale(1.05) rotateZ(1deg); }
-            75%  { transform: scale(0.98) rotateZ(-1deg); }
+          @keyframes vuquyBadgeGlow {
+            0%, 100% {
+              box-shadow: 0 12px 24px rgba(0,0,0,0.18), 0 0 0 rgba(233,206,158,0), inset 0 0 0 rgba(233,206,158,0);
+            }
+            50% {
+              box-shadow: 0 14px 30px rgba(0,0,0,0.24), 0 0 18px ${textDark}33, inset 0 0 12px ${textDark}1a;
+            }
           }
-          @keyframes gradientShift {
-            0%   { background-position: 0% 50%; }
-            50%  { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+          .splash-card-motion {
+            width: 100%;
+            max-width: 480px;
+            animation: splashCardShakeFast 1.25s ease-in-out 1s infinite;
+            transform-origin: center 85%;
           }
-          @keyframes float3d {
-            0%, 100% { transform: translateY(0) rotateX(0); }
-            50%      { transform: translateY(-12px) rotateX(2deg); }
+          .splash-card { animation: fadeInUp 0.85s cubic-bezier(.22,.68,0,1.2) both; }
+          .splash-card-glow {
+            animation: splashCardLightPulse 2s ease-in-out 1s infinite;
+            filter: drop-shadow(0 10px 22px rgba(0,0,0,0.38));
           }
-          @keyframes countTick {
-            0%   { transform: scale(1); }
-            50%  { transform: scale(1.08); }
-            100% { transform: scale(1); }
+          .splash-hy-wrap {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
           }
-          @keyframes orbitSlow {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
+          .splash-hy-symbol {
+            font-size: 2.55rem;
+            color: ${textDark};
+            letter-spacing: 6px;
+            line-height: 1;
+            font-weight: 700;
           }
-          @keyframes borderGlow {
-            0%, 100% { border-color: ${accent}40; }
-            50%      { border-color: ${accentLight}80; }
-          }
-          @keyframes borderPulse {
-            0%, 100% { border-color: rgba(255,255,255,0.08); }
-            50%      { border-color: ${accent}40; }
-          }
-          @keyframes successPop {
-            0%   { transform: scale(0) rotate(-180deg); opacity: 0; }
-            60%  { transform: scale(1.2) rotate(15deg); opacity: 1; }
-            100% { transform: scale(1) rotate(0deg); opacity: 1; }
-          }
-
-          .m-hero    { animation: heroReveal 1.2s cubic-bezier(.16,1,.3,1) both; }
-          .m-left    { animation: slideInLeft 0.9s cubic-bezier(.16,1,.3,1) both; }
-          .m-right   { animation: slideInRight 0.9s cubic-bezier(.16,1,.3,1) both; }
-          .m-fade    { animation: fadeUp 0.8s cubic-bezier(.16,1,.3,1) both; }
-          .m-fade-d1 { animation-delay: 0.1s; }
-          .m-fade-d2 { animation-delay: 0.2s; }
-          .m-fade-d3 { animation-delay: 0.35s; }
-          .m-fade-d4 { animation-delay: 0.5s; }
-          .m-glow    { animation: glow 3s ease-in-out infinite; }
-          .m-pulse3d { animation: pulse3d 4s ease-in-out infinite; }
-          .m-float   { animation: float3d 5s ease-in-out infinite; }
-          .m-tick    { animation: countTick 1s ease-in-out infinite; }
-          .mg-pop    { animation: successPop 0.8s cubic-bezier(.175,.885,.32,1.275) both; }
-          .mg-pulse  { animation: pulse3d 3s ease-in-out infinite; }
-
-          .glass-card {
-            background: ${cardBg};
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 24px;
-            transition: transform 0.4s cubic-bezier(.16,1,.3,1), box-shadow 0.4s ease, border-color 0.4s ease;
-          }
-          .glass-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 60px rgba(0,0,0,.3), 0 0 30px ${accent}15;
-            border-color: ${accent}30;
-          }
-
-          .mg-glass {
-            background: ${cardBg};
-            backdrop-filter: blur(20px) saturate(180%);
-            -webkit-backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 24px;
-            box-shadow: 0 8px 32px rgba(0,0,0,.2);
-            animation: borderPulse 4s ease-in-out infinite;
-          }
-
-          .gradient-text {
-            background: linear-gradient(135deg, ${accent}, ${accentLight}, #c084fc, ${accent});
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradientShift 6s ease infinite;
-          }
-
-          .mg-gradient {
-            background: linear-gradient(135deg, ${accent}, ${accentLight}, #c084fc, ${accent});
-            background-size: 300% 300%;
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            animation: gradientShift 6s ease infinite;
-          }
-
-          .orbit-ring {
+          .splash-hy-ornament {
+            display: none;
             position: absolute;
-            border: 1px solid ${accent}15;
-            border-radius: 50%;
-            animation: orbitSlow 30s linear infinite;
-          }
-
-          .mg-orbit {
-            position: absolute;
-            border: 1px solid ${accent}10;
-            border-radius: 50%;
-            animation: orbitSlow 30s linear infinite;
+            top: 50%;
+            width: 62px;
+            height: auto;
+            opacity: 0.72;
+            filter: drop-shadow(0 4px 10px rgba(0,0,0,0.26));
             pointer-events: none;
           }
-
-          .neon-line {
-            height: 2px;
-            background: linear-gradient(90deg, transparent, ${accent}, ${accentLight}, transparent);
-            border-radius: 2px;
+          .splash-hy-ornament-left {
+            left: 50%;
+            transform: translate(-124px, -50%);
           }
-
-          .photo-grid-item {
-            overflow: hidden;
-            border-radius: 20px;
-            position: relative;
-            cursor: pointer;
-            transition: transform 0.5s cubic-bezier(.16,1,.3,1);
+          .splash-hy-ornament-right {
+            left: 50%;
+            transform: translate(62px, -50%);
           }
-          .photo-grid-item:hover {
-            transform: scale(1.03);
-          }
-          .photo-grid-item::after {
-            content: '';
+          .splash-decor-wrap {
             position: absolute;
             inset: 0;
-            background: linear-gradient(to top, rgba(0,0,0,.6) 0%, transparent 50%);
-            opacity: 0;
-            transition: opacity 0.4s ease;
+            pointer-events: none;
           }
-          .photo-grid-item:hover::after {
-            opacity: 1;
+          .splash-ornament {
+            position: absolute;
+            width: clamp(170px, 20vw, 270px);
+            height: auto;
+            opacity: 0.72;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.25));
           }
-
-          .btn-modern {
+          .splash-ornament-left {
+            left: max(8px, calc(50% - 508px));
+            top: 50%;
+            transform: translateY(-54%) rotate(-2deg);
+          }
+          .splash-ornament-right {
+            right: max(8px, calc(50% - 508px));
+            top: 50%;
+            transform: translateY(-52%) rotate(2deg) scaleX(-1);
+          }
+          .splash-flower {
+            position: absolute;
+            width: clamp(84px, 8vw, 126px);
+            height: clamp(84px, 8vw, 126px);
+            opacity: 0.26;
+            filter: drop-shadow(0 8px 18px rgba(0,0,0,0.25));
+          }
+          .splash-flower-left {
+            left: max(4px, calc(50% - 330px));
+            top: calc(50% - 246px);
+            transform: rotate(-18deg);
+          }
+          .splash-flower-right {
+            right: max(4px, calc(50% - 330px));
+            bottom: calc(50% - 246px);
+            transform: rotate(18deg) scaleX(-1);
+          }
+          .btn-open { animation: sealPulse 2.2s ease-out infinite; }
+          .btn-calendar:hover { opacity: 0.9; transform: scale(1.02); }
+          .gift-mini-card {
+            animation: splashCardShakeFast 1.25s ease-in-out 1s infinite, giftCardLightPulse 2s ease-in-out 1s infinite;
+            transform-origin: center 85%;
+            transition: transform .24s ease;
+            filter: drop-shadow(0 10px 20px rgba(0,0,0,0.3));
+          }
+          .gift-mini-card:hover { transform: translateY(-4px); }
+          .gift-card-wrap {
+            position: relative;
+            width: fit-content;
+            margin: 0 auto;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+          }
+          .gift-card-ornament {
+            position: absolute;
+            top: 50%;
+            width: clamp(102px, 13vw, 146px);
+            height: auto;
+            transform: translateY(-55%);
+            opacity: 0.8;
+            pointer-events: none;
+            filter: drop-shadow(0 8px 14px rgba(0,0,0,0.28));
+            z-index: 1;
+          }
+          .gift-card-ornament-left {
+            left: -158px;
+            transform: translateY(-55%) rotate(-4deg);
+          }
+          .gift-card-ornament-right {
+            right: -158px;
+            transform: translateY(-55%) rotate(4deg) scaleX(-1);
+          }
+          .gift-card-flower {
+            position: absolute;
+            width: clamp(52px, 6.8vw, 82px);
+            height: clamp(52px, 6.8vw, 82px);
+            opacity: 0.28;
+            pointer-events: none;
+            filter: drop-shadow(0 6px 12px rgba(0,0,0,0.24));
+            z-index: 1;
+          }
+          .gift-card-flower-left {
+            left: -44px;
+            top: -24px;
+            transform: rotate(-24deg);
+          }
+          .gift-card-flower-right {
+            right: -44px;
+            bottom: -24px;
+            transform: rotate(24deg) scaleX(-1);
+          }
+          .modern-rsvp-control {
+            width: 100%;
+            min-height: 42px;
+            line-height: 1.25;
+          }
+          .modern-rsvp-submit {
+            width: 100%;
+            min-height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+          }
+          .modern-card-content { position: relative; z-index: 2; }
+          .modern-flower {
+            position: absolute;
+            pointer-events: none;
+            user-select: none;
+            z-index: 1;
+            opacity: 0.2;
+            filter: drop-shadow(0 6px 14px rgba(0,0,0,0.2));
+          }
+          .modern-flower-soft { opacity: 0.13; }
+          .modern-guestbook-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: ${creamLight} ${rose};
+          }
+          .modern-guestbook-scroll::-webkit-scrollbar { width: 10px; }
+          .modern-guestbook-scroll::-webkit-scrollbar-track {
+            background: ${rose};
+            border-radius: 999px;
+          }
+          .modern-guestbook-scroll::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, ${creamLight}, #5b1010);
+            border-radius: 999px;
+            border: 1px solid ${textDark}33;
+          }
+          .modern-guestbook-scroll::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #872020, ${creamLight});
+          }
+          .modern-section-floral {
             position: relative;
             overflow: hidden;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
           }
-          .btn-modern::before {
+          .modern-section-floral::before,
+          .modern-section-floral::after {
             content: '';
             position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(255,255,255,.15), transparent);
-            opacity: 0;
-            transition: opacity 0.3s;
+            top: 50%;
+            width: 104px;
+            height: 104px;
+            background-color: ${textDark};
+            opacity: 0.12;
+            pointer-events: none;
+            transform: translateY(-50%);
+            z-index: 0;
+            -webkit-mask-image: url(${flowerDecorUrl});
+            mask-image: url(${flowerDecorUrl});
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
           }
-          .btn-modern:hover::before { opacity: 1; }
-          .btn-modern:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 40px ${accent}40;
+          .modern-section-floral::before {
+            left: -26px;
+            transform: translateY(-50%) rotate(-18deg);
+          }
+          .modern-section-floral::after {
+            right: -26px;
+            transform: translateY(-50%) rotate(18deg) scaleX(-1);
+          }
+          .modern-section-floral > * {
+            position: relative;
+            z-index: 1;
+          }
+          .modern-vuquy-flower {
+            position: absolute;
+            top: 50%;
+            width: 50px;
+            height: 50px;
+            background-color: ${textDark};
+            opacity: 0.26;
+            pointer-events: none;
+            -webkit-mask-image: url(${flowerDecorUrl});
+            mask-image: url(${flowerDecorUrl});
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-position: center;
+            mask-position: center;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+          }
+          .modern-vuquy-flower-left {
+            left: 14px;
+            transform: translateY(-50%) rotate(-20deg);
+          }
+          .modern-vuquy-flower-right {
+            right: 14px;
+            transform: translateY(-50%) rotate(20deg) scaleX(-1);
           }
 
-          .btn-mg-attend:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(34,197,94,.25); }
-          .btn-mg-decline:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(239,68,68,.2); }
-          .btn-mg-submit:not(:disabled):hover { transform: translateY(-3px); box-shadow: 0 12px 40px ${accent}45; }
+          @media (max-width: 768px) {
+            .modern-side-panel { display: none !important; }
+            .modern-card { width: 100% !important; max-width: 100% !important; }
+            .modern-avatar { width: 120px !important; height: 120px !important; }
+            .modern-ornament {
+              display: block !important;
+              top: -72px !important;
+              height: clamp(122px, 31vw, 162px) !important;
+              opacity: 0.76 !important;
+              z-index: 2 !important;
+            }
+            .modern-ornament-left { left: 3% !important; right: auto !important; }
+            .modern-ornament-right { right: 3% !important; left: auto !important; }
+            .modern-vuquy-badge {
+              top: 75px !important;
+              min-width: 238px !important;
+              padding: 10px 22px 8px !important;
+            }
+            .modern-vuquy-title {
+              font-size: 1.55rem !important;
+              letter-spacing: 2px !important;
+            }
+            .modern-vuquy-flower {
+              width: 34px;
+              height: 34px;
+              opacity: 0.22;
+            }
+            .modern-vuquy-flower-left { left: 10px; }
+            .modern-vuquy-flower-right { right: 10px; }
+            .modern-parents-flex {
+              flex-direction: column !important;
+              gap: 20px !important;
+              align-items: center !important;
+              text-align: center !important;
+            }
+            .modern-parents-col {
+              padding: 0 !important;
+              width: 100% !important;
+              max-width: 320px;
+              margin: 0 auto;
+              text-align: center;
+            }
+            .modern-parents-divider { display: none !important; }
+            .modern-album-grid { grid-template-columns: repeat(2, 1fr) !important; }
+            .modern-section-padding { padding-left: 16px !important; padding-right: 16px !important; }
+            .modern-flower-soft { display: none !important; }
+            .splash-decor-wrap { display: none !important; }
+            .splash-hy-wrap { margin-bottom: 28px; }
+            .splash-hy-symbol { font-size: 2.32rem; letter-spacing: 5px; }
+            .splash-hy-ornament { display: block; width: 68px; }
+            .splash-hy-ornament-left { transform: translate(-132px, -50%); }
+            .splash-hy-ornament-right { transform: translate(64px, -50%); }
+            .modern-section-floral::before,
+            .modern-section-floral::after {
+              width: 82px;
+              height: 82px;
+              opacity: 0.11;
+            }
+            .modern-section-floral::before { left: -24px; }
+            .modern-section-floral::after { right: -24px; }
+            .gift-card-ornament {
+              width: clamp(90px, 22vw, 124px);
+              opacity: 0.74;
+            }
+            .gift-card-ornament-left { left: -88px; }
+            .gift-card-ornament-right { right: -88px; }
+            .gift-mini-card {
+              width: 196px !important;
+              height: 136px !important;
+            }
+            .gift-card-flower {
+              width: clamp(50px, 11vw, 72px);
+              height: clamp(50px, 11vw, 72px);
+              opacity: 0.24;
+            }
+            .gift-card-flower-left { left: -36px; top: -20px; }
+            .gift-card-flower-right { right: -36px; bottom: -20px; }
+            .modern-rsvp-form {
+              max-width: 540px !important;
+              padding: 14px 16px !important;
+            }
+            .modern-rsvp-row {
+              grid-template-columns: 1fr 1fr !important;
+            }
+            .modern-map-wrap,
+            .modern-guestbook-wrap {
+              max-width: 540px !important;
+            }
+            .modern-map-frame {
+              height: 340px !important;
+            }
+            .modern-guestbook-wrap {
+              max-height: 410px !important;
+            }
+          }
+          
+          .modern-container {
+            container-type: inline-size;
+          }
+
+          @container (max-width: 896px) {
+             .modern-side-panel { display: none !important; }
+             .modern-card { width: 100% !important; max-width: 100% !important; border: none !important; border-radius: 0 !important; }
+             .modern-avatar { width: 120px !important; height: 120px !important; }
+             .modern-ornament {
+                display: block !important;
+                top: -96px !important;
+                height: clamp(96px, 24vw, 124px) !important;
+                opacity: 0.76 !important;
+                z-index: 2 !important;
+             }
+             .modern-ornament-left { left: 3% !important; right: auto !important; }
+             .modern-ornament-right { right: 3% !important; left: auto !important; }
+             .modern-vuquy-badge {
+                top: 58px !important;
+                min-width: 238px !important;
+                padding: 10px 22px 8px !important;
+             }
+             .modern-vuquy-title {
+                font-size: 1.55rem !important;
+                letter-spacing: 2px !important;
+             }
+             .modern-parents-flex {
+                flex-direction: column !important;
+                gap: 20px !important;
+                align-items: center !important;
+                text-align: center !important;
+             }
+             .modern-parents-col {
+                padding: 0 !important;
+                width: 100% !important;
+                max-width: 320px;
+                margin: 0 auto;
+                text-align: center;
+             }
+             .modern-parents-divider { display: none !important; }
+             .modern-album-grid { grid-template-columns: repeat(2, 1fr) !important; }
+             .modern-section-padding { padding-left: 16px !important; padding-right: 16px !important; }
+             .modern-flower-soft { display: none !important; }
+             .splash-decor-wrap { display: none !important; }
+             .splash-hy-wrap { margin-bottom: 28px; }
+             .splash-hy-symbol { font-size: 2.32rem; letter-spacing: 5px; }
+             .splash-hy-ornament { display: block; width: 68px; }
+             .splash-hy-ornament-left { transform: translate(-132px, -50%); }
+             .splash-hy-ornament-right { transform: translate(64px, -50%); }
+             .modern-rsvp-grid { grid-template-columns: 1fr !important; }
+             .modern-section-floral::before,
+             .modern-section-floral::after {
+                width: 82px;
+                height: 82px;
+                opacity: 0.11;
+             }
+             .modern-section-floral::before { left: -24px; }
+             .modern-section-floral::after { right: -24px; }
+          }
+
+          @container (max-width: 440px) {
+            .modern-ornament {
+              top: -68px !important;
+              height: clamp(106px, 30vw, 132px) !important;
+              opacity: 0.68 !important;
+            }
+            .modern-ornament-left { left: 2% !important; }
+            .modern-ornament-right { right: 2% !important; }
+            .modern-vuquy-badge {
+              top: 75px !important;
+              min-width: 218px !important;
+              padding: 9px 18px 8px !important;
+            }
+            .modern-vuquy-title {
+              font-size: 1.34rem !important;
+              letter-spacing: 1.5px !important;
+            }
+            .modern-vuquy-flower {
+              width: 30px;
+              height: 30px;
+              opacity: 0.2;
+            }
+            .modern-vuquy-flower-left { left: 8px; }
+            .modern-vuquy-flower-right { right: 8px; }
+            .splash-hy-wrap { margin-bottom: 24px; }
+            .splash-hy-symbol { font-size: 2.14rem; letter-spacing: 4px; }
+            .splash-hy-ornament { width: 62px; opacity: 0.72; }
+            .splash-hy-ornament-left { transform: translate(-114px, -50%); }
+            .splash-hy-ornament-right { transform: translate(56px, -50%); }
+            .splash-ornament {
+              width: clamp(124px, 28vw, 170px);
+              opacity: 0.56;
+            }
+            .splash-ornament-left {
+              left: max(0px, calc(50% - 446px));
+            }
+            .splash-ornament-right {
+              right: max(0px, calc(50% - 466px));
+            }
+            .splash-flower {
+              width: 74px;
+              height: 74px;
+              opacity: 0.2;
+            }
+            .splash-flower-left {
+              left: max(0px, calc(50% - 192px));
+              top: calc(50% - 226px);
+            }
+            .splash-flower-right {
+              right: max(0px, calc(50% - 192px));
+              bottom: calc(50% - 226px);
+            }
+            .modern-section-floral::before,
+            .modern-section-floral::after {
+              width: 70px;
+              height: 70px;
+              opacity: 0.1;
+            }
+            .gift-card-ornament {
+              width: 78px;
+              opacity: 0.68;
+              top: 52%;
+            }
+            .gift-card-ornament-left { left: -78px; }
+            .gift-card-ornament-right { right: -78px; }
+            .gift-mini-card {
+              width: 182px !important;
+              height: 126px !important;
+            }
+            .gift-card-flower {
+              width: 46px;
+              height: 46px;
+              opacity: 0.2;
+            }
+            .gift-card-flower-left { left: -28px; top: -16px; }
+            .gift-card-flower-right { right: -28px; bottom: -16px; }
+            .modern-rsvp-form {
+              max-width: 340px !important;
+              padding: 12px !important;
+            }
+            .modern-rsvp-row {
+              grid-template-columns: 1fr !important;
+              gap: 8px !important;
+            }
+            .modern-rsvp-submit {
+              border-radius: 12px !important;
+              padding: 10px 12px !important;
+              font-size: 0.84rem !important;
+              letter-spacing: 0.3px !important;
+            }
+            .modern-map-wrap,
+            .modern-guestbook-wrap {
+              max-width: 320px !important;
+            }
+            .modern-map-frame {
+              height: 300px !important;
+            }
+            .modern-guestbook-wrap {
+              max-height: 360px !important;
+            }
+          }
         `}</style>
       </Head>
 
-      <div
-        style={{
-          minHeight: '100vh',
-          background: darkBg,
-          color: '#e2e8f0',
-          fontFamily: fontFamily,
-          overflowX: 'hidden'
-        }}
-      >
-        {/* ══ Floating Nav Pill ══ */}
-        <nav
+      {showSplash && (
+        <div
+          onClick={handleOpenInvitation}
           style={{
             position: 'fixed',
-            top: 20,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            zIndex: 100,
-            padding: '10px 28px',
-            background: scrolled ? 'rgba(15,15,35,.85)' : 'transparent',
-            backdropFilter: scrolled ? 'blur(20px)' : 'none',
-            borderRadius: 50,
-            border: scrolled ? '1px solid rgba(255,255,255,.08)' : '1px solid transparent',
-            transition: 'all 0.5s cubic-bezier(.16,1,.3,1)',
+            inset: 0,
+            zIndex: 9997,
+            backgroundColor: 'rgba(110, 37, 37, 1)',
             display: 'flex',
             alignItems: 'center',
-            gap: 8,
-            opacity: scrolled ? 1 : 0,
-            pointerEvents: scrolled ? 'auto' : 'none'
-          }}
-        >
-          <Heart size={14} fill={accent} color={accent} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#fff', letterSpacing: '0.05em' }}>
-            {mergedContent.groom_name} & {mergedContent.bride_name}
-          </span>
-        </nav>
-
-        {/* ══ Hero Section ══ */}
-        <section
-          style={{
-            position: 'relative',
-            height: '100vh',
-            minHeight: 600,
+            justifyContent: 'center',
+            cursor: 'pointer',
+            opacity: splashFading ? 0 : 1,
+            transition: 'opacity 0.6s ease',
+            fontFamily: "'Lora', serif",
+            padding: 20,
             overflow: 'hidden'
           }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={coverImage}
-            alt='Wedding Cover'
-            style={{
-              position: 'absolute',
-              inset: 0,
-              width: '100%',
-              height: '100%',
-              ...getImageStyle(resolveImageAdjust(mergedContent.cover_image_position, viewport))
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background:
-                'linear-gradient(to bottom, rgba(15,15,35,0.35) 0%, transparent 35%, rgba(15,15,35,0.82) 100%)'
-            }}
-          />
-
-          <div
-            className='orbit-ring'
-            style={{
-              width: 500,
-              height: 500,
-              top: '50%',
-              left: '50%',
-              marginTop: -250,
-              marginLeft: -250,
-              opacity: 0.25
-            }}
-          />
-          <div
-            className='orbit-ring'
-            style={{
-              width: 700,
-              height: 700,
-              top: '50%',
-              left: '50%',
-              marginTop: -350,
-              marginLeft: -350,
-              animationDuration: '45s',
-              animationDirection: 'reverse',
-              opacity: 0.15
-            }}
-          />
-
-          <div style={{ position: 'absolute', top: 28, left: 0, right: 0, textAlign: 'center', zIndex: 1 }}>
-            <p
-              className='m-fade'
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                letterSpacing: '0.4em',
-                textTransform: 'uppercase',
-                color: accentLight
-              }}
-            >
-              WE ARE GETTING MARRIED
-            </p>
+          <div aria-hidden='true' className='splash-decor-wrap'>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className='splash-ornament splash-ornament-left' src='/image/rong.webp' alt='' />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className='splash-ornament splash-ornament-right' src='/image/phung.webp' alt='' />
+            <div className='splash-flower splash-flower-left' style={flowerMaskBase} />
+            <div className='splash-flower splash-flower-right' style={flowerMaskBase} />
           </div>
 
-          <div
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              left: 0,
-              right: 0,
-              zIndex: 1,
-              textAlign: 'center',
-              padding: '0 24px 40px'
-            }}
-          >
-            {guestName && (
-              <p
-                style={{
-                  fontSize: 10,
-                  fontWeight: 600,
-                  letterSpacing: '0.3em',
-                  textTransform: 'uppercase',
-                  color: `${accentLight}90`,
-                  marginBottom: 6
-                }}
-              >
-                WE INVITE YOU
-              </p>
-            )}
-            {guestName && (
-              <p
-                className='mg-gradient'
-                style={{
-                  fontFamily: headingFontFamily,
-                  fontSize: 'clamp(1.1rem, 4vw, 1.5rem)',
-                  fontWeight: 700,
-                  marginBottom: 12
-                }}
-              >
-                {guestName}
-              </p>
-            )}
-            <h1
-              className='gradient-text'
-              style={{
-                fontFamily: headingFontFamily,
-                fontSize: 'clamp(2rem, 8vw, 3.2rem)',
-                fontWeight: 800,
-                lineHeight: 1.1,
-                paddingTop: '0.15em',
-                paddingBottom: '0.15em',
-                marginBottom: 8
-              }}
-            >
-              {mergedContent.groom_name}
-            </h1>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, margin: '8px 0' }}>
-              <div className='neon-line' style={{ width: 40 }} />
-              <Heart size={18} fill={accent} color={accent} />
-              <div className='neon-line' style={{ width: 40 }} />
-            </div>
-            <h1
-              className='gradient-text'
-              style={{
-                fontFamily: headingFontFamily,
-                fontSize: 'clamp(2rem, 8vw, 3.2rem)',
-                fontWeight: 800,
-                lineHeight: 1.1,
-                paddingTop: '0.15em',
-                paddingBottom: '0.15em',
-                marginBottom: 12
-              }}
-            >
-              {mergedContent.bride_name}
-            </h1>
-            {mergedContent.wedding_date && (
-              <p style={{ fontSize: 13, color: '#94a3b8', fontWeight: 300, letterSpacing: '0.08em' }}>
-                {new Date(mergedContent.wedding_date).toLocaleDateString('vi-VN', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
-            )}
-          </div>
-        </section>
-
-        {/* ══ Parents Info ══ */}
-        {(mergedContent.groom_father_name || mergedContent.bride_father_name) && (
-          <section style={{ padding: '80px 20px', position: 'relative' }}>
+          <div className='splash-card-motion'>
             <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: `linear-gradient(180deg, transparent, ${accent}08, transparent)`
-              }}
-            />
-            <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
-              <p
-                className='m-fade'
+              className='splash-card splash-card-glow'
+              style={{ textAlign: 'center', position: 'relative', zIndex: 2 }}
+            >
+              <div
                 style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  letterSpacing: '0.3em',
-                  textTransform: 'uppercase',
-                  color: accentLight,
-                  marginBottom: 12
+                  backgroundColor: rose,
+                  height: 90,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}
               >
-                FAMILY
-              </p>
-              <h2
-                className='m-fade gradient-text'
-                style={{
-                  fontFamily: sectionFontFamily,
-                  fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
-                  fontWeight: 700,
-                  marginBottom: 40
-                }}
-              >
-                Gia Đình
-              </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                <div
-                  className='glass-card m-fade'
-                  style={{ padding: '28px 20px', textAlign: 'center', borderRadius: 20 }}
+                <p
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    letterSpacing: 5,
+                    color: 'rgba(255,255,255,0.9)',
+                    textTransform: 'uppercase'
+                  }}
                 >
-                  <p
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      letterSpacing: '0.3em',
-                      textTransform: 'uppercase',
-                      color: accentLight,
-                      marginBottom: 16
-                    }}
-                  >
-                    Nhà Trai
-                  </p>
-                  <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.9 }}>
-                    {mergedContent.groom_father_name && (
-                      <p>
-                        Ông: <span style={{ color: '#e2e8f0' }}>{mergedContent.groom_father_name}</span>
-                      </p>
-                    )}
-                    {mergedContent.groom_mother_name && (
-                      <p>
-                        Bà: <span style={{ color: '#e2e8f0' }}>{mergedContent.groom_mother_name}</span>
-                      </p>
-                    )}
-                    {mergedContent.groom_city && (
-                      <p style={{ fontSize: 11, color: '#475569', marginTop: 6 }}>{mergedContent.groom_city}</p>
-                    )}
-                  </div>
-                </div>
-                <div
-                  className='glass-card m-fade'
-                  style={{ padding: '28px 20px', textAlign: 'center', borderRadius: 20 }}
-                >
-                  <p
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      letterSpacing: '0.3em',
-                      textTransform: 'uppercase',
-                      color: accentLight,
-                      marginBottom: 16
-                    }}
-                  >
-                    Nhà Gái
-                  </p>
-                  <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.9 }}>
-                    {mergedContent.bride_father_name && (
-                      <p>
-                        Ông: <span style={{ color: '#e2e8f0' }}>{mergedContent.bride_father_name}</span>
-                      </p>
-                    )}
-                    {mergedContent.bride_mother_name && (
-                      <p>
-                        Bà: <span style={{ color: '#e2e8f0' }}>{mergedContent.bride_mother_name}</span>
-                      </p>
-                    )}
-                    {mergedContent.bride_city && (
-                      <p style={{ fontSize: 11, color: '#475569', marginTop: 6 }}>{mergedContent.bride_city}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ══ Countdown ══ */}
-        {timeRemaining && (
-          <section style={{ padding: '80px 20px', position: 'relative' }}>
-            <div
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: `linear-gradient(180deg, transparent, ${accent}08, transparent)`
-              }}
-            />
-            <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
-              <p
-                className='m-fade'
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  letterSpacing: '0.3em',
-                  textTransform: 'uppercase',
-                  color: accentLight,
-                  marginBottom: 12
-                }}
-              >
-                COUNTDOWN
-              </p>
-              <h2
-                className='m-fade gradient-text'
-                style={{
-                  fontFamily: sectionFontFamily,
-                  fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
-                  fontWeight: 700,
-                  marginBottom: 8
-                }}
-              >
-                Đếm Ngược Đến Ngày Vui
-              </h2>
-              <p className='m-fade' style={{ color: '#64748b', marginBottom: 40 }}>
-                Mỗi giây trôi qua là gần hơn một bước…
-              </p>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-                {[
-                  { label: 'Ngày', value: timeRemaining.days },
-                  { label: 'Giờ', value: timeRemaining.hours },
-                  { label: 'Phút', value: timeRemaining.minutes },
-                  { label: 'Giây', value: timeRemaining.seconds }
-                ].map((item, i) => (
-                  <div
-                    key={item.label}
-                    className={`glass-card m-fade m-fade-d${i + 1}`}
-                    style={{ padding: '28px 12px', textAlign: 'center' }}
-                  >
-                    <div
-                      className='m-tick'
-                      style={{
-                        fontFamily: "'Space Grotesk', monospace",
-                        fontSize: 'clamp(2rem, 6vw, 3.2rem)',
-                        fontWeight: 700,
-                        color: '#fff',
-                        lineHeight: 1,
-                        marginBottom: 8,
-                        textShadow: `0 0 20px ${accent}40`
-                      }}
-                    >
-                      {String(item.value).padStart(2, '0')}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: 11,
-                        fontWeight: 500,
-                        letterSpacing: '0.15em',
-                        textTransform: 'uppercase',
-                        color: '#64748b'
-                      }}
-                    >
-                      {item.label}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ══ Event Details ══ */}
-        <section style={{ padding: '80px 20px' }}>
-          <div style={{ maxWidth: 800, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <p
-                className='m-fade'
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  letterSpacing: '0.3em',
-                  textTransform: 'uppercase',
-                  color: accentLight,
-                  marginBottom: 12
-                }}
-              >
-                DETAILS
-              </p>
-              <h2
-                className='gradient-text m-fade'
-                style={{
-                  fontFamily: sectionFontFamily,
-                  fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
-                  fontWeight: 700,
-                  marginBottom: 16
-                }}
-              >
-                Thông Tin Sự Kiện
-              </h2>
-              <div className='neon-line m-fade' style={{ width: 80, margin: '0 auto' }} />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 20 }}>
-              <div className='glass-card m-left' style={{ padding: 32 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                  <div
-                    className='m-glow'
-                    style={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: 16,
-                      background: `${accent}20`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <Calendar size={24} color={accent} />
-                  </div>
-                  <h3 style={{ fontSize: 20, fontWeight: 700, color: '#fff', fontFamily: sectionFontFamily }}>
-                    Thời Gian
-                  </h3>
-                </div>
-                {calYear > 0 && (
-                  <div style={{ marginBottom: 16 }}>
-                    <WeddingCalendar
-                      year={calYear}
-                      month={calMonth}
-                      day={calDay}
-                      primaryColor={accent}
-                      variant='dark'
-                      fontFamily={fontFamily}
-                    />
-                  </div>
-                )}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#94a3b8' }}>
-                  <Clock size={16} />
-                  <span>Lúc {mergedContent.wedding_time || '00:00'}</span>
-                </div>
-              </div>
-
-              <div className='glass-card m-right' style={{ padding: 32 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-                  <div
-                    className='m-glow'
-                    style={{
-                      width: 52,
-                      height: 52,
-                      borderRadius: 16,
-                      background: `${accent}20`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <MapPin size={24} color={accent} />
-                  </div>
-                  <h3 style={{ fontSize: 20, fontWeight: 700, color: '#fff', fontFamily: sectionFontFamily }}>
-                    Địa Điểm
-                  </h3>
-                </div>
-                <p style={{ color: '#cbd5e1', fontSize: 16, lineHeight: 1.7, marginBottom: 16 }}>
-                  {mergedContent.address || '—'}
+                  Thiệp Cưới
                 </p>
-                {mergedContent.map_url && (
-                  <a
-                    href={mergedContent.map_url}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='btn-modern'
+              </div>
+
+              <div
+                style={{
+                  backgroundColor: '#6a131a',
+                  border: `1px solid ${textDark}2f`,
+                  borderTop: 'none',
+                  borderBottom: 'none',
+                  padding: '40px 32px 32px'
+                }}
+              >
+                <div className='splash-hy-wrap'>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className='splash-hy-ornament splash-hy-ornament-left' src='/image/rong.webp' alt='' />
+                  <p className='splash-hy-symbol'>囍</p>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img className='splash-hy-ornament splash-hy-ornament-right' src='/image/phung.webp' alt='' />
+                </div>
+
+                <p
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '0.6rem',
+                    letterSpacing: '0.45em',
+                    color: textDark,
+                    textTransform: 'uppercase',
+                    fontWeight: 600,
+                    marginTop: 30,
+                    marginBottom: 20
+                  }}
+                >
+                  Trân trọng kính báo
+                </p>
+
+                {guestName && (
+                  <p style={{ fontSize: '0.7rem', color: textDark, marginBottom: 16 }}>
+                    Kính mời: <strong>{guestName}</strong>
+                  </p>
+                )}
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+                  <div style={{ flex: 1, height: 1, backgroundColor: `${rose}35` }} />
+                  <span style={{ color: textDark, fontSize: '0.55rem', letterSpacing: 6 }}>✦ ✦ ✦</span>
+                  <div style={{ flex: 1, height: 1, backgroundColor: `${rose}35` }} />
+                </div>
+
+                <p style={{ fontSize: '0.72rem', color: textDark, fontStyle: 'italic', marginBottom: 16 }}>
+                  Lễ thành hôn của
+                </p>
+
+                <h3
+                  style={{
+                    fontFamily: "'Great Vibes', cursive",
+                    fontSize: '3rem',
+                    color: textDark,
+                    fontWeight: 400,
+                    lineHeight: 1.1
+                  }}
+                >
+                  {groomName}
+                </h3>
+                <p style={{ fontFamily: "'Great Vibes', cursive", fontSize: '2rem', color: textDark, lineHeight: 1 }}>
+                  &amp;
+                </p>
+                <h3
+                  style={{
+                    fontFamily: "'Great Vibes', cursive",
+                    fontSize: '3rem',
+                    color: textDark,
+                    fontWeight: 400,
+                    lineHeight: 1.1,
+                    marginBottom: 24
+                  }}
+                >
+                  {brideName}
+                </h3>
+
+                <div
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 30 }}
+                >
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+                    {dayName}
+                  </span>
+                  <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
+                  <span
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '12px 24px',
-                      background: `linear-gradient(135deg, ${accent}, ${accentLight})`,
-                      color: '#fff',
-                      borderRadius: 14,
-                      fontSize: 14,
-                      fontWeight: 600,
-                      textDecoration: 'none'
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: '1.8rem',
+                      fontWeight: 700,
+                      color: textDark,
+                      lineHeight: 1
                     }}
                   >
-                    <MapPin size={16} /> Xem Bản Đồ
-                  </a>
-                )}
+                    {day}
+                  </span>
+                  <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+                    THÁNG {month}
+                  </span>
+                  <div style={{ width: 1, height: 18, backgroundColor: '#c8b6a6' }} />
+                  <span
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: '1rem',
+                      fontWeight: 700,
+                      color: textDark
+                    }}
+                  >
+                    {year}
+                  </span>
+                </div>
+
+                <button
+                  className='btn-open'
+                  onClick={() => {
+                    handleOpenInvitation()
+                  }}
+                  style={{
+                    backgroundColor: rose,
+                    color: textDark,
+                    border: 'none',
+                    padding: '13px 44px',
+                    borderRadius: 2,
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.35em',
+                    textTransform: 'uppercase',
+                    cursor: 'pointer',
+                    fontFamily: "'Playfair Display', serif"
+                  }}
+                >
+                  Mở Thiệp
+                </button>
               </div>
+
+              <div style={{ height: 8, backgroundColor: rose }} />
             </div>
           </div>
-        </section>
+        </div>
+      )}
 
-        {/* ══ Gallery ══ */}
-        <section style={{ padding: '80px 20px' }}>
-          <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <p
-                className='m-fade'
+      <div
+        className='modern-container'
+        style={{ minHeight: '100vh', background: '#fff', display: 'flex', alignItems: 'stretch' }}
+      >
+        <div className='modern-side-panel' style={{ flex: 1, minHeight: '100vh', background: '#fff' }} />
+
+        <div
+          className='modern-card'
+          style={{
+            width: 896,
+            maxWidth: '100%',
+            flexShrink: 0,
+            background: cream,
+            minHeight: '100vh',
+            fontFamily: fontFamily,
+            color: textDark,
+            paddingBottom: 60,
+            boxShadow: '0 0 40px rgba(0,0,0,0.08)',
+            position: 'relative',
+            overflow: 'hidden'
+          }}
+        >
+          <div
+            aria-hidden='true'
+            className='modern-flower modern-flower-soft'
+            style={{
+              ...flowerMaskBase,
+              top: -42,
+              left: -26,
+              width: 168,
+              height: 168,
+              transform: 'rotate(-12deg)'
+            }}
+          />
+          <div
+            aria-hidden='true'
+            className='modern-flower'
+            style={{
+              ...flowerMaskBase,
+              top: 332,
+              right: -48,
+              width: 190,
+              height: 190,
+              transform: 'rotate(102deg)'
+            }}
+          />
+          <div
+            aria-hidden='true'
+            className='modern-flower modern-flower-soft'
+            style={{
+              ...flowerMaskBase,
+              top: 876,
+              left: -58,
+              width: 176,
+              height: 176,
+              transform: 'rotate(24deg)'
+            }}
+          />
+          <div
+            aria-hidden='true'
+            className='modern-flower'
+            style={{
+              ...flowerMaskBase,
+              bottom: 548,
+              right: -52,
+              width: 182,
+              height: 182,
+              transform: 'rotate(148deg)'
+            }}
+          />
+          <div
+            aria-hidden='true'
+            className='modern-flower modern-flower-soft'
+            style={{
+              ...flowerMaskBase,
+              bottom: 236,
+              left: -40,
+              width: 160,
+              height: 160,
+              transform: 'rotate(-26deg)'
+            }}
+          />
+          <div
+            aria-hidden='true'
+            className='modern-flower'
+            style={{
+              ...flowerMaskBase,
+              bottom: -34,
+              right: -26,
+              width: 170,
+              height: 170,
+              transform: 'rotate(194deg)'
+            }}
+          />
+          <div
+            aria-hidden='true'
+            className='modern-flower modern-flower-soft'
+            style={{
+              ...flowerMaskBase,
+              top: 174,
+              left: -56,
+              width: 140,
+              height: 140,
+              transform: 'rotate(-132deg)'
+            }}
+          />
+          <div
+            aria-hidden='true'
+            className='modern-flower'
+            style={{
+              ...flowerMaskBase,
+              top: 690,
+              right: -52,
+              width: 148,
+              height: 148,
+              transform: 'rotate(32deg)'
+            }}
+          />
+          <div
+            aria-hidden='true'
+            className='modern-flower modern-flower-soft'
+            style={{
+              ...flowerMaskBase,
+              bottom: 62,
+              left: -34,
+              width: 138,
+              height: 138,
+              transform: 'rotate(18deg)'
+            }}
+          />
+
+          <div className='modern-card-content'>
+            <div style={{ width: '100%', height: 128, ...ribbonStyle }} />
+
+            <div
+              style={{
+                width: '100%',
+                minHeight: 200,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px 20px'
+              }}
+            >
+              <div
                 style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  letterSpacing: '0.3em',
-                  textTransform: 'uppercase',
-                  color: accentLight,
-                  marginBottom: 12
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: '8%',
+                  width: '100%',
+                  position: 'relative',
+                  alignItems: 'flex-start'
                 }}
               >
-                GALLERY
-              </p>
-              <h2
-                className='gradient-text m-fade'
-                style={{
-                  fontFamily: sectionFontFamily,
-                  fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
-                  fontWeight: 700,
-                  marginBottom: 16
-                }}
-              >
-                Khoảnh Khắc Của Chúng Tôi
-              </h2>
-              <div className='neon-line m-fade' style={{ width: 80, margin: '0 auto' }} />
-            </div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className='modern-ornament modern-ornament-left'
+                  src='/image/rong.webp'
+                  alt='Rong trang tri'
+                  style={{
+                    position: 'absolute',
+                    left: '1%',
+                    top: '-132px',
+                    height: 240,
+                    width: 'auto',
+                    pointerEvents: 'none',
+                    opacity: 0.88,
+                    zIndex: 1
+                  }}
+                />
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-              {albumImages.slice(0, 4).map((img: string, idx: number) => {
-                const isLast = idx === 3
-                const extraCount = albumImages.length - 4
-                return (
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  className='modern-ornament modern-ornament-right'
+                  src='/image/phung.webp'
+                  alt='Phung trang tri'
+                  style={{
+                    position: 'absolute',
+                    right: '1%',
+                    top: '-132px',
+                    height: 240,
+                    width: 'auto',
+                    pointerEvents: 'none',
+                    opacity: 0.88,
+                    zIndex: 1
+                  }}
+                />
+
+                <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
                   <div
-                    key={idx}
-                    className={`photo-grid-item m-fade`}
-                    style={{ animationDelay: `${idx * 0.1}s`, aspectRatio: '3/4', cursor: 'pointer' }}
-                    onClick={() => {
-                      setLightboxIndex(idx)
-                      setLightboxOpen(true)
+                    className='modern-avatar'
+                    style={{
+                      width: 240,
+                      height: 240,
+                      borderRadius: '50%',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                      overflow: 'hidden',
+                      margin: '0 auto 12px'
                     }}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={img}
-                      alt={`Photo ${idx + 1}`}
+                      src={groomImage}
+                      alt={groomName}
                       style={{
                         width: '100%',
                         height: '100%',
-                        transition: 'transform 0.6s ease',
-                        ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[idx], viewport))
+                        ...getImageStyle(resolveImageAdjust(mergedContent.groom_image_position, viewport))
                       }}
                     />
-                    {isLast && extraCount > 0 && (
-                      <div
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          backgroundColor: 'rgba(0,0,0,0.55)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: '#fff',
-                          fontSize: '1.2rem',
-                          fontWeight: 700,
-                          zIndex: 2
-                        }}
-                      >
-                        +{extraCount}
-                      </div>
-                    )}
                   </div>
-                )
-              })}
-            </div>
-          </div>
-        </section>
+                  <p
+                    style={{
+                      fontSize: '0.65rem',
+                      color: textDark,
+                      letterSpacing: 2,
+                      textTransform: 'uppercase',
+                      marginBottom: 2
+                    }}
+                  >
+                    {groomRole}
+                  </p>
+                  <h3
+                    style={{
+                      fontFamily: headingFontFamily,
+                      fontSize: '2rem',
+                      color: textDark,
+                      fontWeight: 400,
+                      marginBottom: 10
+                    }}
+                  >
+                    {groomName}
+                  </h3>
+                  <div style={{ width: '60%', height: 1, backgroundColor: `${rose}55`, margin: '0 auto' }} />
+                </div>
 
-        {/* ══ RSVP Section ══ */}
-        <section style={{ padding: '80px 20px', position: 'relative' }}>
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              background: `linear-gradient(180deg, transparent, ${accent}08, transparent)`
-            }}
-          />
-          <div style={{ maxWidth: 600, margin: '0 auto', position: 'relative' }}>
-            <div style={{ textAlign: 'center', marginBottom: 40 }}>
+                <div
+                  className='modern-vuquy-badge'
+                  style={{
+                    position: 'absolute',
+                    left: '50%',
+                    top: '48px',
+                    transform: 'translate(-50%, -50%)',
+                    minWidth: 286,
+                    padding: '12px 34px 10px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    borderRadius: 999,
+                    background: `linear-gradient(145deg, ${rose}dd 0%, ${creamLight}e6 100%)`,
+                    border: `1px solid ${textDark}66`,
+                    boxShadow: '0 12px 24px rgba(0,0,0,0.18), 0 0 14px rgba(233,206,158,0.18)',
+                    animation:
+                      'vuquyBadgeSway 1.25s ease-in-out 1s infinite, vuquyBadgeGlow 2s ease-in-out 1s infinite',
+                    zIndex: 5
+                  }}
+                >
+                  <span className='modern-vuquy-flower modern-vuquy-flower-left' aria-hidden='true' />
+                  <span className='modern-vuquy-flower modern-vuquy-flower-right' aria-hidden='true' />
+                  <div
+                    className='modern-vuquy-title'
+                    style={{
+                      fontFamily: "'Playfair Display', serif",
+                      fontSize: '1.9rem',
+                      color: textDark,
+                      lineHeight: 1,
+                      fontWeight: 700,
+                      letterSpacing: 2.6,
+                      textTransform: 'uppercase',
+                      textShadow: `0 1px 0 rgba(0,0,0,0.15), 0 0 10px ${textDark}33`
+                    }}
+                  >
+                    Lễ Vu Quy
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <span style={{ width: 30, height: 1, backgroundColor: `${textDark}88` }} />
+                    <span style={{ fontSize: '1.2rem', color: textDark, lineHeight: 1 }}>囍</span>
+                    <span style={{ width: 30, height: 1, backgroundColor: `${textDark}88` }} />
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
+                  <div
+                    className='modern-avatar'
+                    style={{
+                      width: 240,
+                      height: 240,
+                      borderRadius: '50%',
+                      boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
+                      overflow: 'hidden',
+                      margin: '0 auto 12px'
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={brideImage}
+                      alt={brideName}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.bride_image_position, viewport))
+                      }}
+                    />
+                  </div>
+                  <p
+                    style={{
+                      fontSize: '0.65rem',
+                      color: textDark,
+                      letterSpacing: 2,
+                      textTransform: 'uppercase',
+                      marginBottom: 2
+                    }}
+                  >
+                    {brideRole}
+                  </p>
+                  <h3
+                    style={{
+                      fontFamily: headingFontFamily,
+                      fontSize: '2rem',
+                      color: textDark,
+                      fontWeight: 400,
+                      marginBottom: 10
+                    }}
+                  >
+                    {brideName}
+                  </h3>
+                  <div style={{ width: '60%', height: 1, backgroundColor: `${rose}55`, margin: '0 auto' }} />
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                width: '100%',
+                height: 68,
+                ...ribbonStyle,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
               <p
-                className='m-fade'
-                style={{
-                  fontSize: 12,
-                  fontWeight: 600,
-                  letterSpacing: '0.3em',
-                  textTransform: 'uppercase',
-                  color: accentLight,
-                  marginBottom: 12
-                }}
-              >
-                RSVP
-              </p>
-              <h2
-                className='gradient-text m-fade'
                 style={{
                   fontFamily: sectionFontFamily,
-                  fontSize: 'clamp(1.8rem, 5vw, 2.8rem)',
+                  fontSize: '0.85rem',
                   fontWeight: 700,
+                  letterSpacing: 4,
+                  color: textDark,
+                  textTransform: 'uppercase'
+                }}
+              >
+                Thông Tin Lễ Cưới
+              </p>
+            </div>
+
+            <div
+              className='modern-parents-flex modern-section-padding modern-section-floral'
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                padding: '28px 32px 28px',
+                textAlign: 'center',
+                position: 'relative'
+              }}
+            >
+              <div className='modern-parents-col' style={{ flex: 1, padding: '0 16px 0 0' }}>
+                <p style={{ fontSize: '0.75rem', color: textDark, marginBottom: 6 }}>Ông bà</p>
+                <div
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    color: textDark,
+                    lineHeight: 1.8
+                  }}
+                >
+                  {formatParents(groomParents)}
+                </div>
+                <p
+                  style={{
+                    fontSize: '0.72rem',
+                    color: textDark,
+                    lineHeight: 1.5,
+                    marginTop: 8,
+                    whiteSpace: 'pre-line'
+                  }}
+                >
+                  {groomAddress}
+                </p>
+              </div>
+
+              <div
+                className='modern-parents-divider'
+                style={{ width: 1, alignSelf: 'stretch', backgroundColor: '#c8b6a6', flexShrink: 0 }}
+              />
+
+              <div className='modern-parents-col' style={{ flex: 1, padding: '0 0 0 16px' }}>
+                <p style={{ fontSize: '0.75rem', color: textDark, marginBottom: 6 }}>Ông bà</p>
+                <div
+                  style={{
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '0.95rem',
+                    fontWeight: 700,
+                    color: textDark,
+                    lineHeight: 1.8
+                  }}
+                >
+                  {formatParents(brideParents)}
+                </div>
+                <p
+                  style={{
+                    fontSize: '0.72rem',
+                    color: textDark,
+                    lineHeight: 1.5,
+                    marginTop: 8,
+                    whiteSpace: 'pre-line'
+                  }}
+                >
+                  {brideAddress}
+                </p>
+              </div>
+            </div>
+
+            <div
+              className='modern-section-padding modern-section-floral'
+              style={{ textAlign: 'center', padding: '16px 32px 32px' }}
+            >
+              <p
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: textDark,
+                  letterSpacing: 3,
+                  textTransform: 'uppercase',
+                  marginBottom: 4
+                }}
+              >
+                Trân trọng báo tin
+              </p>
+              <p
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: textDark,
+                  letterSpacing: 2,
+                  textTransform: 'uppercase',
+                  marginBottom: 28
+                }}
+              >
+                Lễ thành hôn của con chúng tôi
+              </p>
+
+              <h2
+                style={{
+                  fontFamily: sectionFontFamily,
+                  fontSize: '2.6rem',
+                  fontWeight: 400,
+                  color: textDark,
+                  lineHeight: 1.1,
+                  marginBottom: 10
+                }}
+              >
+                {groomName}
+              </h2>
+              <p
+                style={{
+                  fontSize: '0.65rem',
+                  color: textDark,
+                  letterSpacing: 4,
+                  textTransform: 'uppercase',
+                  marginBottom: 20
+                }}
+              >
+                {groomRole}
+              </p>
+
+              <p
+                style={{
+                  fontFamily: headingFontFamily,
+                  fontSize: '3rem',
+                  color: textDark,
+                  fontWeight: 400,
+                  lineHeight: 1,
+                  marginBottom: 20
+                }}
+              >
+                &amp;
+              </p>
+
+              <h2
+                style={{
+                  fontFamily: sectionFontFamily,
+                  fontSize: '2.6rem',
+                  fontWeight: 400,
+                  color: textDark,
+                  lineHeight: 1.1,
+                  marginBottom: 10
+                }}
+              >
+                {brideName}
+              </h2>
+              <p
+                style={{
+                  fontSize: '0.65rem',
+                  color: textDark,
+                  letterSpacing: 4,
+                  textTransform: 'uppercase',
+                  marginBottom: 32
+                }}
+              >
+                {brideRole}
+              </p>
+
+              <p
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: textDark,
+                  letterSpacing: 2,
+                  textTransform: 'uppercase',
+                  marginBottom: 4
+                }}
+              >
+                Lễ thành hôn được cử hành tại
+              </p>
+              <p
+                style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  color: textDark,
+                  letterSpacing: 2,
+                  textTransform: 'uppercase',
                   marginBottom: 16
                 }}
               >
-                Xác Nhận Tham Dự
-              </h2>
-              <div className='neon-line m-fade' style={{ width: 80, margin: '0 auto' }} />
-              {guestName && (
-                <p className='m-fade' style={{ marginTop: 16, color: accentLight, fontSize: 14, fontStyle: 'italic' }}>
-                  Kính mời <span style={{ fontWeight: 700, color: '#fff' }}>{guestName}</span>
-                </p>
-              )}
+                Tư Gia
+              </p>
+              <p style={{ fontSize: '0.8rem', color: textDark, letterSpacing: 1, marginBottom: 20 }}>
+                Vào lúc {weddingTime}
+              </p>
+
+              <div
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 12 }}
+              >
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+                  {dayName}
+                </span>
+                <div style={{ width: 1, height: 28, backgroundColor: '#c8b6a6' }} />
+                <span
+                  style={{
+                    fontSize: '2.8rem',
+                    fontWeight: 700,
+                    color: textDark,
+                    fontFamily: "'Playfair Display', serif",
+                    lineHeight: 1
+                  }}
+                >
+                  {day}
+                </span>
+                <div style={{ width: 1, height: 28, backgroundColor: '#c8b6a6' }} />
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: textDark, letterSpacing: 2 }}>
+                  THÁNG {month}
+                </span>
+              </div>
+
+              <p
+                style={{
+                  fontSize: '1.4rem',
+                  fontWeight: 700,
+                  color: textDark,
+                  fontFamily: "'Playfair Display', serif",
+                  marginBottom: 8
+                }}
+              >
+                {year}
+              </p>
+              <p
+                style={{
+                  fontSize: '0.78rem',
+                  color: textDark,
+                  fontStyle: 'italic',
+                  textTransform: 'uppercase',
+                  letterSpacing: 1
+                }}
+              >
+                (Tức ngày {lunarDate})
+              </p>
             </div>
 
-            {!submitted ? (
-              <div className='mg-glass' style={{ padding: '28px 24px' }}>
-                <p
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    color: accentLight,
-                    letterSpacing: '0.16em',
-                    textTransform: 'uppercase',
-                    textAlign: 'center',
-                    marginBottom: 4
-                  }}
-                >
-                  ✦ CONFIRM ATTENDANCE
-                </p>
-                <p style={{ textAlign: 'center', color: '#64748b', fontSize: 13, marginBottom: 24 }}>
-                  Vui lòng điền thông tin để chúng tôi chuẩn bị tốt hơn
-                </p>
+            <div
+              style={{
+                width: '100%',
+                height: 68,
+                ...ribbonStyle,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: sectionFontFamily,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  letterSpacing: 4,
+                  color: textDark,
+                  textTransform: 'uppercase'
+                }}
+              >
+                Album Ảnh Cưới
+              </p>
+            </div>
 
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                  <div>
-                    <label style={labelStyle}>Bạn có tham dự không? *</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                      <button
-                        type='button'
-                        className='btn-mg-attend'
-                        onClick={() => setIsAttending(true)}
-                        style={{
-                          padding: '13px 8px',
-                          borderRadius: 14,
-                          border: isAttending === true ? '2px solid #22c55e' : '1.5px solid rgba(255,255,255,.1)',
-                          background: isAttending === true ? 'rgba(34,197,94,.12)' : 'rgba(255,255,255,.03)',
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: isAttending === true ? '#4ade80' : '#64748b',
-                          transition: 'all .25s',
-                          fontFamily: 'inherit'
-                        }}
-                      >
-                        Có, tôi sẽ đến
-                      </button>
-                      <button
-                        type='button'
-                        className='btn-mg-decline'
-                        onClick={() => setIsAttending(false)}
-                        style={{
-                          padding: '13px 8px',
-                          borderRadius: 14,
-                          border: isAttending === false ? '2px solid #ef4444' : '1.5px solid rgba(255,255,255,.1)',
-                          background: isAttending === false ? 'rgba(239,68,68,.1)' : 'rgba(255,255,255,.03)',
-                          cursor: 'pointer',
-                          fontSize: 14,
-                          fontWeight: 600,
-                          color: isAttending === false ? '#f87171' : '#64748b',
-                          transition: 'all .25s',
-                          fontFamily: 'inherit'
-                        }}
-                      >
-                        Xin lỗi, tôi bận
-                      </button>
-                    </div>
-                  </div>
+            <div className='modern-section-floral' style={{ padding: '24px 20px 10px', marginBottom: 40 }}>
+              <div
+                className='modern-album-grid'
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: 16,
+                  maxWidth: 620,
+                  margin: '0 auto'
+                }}
+              >
+                {albumImages.slice(0, 4).map((img: string, i: number) => {
+                  const isLast = i === 3
+                  const extraCount = albumImages.length - 4
 
-                  <div>
-                    <label style={labelStyle}>
-                      Số điện thoại <span style={{ color: '#475569', fontSize: 12, fontWeight: 400 }}>(tùy chọn)</span>
-                    </label>
-                    <input
-                      type='tel'
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder='0901 234 567'
-                      style={inputStyle}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>Số người tham dự</label>
-                    <div style={{ display: 'flex' }}>
-                      {[1, 2, 3, 4, 5].map((n, i) => (
-                        <button
-                          key={n}
-                          type='button'
-                          onClick={() => setPartySize(n)}
-                          style={{
-                            flex: 1,
-                            padding: '12px 4px',
-                            border: '1.5px solid',
-                            borderColor: partySize === n ? accent : 'rgba(255,255,255,.1)',
-                            borderRight: i < 4 ? 'none' : '1.5px solid',
-                            borderRightColor: partySize === n ? accent : 'rgba(255,255,255,.1)',
-                            borderRadius: i === 0 ? '14px 0 0 14px' : i === 4 ? '0 14px 14px 0' : '0',
-                            background:
-                              partySize === n
-                                ? `linear-gradient(135deg, ${accent}, ${accentLight})`
-                                : 'rgba(255,255,255,.03)',
-                            color: partySize === n ? '#fff' : '#64748b',
-                            fontWeight: 700,
-                            fontSize: 15,
-                            cursor: 'pointer',
-                            transition: 'all .2s',
-                            fontFamily: 'inherit',
-                            boxShadow: partySize === n ? `0 4px 16px ${accent}30` : 'none'
-                          }}
-                        >
-                          {n}
-                        </button>
-                      ))}
-                    </div>
-                    <p style={{ fontSize: 12, color: '#475569', marginTop: 5 }}>người tham dự</p>
-                  </div>
-
-                  <div>
-                    <label style={labelStyle}>
-                      Lời chúc <span style={{ color: '#475569', fontSize: 12, fontWeight: 400 }}>(tùy chọn)</span>
-                    </label>
-                    <textarea
-                      value={wish}
-                      onChange={(e) => setWish(e.target.value)}
-                      placeholder='Chúc hai bạn trăm năm hạnh phúc...'
-                      rows={4}
-                      style={{ ...inputStyle, resize: 'vertical', lineHeight: 1.65 }}
-                    />
-                  </div>
-
-                  <button
-                    type='submit'
-                    className='btn-mg-submit'
-                    disabled={loading || isAttending === null}
-                    style={{
-                      width: '100%',
-                      padding: 16,
-                      background:
-                        isAttending === null || loading
-                          ? 'rgba(255,255,255,.06)'
-                          : `linear-gradient(135deg, ${accent}, ${accentLight})`,
-                      color: isAttending === null || loading ? '#475569' : '#fff',
-                      border: 'none',
-                      borderRadius: 16,
-                      fontSize: 16,
-                      fontWeight: 700,
-                      cursor: loading || isAttending === null ? 'not-allowed' : 'pointer',
-                      letterSpacing: '0.03em',
-                      transition: 'all .3s',
-                      boxShadow: isAttending !== null && !loading ? `0 8px 30px ${accent}40` : 'none',
-                      fontFamily: 'inherit'
-                    }}
-                  >
-                    {loading ? '⏳ Đang gửi...' : '🚀 Gửi xác nhận'}
-                  </button>
-
-                  {submitError && (
+                  return (
                     <div
+                      key={i}
+                      onClick={() => setLightboxIndex(i)}
                       style={{
-                        padding: '12px 16px',
-                        background: 'rgba(239,68,68,.1)',
-                        border: '1px solid rgba(239,68,68,.2)',
-                        borderRadius: 12,
-                        color: '#f87171',
-                        fontSize: 14,
-                        textAlign: 'center',
-                        fontWeight: 500
+                        borderRadius: 14,
+                        border: `1px solid ${textDark}66`,
+                        overflow: 'hidden',
+                        aspectRatio: '1 / 1',
+                        position: 'relative',
+                        cursor: 'pointer',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.22)'
                       }}
                     >
-                      ❌ {submitError}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={img}
+                        alt={`Album ${i + 1}`}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          ...getImageStyle(resolveImageAdjust(mergedContent.image_positions?.[i], viewport))
+                        }}
+                      />
+                      {isLast && extraCount > 0 && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 0,
+                            backgroundColor: 'rgba(0,0,0,0.6)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#fff',
+                            fontSize: '2rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          +{extraCount}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </form>
+                  )
+                })}
               </div>
-            ) : (
-              <div className='mg-glass' style={{ padding: '52px 28px', textAlign: 'center' }}>
-                <div className='mg-pop' style={{ fontSize: '4rem', marginBottom: 22 }}>
-                  {isAttending ? '🎊' : '💜'}
-                </div>
-                <h3
-                  className='mg-gradient'
+            </div>
+
+            <div
+              style={{
+                width: '100%',
+                height: 68,
+                ...ribbonStyle,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  letterSpacing: 4,
+                  color: textDark,
+                  textTransform: 'uppercase'
+                }}
+              >
+                Thông Tin Tiệc Cưới
+              </p>
+            </div>
+
+            <div className='modern-section-floral' style={{ textAlign: 'center', marginBottom: 40 }}>
+              <h2
+                style={{
+                  fontFamily: "'Great Vibes', cursive",
+                  fontSize: '2.2rem',
+                  color: textDark,
+                  fontWeight: 400,
+                  marginBottom: 16
+                }}
+              >
+                Tiệc cưới sẽ diễn ra vào lúc:
+              </h2>
+              <p
+                style={{
+                  fontSize: '1.6rem',
+                  color: textDark,
+                  fontWeight: 700,
+                  fontFamily: "'Playfair Display', serif",
+                  marginBottom: 16
+                }}
+              >
+                {partyTime}
+              </p>
+
+              <div
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 8 }}
+              >
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: textDark }}>{dayName}</span>
+                <div style={{ width: 1, height: 24, backgroundColor: '#c8b6a6' }} />
+                <span
                   style={{
-                    fontFamily: headingFontFamily,
-                    fontSize: '1.5rem',
+                    fontSize: '2.5rem',
                     fontWeight: 700,
-                    marginBottom: 12,
-                    lineHeight: 1.3
+                    color: textDark,
+                    fontFamily: "'Playfair Display', serif",
+                    lineHeight: 1
                   }}
                 >
-                  {isAttending ? 'Hẹn gặp bạn tại đám cưới!' : 'Cảm ơn bạn đã phản hồi!'}
-                </h3>
+                  {day}
+                </span>
+                <div style={{ width: 1, height: 24, backgroundColor: '#c8b6a6' }} />
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: textDark }}>THÁNG {month}</span>
+              </div>
+
+              <p
+                style={{
+                  fontSize: '1.1rem',
+                  color: textDark,
+                  fontWeight: 700,
+                  fontFamily: "'Playfair Display', serif",
+                  marginBottom: 6
+                }}
+              >
+                {year}
+              </p>
+              <p style={{ fontSize: '0.9rem', color: textDark, fontStyle: 'italic', marginBottom: 16 }}>
+                (Tức ngày {lunarDate})
+              </p>
+
+              <p style={{ fontSize: '0.8rem', color: textDark, textTransform: 'uppercase', marginBottom: 4 }}>
+                KHAI TIỆC
+              </p>
+              <p
+                style={{
+                  fontSize: '1.2rem',
+                  color: textDark,
+                  fontWeight: 700,
+                  fontFamily: "'Playfair Display', serif",
+                  marginBottom: 20
+                }}
+              >
+                {partyTime}
+              </p>
+
+              <button
+                className='btn-calendar'
+                style={{
+                  backgroundColor: rose,
+                  color: textDark,
+                  border: 'none',
+                  padding: '10px 24px',
+                  borderRadius: 20,
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.3s'
+                }}
+              >
+                Thêm vào lịch
+              </button>
+            </div>
+
+            <div
+              style={{
+                width: '100%',
+                height: 68,
+                ...ribbonStyle,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: sectionFontFamily,
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  letterSpacing: 4,
+                  color: textDark,
+                  textTransform: 'uppercase'
+                }}
+              >
+                Tiệc Cưới Sẽ Tổ Chức Tại
+              </p>
+            </div>
+
+            <div className='modern-section-floral' style={{ padding: '24px 20px 0', textAlign: 'center' }}>
+              <div className='modern-map-wrap' style={{ maxWidth: 620, margin: '0 auto' }}>
                 <p
                   style={{
-                    color: '#94a3b8',
-                    fontSize: 15,
-                    lineHeight: 1.75,
-                    maxWidth: 300,
-                    margin: '0 auto',
-                    fontStyle: 'italic'
+                    fontSize: '0.85rem',
+                    color: textDark,
+                    fontWeight: 500,
+                    lineHeight: 1.6,
+                    marginBottom: 16
                   }}
                 >
-                  {isAttending
-                    ? `Chúng tôi rất vui được đón tiếp${guestName ? ` ${guestName}` : ''}. Hẹn gặp trong ngày vui! 🥂`
-                    : 'Rất tiếc khi bạn không thể tham dự. Mong có dịp gặp nhau trong tương lai! 💕'}
+                  {address}
                 </p>
-                {wish && (
+                <div
+                  style={{
+                    width: '100%',
+                    borderRadius: 12,
+                    overflow: 'hidden',
+                    marginBottom: 0,
+                    boxShadow: '0 8px 16px rgba(0,0,0,0.08)'
+                  }}
+                >
+                  <iframe
+                    className='modern-map-frame'
+                    title='wedding-venue-map'
+                    width='100%'
+                    height='380'
+                    style={{ border: 0, display: 'block' }}
+                    loading='lazy'
+                    allowFullScreen
+                    referrerPolicy='no-referrer-when-downgrade'
+                    src={mapUrl}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div
+              style={{
+                width: '100%',
+                height: 68,
+                ...ribbonStyle,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginTop: 0
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  letterSpacing: 4,
+                  color: textDark,
+                  textTransform: 'uppercase'
+                }}
+              >
+                Sổ Lưu Bút
+              </p>
+            </div>
+
+            <div className='modern-section-floral' style={{ padding: '24px 20px 40px' }}>
+              <div style={{ maxWidth: 620, margin: '0 auto' }}>
+                <RSVPForm
+                  weddingId={wedding?.id}
+                  rsvpId={rsvpId}
+                  guestName={guestName}
+                  primaryColor={textDark}
+                  fontFamily={fontFamily}
+                  sectionFontFamily={sectionFontFamily}
+                  isDark={true}
+                />
+              </div>
+            </div>
+
+            <div className='modern-section-floral' style={{ padding: '24px 20px' }}>
+              <div
+                className='modern-guestbook-scroll modern-guestbook-wrap'
+                style={{
+                  maxWidth: 620,
+                  margin: '0 auto',
+                  maxHeight: 450,
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16,
+                  ...panelPatternStyle
+                }}
+              >
+                {displayedGuestWishes.map((comment, i) => (
                   <div
+                    key={i}
                     style={{
-                      marginTop: 28,
+                      backgroundColor: '#5b1010',
+                      borderRadius: 12,
                       padding: '16px 20px',
-                      background: `${accent}10`,
-                      borderRadius: 14,
-                      borderLeft: `3px solid ${accent}`,
-                      textAlign: 'left'
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                      borderLeft: `4px solid ${rose}`,
+                      fontFamily: "'Playfair Display', serif"
                     }}
                   >
-                    <p
+                    <div
                       style={{
-                        fontSize: 10,
-                        fontWeight: 700,
-                        color: accentLight,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.1em',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'baseline',
                         marginBottom: 8
                       }}
                     >
-                      Your wishes
-                    </p>
-                    <p style={{ color: '#cbd5e1', fontStyle: 'italic', fontSize: 14, lineHeight: 1.7 }}>
-                      &ldquo;{wish}&rdquo;
+                      <span style={{ fontWeight: 700, color: textDark, fontSize: '0.95rem' }}>
+                        {comment.guest_name || 'Khách mời'}
+                      </span>
+                      <span style={{ fontSize: '0.7rem', color: `${textDark}bb`, fontFamily: "'Lora', serif" }}>
+                        {typeof comment.created_at === 'string' && comment.created_at.includes(':')
+                          ? comment.created_at
+                          : new Date(comment.created_at).toLocaleDateString('vi-VN')}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                      <span
+                        style={{
+                          border: `1px solid ${textDark}66`,
+                          color: textDark,
+                          borderRadius: 999,
+                          padding: '3px 10px',
+                          fontSize: '0.72rem',
+                          fontWeight: 600
+                        }}
+                      >
+                        {comment.is_attending ? 'Sẽ tham dự' : 'Không tham dự'}
+                      </span>
+                      {comment.is_attending && (
+                        <span
+                          style={{
+                            border: `1px solid ${textDark}55`,
+                            color: `${textDark}dd`,
+                            borderRadius: 999,
+                            padding: '3px 10px',
+                            fontSize: '0.72rem'
+                          }}
+                        >
+                          {`Số người: ${comment.party_size || 1}`}
+                        </span>
+                      )}
+                      {comment.phone && (
+                        <span
+                          style={{
+                            border: `1px solid ${textDark}55`,
+                            color: `${textDark}dd`,
+                            borderRadius: 999,
+                            padding: '3px 10px',
+                            fontSize: '0.72rem'
+                          }}
+                        >
+                          {`SĐT: ${comment.phone}`}
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: '0.95rem', color: textDark, lineHeight: 1.6, fontStyle: 'italic' }}>
+                      {comment.wishes ? `"${comment.wishes}"` : 'Đã gửi phản hồi RSVP.'}
                     </p>
                   </div>
-                )}
+                ))}
+              </div>
+            </div>
+
+            {hasGiftInfo && (
+              <div
+                className='modern-section-padding'
+                style={{
+                  padding: '30px 18px 44px',
+                  textAlign: 'center',
+                  backgroundColor: cream,
+                  backgroundImage: `radial-gradient(circle at 12% 18%, ${textDark}1a 0, transparent 130px), radial-gradient(circle at 78% 20%, ${textDark}14 0, transparent 170px), radial-gradient(circle at 84% 75%, ${textDark}10 0, transparent 210px)`
+                }}
+              >
+                <p
+                  style={{
+                    color: textDark,
+                    fontSize: '1.9rem',
+                    fontFamily: "'Playfair Display', serif",
+                    marginBottom: 18,
+                    letterSpacing: 1
+                  }}
+                >
+                  Hộp Mừng Cưới
+                </p>
+
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div className='gift-card-wrap'>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className='gift-card-ornament gift-card-ornament-left' src='/image/rong.webp' alt='' />
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img className='gift-card-ornament gift-card-ornament-right' src='/image/phung.webp' alt='' />
+                    <div aria-hidden='true' className='gift-card-flower gift-card-flower-left' style={flowerMaskBase} />
+                    <div
+                      aria-hidden='true'
+                      className='gift-card-flower gift-card-flower-right'
+                      style={flowerMaskBase}
+                    />
+
+                    <button
+                      onClick={() => setShowGiftQr(true)}
+                      style={{
+                        background: 'transparent',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
+                        position: 'relative',
+                        zIndex: 2
+                      }}
+                      aria-label='Mở hộp mừng cưới'
+                    >
+                      <div
+                        className='gift-mini-card'
+                        style={{
+                          width: 210,
+                          height: 144,
+                          background: 'linear-gradient(150deg, #7e1717 0%, #a14343 100%)',
+                          borderRadius: 14,
+                          position: 'relative',
+                          border: `1px solid ${textDark}44`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          padding: '0 18px'
+                        }}
+                      >
+                        <div
+                          style={{
+                            position: 'absolute',
+                            inset: 10,
+                            borderRadius: 10,
+                            border: `1px dashed ${textDark}66`,
+                            pointerEvents: 'none'
+                          }}
+                        />
+
+                        <div
+                          style={{
+                            width: 52,
+                            height: 52,
+                            borderRadius: '50%',
+                            backgroundColor: `${textDark}20`,
+                            border: `2px solid ${textDark}88`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: textDark,
+                            fontSize: '1.7rem',
+                            fontWeight: 700
+                          }}
+                        >
+                          囍
+                        </div>
+
+                        <p
+                          style={{
+                            marginLeft: 12,
+                            color: textDark,
+                            fontFamily: "'Playfair Display', serif",
+                            fontSize: '0.95rem',
+                            letterSpacing: 1.4,
+                            textTransform: 'uppercase',
+                            textAlign: 'left',
+                            lineHeight: 1.35
+                          }}
+                        >
+                          Mở Thiệp
+                          <br />
+                          Mừng Cưới
+                        </p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <p
+                  style={{
+                    marginTop: 16,
+                    color: `${textDark}cc`,
+                    fontSize: '0.95rem',
+                    fontFamily: "'Lora', serif"
+                  }}
+                >
+                  Nhấn vào tấm thiệp nhỏ để mở mã QR
+                </p>
               </div>
             )}
           </div>
-        </section>
+        </div>
 
-        {/* ══ Footer ══ */}
-        <footer style={{ padding: '60px 20px', textAlign: 'center', borderTop: '1px solid rgba(255,255,255,.05)' }}>
-          <div className='m-pulse3d' style={{ marginBottom: 16 }}>
-            <Heart size={28} fill={accent} color={accent} />
-          </div>
-          <p
-            className='gradient-text'
-            style={{
-              fontFamily: headingFontFamily,
-              fontSize: 'clamp(1.2rem, 3vw, 1.6rem)',
-              fontWeight: 700,
-              marginBottom: 8
-            }}
-          >
-            {mergedContent.groom_name} &amp; {mergedContent.bride_name}
-          </p>
-          <p style={{ color: '#475569', fontSize: 14 }}>Cảm ơn bạn đã đến chung vui cùng chúng tôi</p>
-          <div style={{ marginTop: 24, fontSize: 12, color: '#334155' }}>Powered by MoiMoi Studio</div>
-        </footer>
+        <div className='modern-side-panel' style={{ flex: 1, minHeight: '100vh', background: '#fff' }} />
       </div>
 
-      {/* Lightbox */}
-      {lightboxOpen && (
+      <MusicPlayer musicUrl={musicUrl || mergedContent.music_url} forceHide={showSplash} />
+
+      {lightboxIndex !== null && (
         <div
           style={{
             position: 'fixed',
             inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.92)',
+            backgroundColor: 'rgba(0,0,0,0.9)',
             zIndex: 9999,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            flexDirection: 'column'
           }}
-          onClick={() => setLightboxOpen(false)}
         >
           <button
-            onClick={() => setLightboxOpen(false)}
+            onClick={() => setLightboxIndex(null)}
             style={{
               position: 'absolute',
-              top: 16,
-              right: 16,
-              background: 'rgba(255,255,255,0.15)',
+              top: 48,
+              right: 20,
+              background: 'transparent',
               border: 'none',
-              color: '#fff',
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              fontSize: '1.1rem',
+              color: textDark,
+              fontSize: '2rem',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
+              zIndex: 10000
             }}
           >
-            ✕
+            &times;
           </button>
-          <div
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setLightboxIndex((prev) => (prev! > 0 ? prev! - 1 : albumImages.length - 1))
+            }}
             style={{
               position: 'absolute',
-              top: 20,
-              left: 0,
-              right: 0,
-              textAlign: 'center',
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: '0.85rem'
+              left: 20,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'transparent',
+              border: 'none',
+              color: textDark,
+              fontSize: '3rem',
+              cursor: 'pointer',
+              zIndex: 10000
             }}
           >
+            &#10094;
+          </button>
+
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              setLightboxIndex((prev) => (prev! < albumImages.length - 1 ? prev! + 1 : 0))
+            }}
+            style={{
+              position: 'absolute',
+              right: 20,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'transparent',
+              border: 'none',
+              color: textDark,
+              fontSize: '3rem',
+              cursor: 'pointer',
+              zIndex: 10000
+            }}
+          >
+            &#10095;
+          </button>
+
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={albumImages[lightboxIndex]}
+            alt='Ảnh phóng to'
+            style={{
+              maxWidth: '90%',
+              maxHeight: '80vh',
+              objectFit: 'contain',
+              borderRadius: 8
+            }}
+          />
+
+          <div style={{ color: textDark, marginTop: 16, fontSize: '0.9rem', letterSpacing: 2 }}>
             {lightboxIndex + 1} / {albumImages.length}
           </div>
-          {lightboxIndex > 0 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setLightboxIndex(lightboxIndex - 1)
-              }}
-              style={{
-                position: 'absolute',
-                left: 12,
-                background: 'rgba(255,255,255,0.15)',
-                border: 'none',
-                color: '#fff',
-                width: 44,
-                height: 44,
-                borderRadius: '50%',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              ‹
-            </button>
-          )}
-          <div onClick={(e) => e.stopPropagation()}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={albumImages[lightboxIndex]}
-              alt={`Photo ${lightboxIndex + 1}`}
-              style={{ maxWidth: '90vw', maxHeight: '85vh', objectFit: 'contain', borderRadius: 8, display: 'block' }}
-            />
+        </div>
+      )}
+
+      {showGiftQr && hasGiftInfo && (
+        <div
+          onClick={() => setShowGiftQr(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.74)',
+            zIndex: 9998,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: '100%',
+              maxWidth: 420,
+              backgroundColor: '#5b1010',
+              borderRadius: 18,
+              border: `1px solid ${textDark}44`,
+              boxShadow: '0 24px 60px rgba(0,0,0,0.42)',
+              padding: '22px 20px'
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <p
+                style={{
+                  color: textDark,
+                  fontFamily: "'Playfair Display', serif",
+                  fontSize: '1rem',
+                  letterSpacing: 1.4,
+                  textTransform: 'uppercase',
+                  fontWeight: 700
+                }}
+              >
+                QR Mừng Cưới
+              </p>
+              <button
+                onClick={() => setShowGiftQr(false)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: textDark,
+                  fontSize: '1.6rem',
+                  cursor: 'pointer',
+                  lineHeight: 1
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            {displayQrUrl && (
+              <div
+                style={{
+                  backgroundColor: '#fff',
+                  borderRadius: 14,
+                  padding: 12,
+                  marginBottom: 14,
+                  display: 'flex',
+                  justifyContent: 'center'
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={displayQrUrl}
+                  alt='QR mừng cưới'
+                  style={{ width: '100%', maxWidth: 260, aspectRatio: '1 / 1', objectFit: 'contain' }}
+                />
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gap: 8, color: textDark }}>
+              {bankName && (
+                <p style={{ fontSize: '0.82rem' }}>
+                  Ngân hàng: <strong>{bankName}</strong>
+                </p>
+              )}
+              {accountName && (
+                <p style={{ fontSize: '0.82rem' }}>
+                  Chủ tài khoản: <strong>{accountName}</strong>
+                </p>
+              )}
+              {accountNumber && (
+                <p style={{ fontSize: '0.82rem' }}>
+                  Số tài khoản: <strong>{accountNumber}</strong>
+                </p>
+              )}
+              <p style={{ fontSize: '0.78rem', color: `${textDark}cc`, marginTop: 4 }}>
+                Nội dung chuyển khoản: {transferNote}
+              </p>
+            </div>
           </div>
-          {lightboxIndex < albumImages.length - 1 && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation()
-                setLightboxIndex(lightboxIndex + 1)
-              }}
-              style={{
-                position: 'absolute',
-                right: 12,
-                background: 'rgba(255,255,255,0.15)',
-                border: 'none',
-                color: '#fff',
-                width: 44,
-                height: 44,
-                borderRadius: '50%',
-                fontSize: '1.5rem',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}
-            >
-              ›
-            </button>
-          )}
         </div>
       )}
     </>
