@@ -64,11 +64,24 @@ export default function TemplatePreviewPage({ branch }: Props) {
     if (userContent[k]) validUserContent[k] = userContent[k]
   })
 
+  const moiMoiBaseDemoImages = {
+    cover_image: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=900&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=900&q=80',
+      'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=900&q=80',
+      'https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=900&q=80',
+      'https://images.unsplash.com/photo-1520854221256-17451cc331bf?w=900&q=80',
+      'https://images.unsplash.com/photo-1515934751635-c81c6bc9a2d8?w=900&q=80',
+      'https://images.unsplash.com/photo-1522670350564-7cccf2f0d4d6?w=900&q=80'
+    ]
+  }
+
   // Pass demo data with the correct branch on the template object
   const demoWedding = {
     ...DEMO_WEDDING,
     content: {
       ...DEMO_WEDDING.content,
+      ...(branch === 'theme-moimoi-base' ? moiMoiBaseDemoImages : {}),
       ...validUserContent
     },
     template: {

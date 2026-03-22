@@ -149,5 +149,6 @@ INSERT INTO templates (code, name, thumbnail_url, repo_branch, default_content)
 VALUES 
 ('vintage-rose', 'Vintage Rose', '/templates/vintage-rose.jpg', 'theme-vintage', '{"primary_color": "#e11d48", "font_family": "Playfair Display"}'::jsonb),
 ('modern-minimal', 'Modern Minimal', '/templates/modern-minimal.jpg', 'theme-minimal', '{"primary_color": "#1f2937", "font_family": "Inter"}'::jsonb),
-('luxury-gold', 'Luxury Gold', '/templates/luxury-gold.jpg', 'theme-luxury', '{"primary_color": "#d97706", "font_family": "Cormorant Garamond"}'::jsonb)
+('luxury-gold', 'Luxury Gold', '/templates/luxury-gold.jpg', 'theme-luxury', '{"primary_color": "#d97706", "font_family": "Cormorant Garamond"}'::jsonb),
+('moimoi-base', 'MoiMoiBase', '/templates/moimoi-base.jpg', 'theme-moimoi-base', '{"primary_color": "#e85c93", "font_family": "Nunito Sans", "heading_font_family": "Playfair Display", "section_font_family": "Great Vibes"}'::jsonb)
 ON CONFLICT (code) DO NOTHING;

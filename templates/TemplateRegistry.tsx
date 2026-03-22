@@ -85,6 +85,10 @@ export const Templates: Record<
   'theme-pastel': {
     GeneralView: dynamic(() => import('./ThemePastel/GeneralView')),
     GuestView: dynamic(() => import('./ThemePastel/GuestView'))
+  },
+  'theme-moimoi-base': {
+    GeneralView: dynamic(() => import('./MoiMoiBase/GeneralView')),
+    GuestView: dynamic(() => import('./MoiMoiBase/GuestView'))
   }
 }
 

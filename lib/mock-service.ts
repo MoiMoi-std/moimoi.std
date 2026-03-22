@@ -49,6 +49,12 @@ const MOCK_TEMPLATES: Template[] = [
     name: 'Modern Theme',
     thumbnail_url: 'https://via.placeholder.com/300x200?text=Modern',
     repo_branch: 'theme-modern'
+  },
+  {
+    id: 'tpl_03',
+    name: 'MoiMoiBase',
+    thumbnail_url: 'https://via.placeholder.com/300x200?text=MoiMoiBase',
+    repo_branch: 'theme-moimoi-base'
   }
 ]
 
