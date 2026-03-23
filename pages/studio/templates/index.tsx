@@ -383,7 +383,7 @@ export default function TemplatesPage() {
               {/* Live iframe thumbnail — lazy loaded */}
               {(template as any).repo_branch ? (
                 <LazyIframePreview
-                  src={`/studio/templates/preview/${encodeURIComponent((template as any).repo_branch)}`}
+                  src={`/studio/templates/preview/${encodeURIComponent((template as any).repo_branch)}?embed=1`}
                   title={`Preview ${template.name}`}
                   viewMode={viewMode}
                 />
