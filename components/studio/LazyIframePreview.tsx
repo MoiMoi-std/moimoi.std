@@ -16,6 +16,11 @@ export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: 
   const wrapperRef = useRef<HTMLDivElement>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
   const [loaded, setLoaded] = useState(false)
+  const [wrapperWidth, setWrapperWidth] = useState(0)
+
+  const sourceWidth = viewMode === 'mobile' ? 375 : 1280
+  const sourceHeight = viewMode === 'mobile' ? 812 : 960
+  const scale = wrapperWidth > 0 ? wrapperWidth / sourceWidth : viewMode === 'mobile' ? 0.32 : 0.25
 
   useEffect(() => {
     const el = wrapperRef.current
@@ -32,6 +37,20 @@ export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: 
     )
     observer.observe(el)
     return () => observer.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const el = wrapperRef.current
+    if (!el) return
+
+    const measure = () => {
+      setWrapperWidth(el.clientWidth)
+    }
+
+    measure()
+    const resizeObserver = new ResizeObserver(measure)
+    resizeObserver.observe(el)
+    return () => resizeObserver.disconnect()
   }, [])
 
   return (
@@ -51,18 +70,16 @@ export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: 
             importance='low'
             onLoad={() => setLoaded(true)}
             style={{
-              width: viewMode === 'mobile' ? '375px' : '1280px',
-              height: viewMode === 'mobile' ? '812px' : '960px',
-              transform: viewMode === 'mobile' ? 'scale(0.32)' : 'scale(0.25)',
+              width: `${sourceWidth}px`,
+              height: `${sourceHeight}px`,
+              transform: `scale(${scale})`,
               transformOrigin: 'top left',
-              border: viewMode === 'mobile' ? '12px solid #222' : 'none',
-              borderRadius: viewMode === 'mobile' ? '36px' : '0',
+              border: 'none',
+              borderRadius: 0,
               pointerEvents: 'none',
               position: 'absolute',
-              top: viewMode === 'mobile' ? '50%' : 0,
-              left: viewMode === 'mobile' ? '50%' : 0,
-              marginLeft: viewMode === 'mobile' ? '-60px' : 0, // 375 * 0.32 / 2
-              marginTop: viewMode === 'mobile' ? '-130px' : 0, // 812 * 0.32 / 2
+              top: 0,
+              left: 0,
               backgroundColor: '#fff',
               opacity: loaded ? 1 : 0,
               transition: 'opacity 0.3s ease'
