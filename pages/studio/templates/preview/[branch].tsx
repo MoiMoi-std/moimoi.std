@@ -1,6 +1,9 @@
 import { getTemplate } from '@/templates/TemplateRegistry'
 import { GetStaticPaths, GetStaticProps } from 'next'
 import { useWedding } from '@/lib/useWedding'
+import { useEffect, useState } from 'react'
+import { TemplateViewportContext } from '@/lib/TemplateViewportContext'
+import MusicPlayer from '@/components/MusicPlayer'
 
 // Demo wedding data used for previewing any template
 const DEMO_WEDDING = {
@@ -25,6 +28,7 @@ const DEMO_WEDDING = {
     address: 'Trung Tâm Tiệc Cưới Grand Palace, 142 Công Hòa, Q.Tân Bình, TP.HCM',
     map_url: 'https://maps.google.com',
     cover_image: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=800&q=80',
+    music_url: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3',
     images: [
       'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=600&q=80',
       'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&q=80',
@@ -143,6 +147,16 @@ export default function TemplatePreviewPage({ branch }: Props) {
   const { wedding } = useWedding()
   const bannerTheme = getPreviewBannerTheme(branch)
 
+  const [phoneMode, setPhoneMode] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 768)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
+
   // Lọc lấy các trường có dữ liệu thật của user
   const userContent = wedding?.content || {}
   const validUserContent: any = {}
@@ -150,12 +164,15 @@ export default function TemplatePreviewPage({ branch }: Props) {
     if (userContent[k]) validUserContent[k] = userContent[k]
   })
 
+  const isIframe = typeof window !== 'undefined' && window.self !== window.top
+
   // Pass demo data with the correct branch on the template object
   const demoWedding = {
     ...DEMO_WEDDING,
     content: {
       ...DEMO_WEDDING.content,
-      ...validUserContent
+      ...validUserContent,
+      music_url: isIframe ? undefined : (validUserContent.music_url || DEMO_WEDDING.content.music_url)
     },
     template: {
       ...DEMO_WEDDING.template,
@@ -226,8 +243,120 @@ export default function TemplatePreviewPage({ branch }: Props) {
         </button>
       </div>
 
-      {/* Render the actual template */}
-      <GeneralView wedding={demoWedding as any} />
+      {/* Toggle button — chỉ hiện trên desktop */}
+      {isDesktop && (
+        <button
+          onClick={() => setPhoneMode((p) => !p)}
+          style={{
+            position: 'fixed',
+            bottom: 88,
+            right: 28,
+            zIndex: 9999,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            padding: '10px 20px',
+            background: 'rgba(10,10,10,0.85)',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            border: '1px solid rgba(255,255,255,0.18)',
+            borderRadius: 999,
+            color: '#f1f5f9',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
+            boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
+            transition: 'transform 0.2s, box-shadow 0.2s',
+            fontFamily: 'system-ui, sans-serif',
+            letterSpacing: '0.01em'
+          }}
+          onMouseEnter={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)'
+            ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 10px 32px rgba(0,0,0,0.45)'
+          }}
+          onMouseLeave={(e) => {
+            ;(e.currentTarget as HTMLButtonElement).style.transform = 'translateY(0)'
+            ;(e.currentTarget as HTMLButtonElement).style.boxShadow = '0 6px 24px rgba(0,0,0,0.35)'
+          }}
+        >
+          {phoneMode ? (
+            <>
+              <svg
+                width='15'
+                height='15'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+              >
+                <rect x='2' y='3' width='20' height='14' rx='2' />
+                <line x1='8' y1='21' x2='16' y2='21' />
+                <line x1='12' y1='17' x2='12' y2='21' />
+              </svg>
+              Toàn màn hình
+            </>
+          ) : (
+            <>
+              <svg
+                width='13'
+                height='15'
+                viewBox='0 0 24 24'
+                fill='none'
+                stroke='currentColor'
+                strokeWidth='2'
+                strokeLinecap='round'
+                strokeLinejoin='round'
+              >
+                <rect x='5' y='2' width='14' height='20' rx='2' />
+                <line x1='12' y1='18' x2='12.01' y2='18' />
+              </svg>
+              Xem kiểu điện thoại
+            </>
+          )}
+        </button>
+      )}
+
+      {/* Nội dung template */}
+      <div>
+        {phoneMode && isDesktop ? (
+          <TemplateViewportContext.Provider value='phone'>
+            <div
+              style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'center',
+                background: 'linear-gradient(160deg, #fdf4f8 0%, #faf5ff 50%, #f0f9ff 100%)',
+                padding: '32px 0 80px'
+              }}
+            >
+              <div
+                style={{
+                  width: 390,
+                  minHeight: '85vh',
+                  borderRadius: 40,
+                  overflow: 'hidden',
+                  boxShadow: '0 32px 80px rgba(0,0,0,0.25), 0 0 0 10px #1a1a1a, 0 0 0 11px #333',
+                  position: 'relative'
+                }}
+              >
+                <GeneralView wedding={demoWedding as any} musicUrl={demoWedding.content?.music_url} />
+              </div>
+            </div>
+          </TemplateViewportContext.Provider>
+        ) : (
+          <TemplateViewportContext.Provider value={isDesktop ? 'laptop' : 'phone'}>
+            <GeneralView wedding={demoWedding as any} musicUrl={demoWedding.content?.music_url} />
+          </TemplateViewportContext.Provider>
+        )}
+      </div>
+
+      {/* Music player cho các template không tự quản lý nhạc (trừ những template tự nhúng MusicPlayer) */}
+      {!['theme-vintage', 'theme-boho', 'theme-royal', 'theme-modern', 'theme-luxury', 'theme-nature'].includes(
+        branch
+      ) && <MusicPlayer musicUrl={demoWedding.content?.music_url} />}
     </>
   )
 }
