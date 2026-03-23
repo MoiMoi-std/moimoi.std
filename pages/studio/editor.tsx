@@ -654,7 +654,7 @@ const Editor = () => {
                 }`}
               >
                 <div className='flex items-center justify-center gap-1 md:gap-2'>
-                  <Info size={18} /> <span className='hidden sm:inline'>Thông Tin</span>
+                  <Info size={18} /> <span className='hidden xl:inline'>Thông Tin</span>
                 </div>
               </button>
               <button
@@ -666,7 +666,7 @@ const Editor = () => {
                 }`}
               >
                 <div className='flex items-center justify-center gap-1 md:gap-2'>
-                  <ImageIcon size={18} /> <span className='hidden sm:inline'>Album Ảnh</span>
+                  <ImageIcon size={18} /> <span className='hidden xl:inline'>Album Ảnh</span>
                 </div>
               </button>
               <button
@@ -678,7 +678,7 @@ const Editor = () => {
                 }`}
               >
                 <div className='flex items-center justify-center gap-1 md:gap-2'>
-                  <QrCode size={18} /> <span className='hidden sm:inline'>Tiền mừng</span>
+                  <QrCode size={18} /> <span className='hidden xl:inline'>Tiền mừng</span>
                 </div>
               </button>
               <button
@@ -690,7 +690,7 @@ const Editor = () => {
                 }`}
               >
                 <div className='flex items-center justify-center gap-1 md:gap-2'>
-                  <Palette size={18} /> <span className='hidden sm:inline'>Kiểu Dáng</span>
+                  <Palette size={18} /> <span className='hidden xl:inline'>Kiểu Dáng</span>
                 </div>
               </button>
               <button
@@ -702,7 +702,7 @@ const Editor = () => {
                 }`}
               >
                 <div className='flex items-center justify-center gap-1 md:gap-2'>
-                  <Music size={18} /> <span className='hidden sm:inline'>Nhạc</span>
+                  <Music size={18} /> <span className='hidden xl:inline'>Nhạc</span>
                 </div>
               </button>
             </div>

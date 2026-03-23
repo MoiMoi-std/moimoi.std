@@ -99,7 +99,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
     <div className='bg-white p-6 rounded-lg shadow-sm space-y-6'>
       <h3 className='text-lg font-medium text-gray-900 border-b pb-2'>Thông Tin Chính</h3>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+      <div className='grid grid-cols-1 md:grid-cols-1 gap-6'>
         <div className='space-y-4'>
           <div>
             <label className='block text-sm font-medium text-gray-700 mb-1'>Tên & Vai trò (Chú Rể)</label>
@@ -249,7 +249,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
         </div>
       </div>
 
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6'>
+      <div className='grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6'>
         <div>
           <label className='block text-sm font-medium text-gray-700 mb-1'>Ngày Cưới (Dương)</label>
           <input
