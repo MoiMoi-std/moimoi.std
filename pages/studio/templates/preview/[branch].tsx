@@ -172,7 +172,7 @@ export default function TemplatePreviewPage({ branch }: Props) {
     content: {
       ...DEMO_WEDDING.content,
       ...validUserContent,
-      music_url: isIframe ? undefined : (validUserContent.music_url || DEMO_WEDDING.content.music_url)
+      music_url: isIframe ? undefined : validUserContent.music_url || DEMO_WEDDING.content.music_url
     },
     template: {
       ...DEMO_WEDDING.template,
