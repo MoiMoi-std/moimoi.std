@@ -85,9 +85,7 @@ export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: 
             style={{
               width: `${isMobilePreview ? mobileBase.width : desktopBase.width}px`,
               height: `${isMobilePreview ? mobileBase.height : desktopBase.height}px`,
-              transform: isMobilePreview
-                ? `translate(-50%, -50%) scale(${mobileScale})`
-                : `scale(${desktopScale})`,
+              transform: isMobilePreview ? `translate(-50%, -50%) scale(${mobileScale})` : `scale(${desktopScale})`,
               // Mobile: scale từ tâm để căn giữa đúng với translate(-50%,-50%)
               // Desktop: scale từ top-left (vì top=0, left=0)
               transformOrigin: isMobilePreview ? 'center' : 'top left',
