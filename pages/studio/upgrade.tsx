@@ -390,7 +390,7 @@ export default function UpgradePage() {
                 <div className='space-y-3'>
                   <button
                     onClick={() => handleUpgrade(plan)}
-                    disabled={isCurrentPlan || isLowerThanCurrent || paying}
+                    disabled={isCurrentPlan || isLowerThanCurrent || paying || displayPrice === 0}
                     className='w-full py-4 bg-gradient-to-r from-pink-600 to-rose-500 text-white font-bold rounded-xl shadow-lg shadow-pink-200 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2 disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed'
                   >
                     {isCurrentPlan ? (
@@ -401,6 +401,10 @@ export default function UpgradePage() {
                       'Bạn đã sở hữu gói cao hơn'
                     ) : paying ? (
                       'Đang chuyển đến VNPay...'
+                    ) : displayPrice === 0 ? (
+                      <>
+                        <Check size={20} /> Đã sở hữu
+                      </>
                     ) : (
                       <>
                         <CreditCard size={20} /> {showUpgradePrice ? 'Nâng cấp' : 'Thanh Toán qua VNPay'}

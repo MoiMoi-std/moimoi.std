@@ -8,7 +8,7 @@ import { isPlanExpired } from '@/lib/plan-store'
 import { useWedding } from '@/lib/useWedding'
 import { Check, Eye, LayoutTemplate, Search, Sparkles, Monitor, Smartphone } from 'lucide-react'
 import { useRouter } from 'next/router'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 type TemplateAdminMeta = {
   is_active: boolean
@@ -192,6 +192,50 @@ export default function TemplatesPage() {
     }))
   }, [templates, templateMeta])
 
+  // Returns true if user can apply this template.
+  const canUseTemplate = useCallback(
+    (templateId: number): boolean => {
+      // Block only if user has NOT paid for any plan AND default package is student
+      if (!contentPlanId && isStudentPromoPlan(userPackageName)) return false
+      const tpl = templates.find((t) => t.id === templateId) as any
+      if (!tpl) return false
+      const pkgs: any[] = tpl.packages || []
+      if (pkgs.length === 0) return true // free template — accessible by all
+      if (planExpired) return false // plan expired — block paid templates
+      if (!effectivePlanId) return false
+
+      const userRank = getPlanRank(effectivePackageName ?? '')
+      const userPrice = effectivePackagePrice
+
+      return pkgs.some((p: any) => {
+        // 1. exact match
+        if (p.id === effectivePlanId) return true
+
+        // 2. price comparison
+        const tplPkg = packageInfoMap[Number(p.id)]
+        const pPrice = tplPkg ? tplPkg.price : (p.original_price ?? p.price ?? 0)
+
+        // If template requires a plan that costs <= what the user paid, user can use it
+        if (pPrice >= 0 && pPrice <= userPrice) return true
+
+        // 3. legacy fallback (string-based)
+        if (userRank === 0) return false
+        const pRank = getPlanRank(p.name ?? '')
+        return pRank > 0 && pRank <= userRank
+      })
+    },
+    [
+      contentPlanId,
+      userPackageName,
+      templates,
+      planExpired,
+      effectivePlanId,
+      effectivePackageName,
+      effectivePackagePrice,
+      packageInfoMap
+    ]
+  )
+
   const filteredTemplates = useMemo(() => {
     let data = templatesWithMeta.filter((template) => template.meta.is_active)
 
@@ -207,8 +251,17 @@ export default function TemplatesPage() {
       data = data.filter((template) => template.name.toLowerCase().includes(keyword))
     }
 
-    return data.sort((a, b) => a.meta.sort_order - b.meta.sort_order)
-  }, [templatesWithMeta, searchTerm, selectedPlan])
+    // Sort: owned templates first, then by sort_order
+    return data.sort((a, b) => {
+      const aCanUse = canUseTemplate(a.id)
+      const bCanUse = canUseTemplate(b.id)
+
+      if (aCanUse && !bCanUse) return -1
+      if (!aCanUse && bCanUse) return 1
+
+      return a.meta.sort_order - b.meta.sort_order
+    })
+  }, [templatesWithMeta, searchTerm, selectedPlan, canUseTemplate])
 
   const pagedTemplates = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage
@@ -218,14 +271,6 @@ export default function TemplatesPage() {
   useEffect(() => {
     setCurrentPage(1)
   }, [searchTerm, selectedPlan])
-
-  if (loadingTemplates) {
-    return (
-      <StudioLayout>
-        <StudioLoading message='Đang tải thư viện mẫu...' />
-      </StudioLayout>
-    )
-  }
 
   const applyTemplate = async (templateId: number) => {
     try {
@@ -252,37 +297,12 @@ export default function TemplatesPage() {
     }
   }
 
-  // Returns true if user can apply this template.
-  // Higher-tier users can access templates from lower-tier plans as well.
-  const canUseTemplate = (templateId: number): boolean => {
-    // Block only if user has NOT paid for any plan AND default package is student
-    if (!contentPlanId && isStudentPromoPlan(userPackageName)) return false
-    const tpl = templates.find((t) => t.id === templateId) as any
-    if (!tpl) return false
-    const pkgs: any[] = tpl.packages || []
-    if (pkgs.length === 0) return true // free template — accessible by all
-    if (planExpired) return false // plan expired — block paid templates
-    if (!effectivePlanId) return false
-
-    const userRank = getPlanRank(effectivePackageName ?? '')
-    const userPrice = effectivePackagePrice
-
-    return pkgs.some((p: any) => {
-      // 1. exact match
-      if (p.id === effectivePlanId) return true
-
-      // 2. price comparison
-      const tplPkg = packageInfoMap[Number(p.id)]
-      const pPrice = tplPkg ? tplPkg.price : (p.original_price ?? p.price ?? 0)
-
-      // If template requires a plan that costs <= what the user paid, user can use it
-      if (pPrice >= 0 && pPrice <= userPrice) return true
-
-      // 3. legacy fallback (string-based)
-      if (userRank === 0) return false
-      const pRank = getPlanRank(p.name ?? '')
-      return pRank > 0 && pRank <= userRank
-    })
+  if (loadingTemplates) {
+    return (
+      <StudioLayout>
+        <StudioLoading message='Đang tải thư viện mẫu...' />
+      </StudioLayout>
+    )
   }
 
   const previewTemplate = (templateId: number) => {
