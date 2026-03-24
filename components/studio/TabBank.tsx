@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Wedding } from '../../lib/data-service'
 import { X, Search, Check } from 'lucide-react'
+import LockedOverlay from './LockedOverlay'
 
 interface Bank {
   code: string
@@ -46,9 +47,10 @@ const BANKS: Bank[] = [
 interface TabBankProps {
   content?: Wedding['content']
   onChange: (key: string, value: string) => void
+  isLocked?: boolean
 }
 
-const TabBank: React.FC<TabBankProps> = ({ content, onChange }) => {
+const TabBank: React.FC<TabBankProps> = ({ content, onChange, isLocked }) => {
   const [formData, setFormData] = useState({
     bank_name: content?.bank_name || '',
     account_number: content?.account_number || '',
@@ -112,7 +114,7 @@ const TabBank: React.FC<TabBankProps> = ({ content, onChange }) => {
   const selectedBank = BANKS.find((b) => b.code === formData.bank_name)
 
   return (
-    <>
+    <div className='relative'>
       <div className='bg-white p-6 rounded-lg shadow-sm space-y-6'>
         <h3 className='text-lg font-medium text-gray-900 border-b pb-2'>Thông Tin Ngân Hàng</h3>
 
@@ -236,7 +238,8 @@ const TabBank: React.FC<TabBankProps> = ({ content, onChange }) => {
           </div>
         </div>
       )}
-    </>
+      {isLocked && <LockedOverlay message='Tính năng quản lý tiền mừng và QR Code yêu cầu nâng cấp gói.' />}
+    </div>
   )
 }
 

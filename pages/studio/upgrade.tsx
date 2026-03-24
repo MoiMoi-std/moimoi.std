@@ -226,8 +226,8 @@ export default function UpgradePage() {
   }
 
   return (
-    <StudioLayout>
-      <div className='max-w-7xl mx-auto py-10'>
+    <StudioLayout fullWidth={true}>
+      <div className='max-w-[1400px] mx-auto py-10 px-6 md:px-10 lg:px-16'>
         <div className='text-center mb-16'>
           <h1 className='text-4xl font-serif font-bold text-gray-900 mb-4'>Nâng Cấp Gói Dịch Vụ</h1>
           <p className='text-gray-500 text-lg'>Mở khóa toàn bộ tính năng cao cấp cho đám cưới của bạn</p>
@@ -289,7 +289,7 @@ export default function UpgradePage() {
           </div>
         )}
 
-        <div className='grid md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8'>
+        <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch'>
           {(isAdminMode ? plans : visiblePlans).map((plan) => {
             const discountActive = isDiscountActive(plan)
             let displayPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
@@ -311,8 +311,8 @@ export default function UpgradePage() {
             return (
               <div
                 key={plan.id}
-                className={`bg-white p-8 rounded-3xl border shadow-sm relative flex flex-col ${
-                  plan.highlight ? 'border-pink-500 shadow-xl' : 'border-gray-100'
+                className={`bg-white p-6 rounded-3xl border shadow-sm relative flex flex-col ${
+                  plan.highlight ? 'border-pink-500 shadow-xl scale-[1.02] z-10' : 'border-gray-100'
                 } ${plan.isActive === false ? 'opacity-60' : ''} ${isExpiredPlan ? 'border-amber-300' : ''}`}
               >
                 {plan.highlight && (
@@ -411,7 +411,6 @@ export default function UpgradePage() {
                       </>
                     )}
                   </button>
-                  <p className='text-center text-sm text-gray-400'>Hoàn tiền 100% nếu không hài lòng trong 7 ngày.</p>
                 </div>
 
                 {isAdminMode && (

@@ -1,4 +1,4 @@
-import RSVPForm from '@/components/guest/RSVPForm'
+import { useToast } from '@/components/ui/ToastProvider'
 import MusicPlayer from '@/components/MusicPlayer'
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
@@ -116,11 +116,19 @@ function parseWeddingDate(rawDate: string) {
 }
 
 export default function ModernGuestView({ wedding, disableSplash, musicUrl, guestName = '', rsvpId }: TemplateProps) {
+  const { pink } = useToast()
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showGiftQr, setShowGiftQr] = useState(false)
   const [showSplash, setShowSplash] = useState(!disableSplash)
   const [splashFading, setSplashFading] = useState(false)
   const [guestWishes, setGuestWishes] = useState<any[]>([])
+
+  const [rsvpName, setRsvpName] = useState(guestName || '')
+  const [rsvpAttend, setRsvpAttend] = useState<'yes' | 'no' | ''>('')
+  const [rsvpPartySize, setRsvpPartySize] = useState(1)
+  const [rsvpMessage, setRsvpMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
   const viewport = useTemplateViewport()
 
@@ -215,6 +223,78 @@ export default function ModernGuestView({ wedding, disableSplash, musicUrl, gues
       )
   }, [wedding?.id])
 
+  useEffect(() => {
+    if (!rsvpId) return
+
+    supabase
+      .from('rsvps')
+      .select('guest_name, wishes, is_attending, party_size')
+      .eq('id', rsvpId)
+      .single()
+      .then(({ data }) => {
+        if (!data) return
+        if (data.guest_name) setRsvpName(data.guest_name)
+        if (data.wishes) setRsvpMessage(data.wishes)
+        if (data.is_attending != null) setRsvpAttend(data.is_attending ? 'yes' : 'no')
+        if (data.party_size) setRsvpPartySize(data.party_size)
+      })
+  }, [rsvpId])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const trimmedName = rsvpName.trim()
+    if (!trimmedName) {
+      pink('Vui lòng nhập tên khách mời.')
+      return
+    }
+
+    if (!rsvpAttend) {
+      pink('Vui lòng chọn tình trạng tham dự.')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const partyCount = rsvpAttend === 'yes' ? Math.max(1, rsvpPartySize) : 0
+      const payload = {
+        wedding_id: wedding.id,
+        guest_name: trimmedName,
+        is_attending: rsvpAttend === 'yes',
+        party_size: partyCount,
+        wishes: rsvpMessage.trim() || null
+      }
+
+      let error
+      if (rsvpId) {
+        const { error: updateError } = await supabase.from('rsvps').update(payload).eq('id', rsvpId)
+        error = updateError
+      } else {
+        const { error: insertError } = await supabase.from('rsvps').insert([payload])
+        error = insertError
+      }
+
+      if (error) throw error
+
+      setSubmitted(true)
+      pink('Gửi xác nhận thành công. Cảm ơn bạn!')
+
+      // Refresh guestbook
+      const { data } = await supabase
+        .from('rsvps')
+        .select('guest_name, wishes, created_at, is_attending, party_size, phone')
+        .eq('wedding_id', wedding.id)
+        .order('created_at', { ascending: false })
+      if (data) setGuestWishes(data)
+    } catch (err: any) {
+      console.error('RSVP error:', err)
+      pink('Có lỗi xảy ra, vui lòng thử lại!')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const formatParents = (text: string) => {
     const lines = text.split('\n').filter(Boolean)
     if (lines.length === 2) {
@@ -235,7 +315,10 @@ export default function ModernGuestView({ wedding, disableSplash, musicUrl, gues
   const fontFamily = mergedContent.font_family || "'Lora', serif"
   const headingFontFamily = mergedContent.heading_font_family || "'Great Vibes', cursive"
   const sectionFontFamily = mergedContent.section_font_family || "'Playfair Display', serif"
-  const displayedGuestWishes = guestWishes.length > 0 ? guestWishes : mockGuestbook
+  const displayedGuestWishes = (guestWishes.length > 0 ? guestWishes : mockGuestbook).filter(
+    (w) => w.wishes && w.wishes.trim() !== ''
+  )
+
   const bankName = mergedContent.bank_name || ''
   const accountNumber = mergedContent.account_number || ''
   const accountName = mergedContent.account_name || ''
@@ -1923,18 +2006,171 @@ export default function ModernGuestView({ wedding, disableSplash, musicUrl, gues
               </p>
             </div>
 
-            <div className='modern-section-floral' style={{ padding: '24px 20px 40px' }}>
-              <div style={{ maxWidth: 620, margin: '0 auto' }}>
-                <RSVPForm
-                  weddingId={wedding?.id}
-                  rsvpId={rsvpId}
-                  guestName={guestName}
-                  primaryColor={textDark}
-                  fontFamily={fontFamily}
-                  sectionFontFamily={sectionFontFamily}
-                  isDark={true}
-                />
-              </div>
+            <div className='modern-section-floral' style={{ padding: '24px 20px 10px', backgroundColor: rose }}>
+              {submitted ? (
+                <div
+                  style={{
+                    maxWidth: 620,
+                    margin: '0 auto',
+                    backgroundColor: '#5b1010',
+                    borderRadius: 12,
+                    padding: '32px 20px',
+                    textAlign: 'center',
+                    border: `1px solid ${textDark}33`,
+                    boxShadow: '0 6px 14px rgba(0,0,0,0.12)'
+                  }}
+                >
+                  <div style={{ fontSize: '3rem', marginBottom: 12 }}>✨</div>
+                  <h3 style={{ color: textDark, fontFamily: sectionFontFamily, fontSize: '1.4rem', marginBottom: 8 }}>
+                    Cảm ơn bạn!
+                  </h3>
+                  <p style={{ color: '#28a745', fontSize: '0.96rem', fontWeight: '600', marginTop: 4 }}>
+                    Gửi xác nhận thành công. Cảm ơn bạn!
+                  </p>
+                  <button
+                    onClick={() => setSubmitted(false)}
+                    style={{
+                      backgroundColor: 'transparent',
+                      border: `1px solid ${textDark}`,
+                      color: textDark,
+                      padding: '8px 24px',
+                      borderRadius: 22,
+                      marginTop: 20,
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Gửi lại phản hồi
+                  </button>
+                </div>
+              ) : (
+                <form
+                  className='modern-rsvp-form'
+                  onSubmit={handleSubmit}
+                  style={{
+                    maxWidth: 620,
+                    margin: '0 auto',
+                    backgroundColor: '#5b1010',
+                    borderRadius: 12,
+                    padding: '16px 20px',
+                    border: `1px solid ${textDark}33`,
+                    boxShadow: '0 6px 14px rgba(0,0,0,0.12)'
+                  }}
+                >
+                  <p
+                    style={{
+                      color: textDark,
+                      fontFamily: sectionFontFamily,
+                      fontSize: '1rem',
+                      marginBottom: 10,
+                      letterSpacing: 1
+                    }}
+                  >
+                    RSVP
+                  </p>
+
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    <input
+                      className='modern-rsvp-control'
+                      type='text'
+                      value={rsvpName}
+                      onChange={(e) => setRsvpName(e.target.value)}
+                      placeholder='Tên khách mời'
+                      style={{
+                        width: '100%',
+                        backgroundColor: '#721515',
+                        color: textDark,
+                        border: `1px solid ${textDark}55`,
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        fontSize: '0.86rem'
+                      }}
+                    />
+
+                    <div
+                      className='modern-rsvp-row'
+                      style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}
+                    >
+                      <select
+                        className='modern-rsvp-control'
+                        value={rsvpAttend}
+                        onChange={(e) => setRsvpAttend(e.target.value as 'yes' | 'no' | '')}
+                        style={{
+                          backgroundColor: '#721515',
+                          color: textDark,
+                          border: `1px solid ${textDark}55`,
+                          borderRadius: 8,
+                          padding: '10px 12px',
+                          fontSize: '0.84rem'
+                        }}
+                      >
+                        <option value=''>Chọn tham dự</option>
+                        <option value='yes'>Sẽ tham dự</option>
+                        <option value='no'>Không tham dự</option>
+                      </select>
+
+                      <select
+                        className='modern-rsvp-control'
+                        value={rsvpPartySize}
+                        onChange={(e) => setRsvpPartySize(Number(e.target.value))}
+                        disabled={rsvpAttend !== 'yes'}
+                        style={{
+                          backgroundColor: rsvpAttend === 'yes' ? '#721515' : '#5b1010',
+                          color: textDark,
+                          border: `1px solid ${textDark}55`,
+                          borderRadius: 8,
+                          padding: '10px 12px',
+                          fontSize: '0.84rem'
+                        }}
+                      >
+                        {[1, 2, 3, 4, 5].map((num) => (
+                          <option key={num} value={num}>
+                            {num} người
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <textarea
+                      className='modern-rsvp-control'
+                      value={rsvpMessage}
+                      onChange={(e) => setRsvpMessage(e.target.value)}
+                      rows={3}
+                      placeholder='Lời nhắn gửi cô dâu chú rể (tuỳ chọn)'
+                      style={{
+                        width: '100%',
+                        resize: 'vertical',
+                        backgroundColor: '#721515',
+                        color: textDark,
+                        border: `1px solid ${textDark}55`,
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        fontSize: '0.85rem',
+                        fontFamily: fontFamily
+                      }}
+                    />
+
+                    <button
+                      className='modern-rsvp-submit'
+                      type='submit'
+                      disabled={loading}
+                      style={{
+                        border: 'none',
+                        borderRadius: 999,
+                        background: loading ? '#ccc' : `linear-gradient(180deg, ${textDark}, #d9b77f)`,
+                        color: rose,
+                        fontWeight: 700,
+                        letterSpacing: 0.6,
+                        padding: '10px 14px',
+                        cursor: loading ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {loading ? 'Đang gửi...' : 'Gửi xác nhận'}
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
 
             <div className='modern-section-floral' style={{ padding: '24px 20px' }}>
@@ -1974,51 +2210,6 @@ export default function ModernGuestView({ wedding, disableSplash, musicUrl, gues
                       <span style={{ fontWeight: 700, color: textDark, fontSize: '0.95rem' }}>
                         {comment.guest_name || 'Khách mời'}
                       </span>
-                      <span style={{ fontSize: '0.7rem', color: `${textDark}bb`, fontFamily: "'Lora', serif" }}>
-                        {typeof comment.created_at === 'string' && comment.created_at.includes(':')
-                          ? comment.created_at
-                          : new Date(comment.created_at).toLocaleDateString('vi-VN')}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-                      <span
-                        style={{
-                          border: `1px solid ${textDark}66`,
-                          color: textDark,
-                          borderRadius: 999,
-                          padding: '3px 10px',
-                          fontSize: '0.72rem',
-                          fontWeight: 600
-                        }}
-                      >
-                        {comment.is_attending ? 'Sẽ tham dự' : 'Không tham dự'}
-                      </span>
-                      {comment.is_attending && (
-                        <span
-                          style={{
-                            border: `1px solid ${textDark}55`,
-                            color: `${textDark}dd`,
-                            borderRadius: 999,
-                            padding: '3px 10px',
-                            fontSize: '0.72rem'
-                          }}
-                        >
-                          {`Số người: ${comment.party_size || 1}`}
-                        </span>
-                      )}
-                      {comment.phone && (
-                        <span
-                          style={{
-                            border: `1px solid ${textDark}55`,
-                            color: `${textDark}dd`,
-                            borderRadius: 999,
-                            padding: '3px 10px',
-                            fontSize: '0.72rem'
-                          }}
-                        >
-                          {`SĐT: ${comment.phone}`}
-                        </span>
-                      )}
                     </div>
                     <p style={{ fontSize: '0.95rem', color: textDark, lineHeight: 1.6, fontStyle: 'italic' }}>
                       {comment.wishes ? `"${comment.wishes}"` : 'Đã gửi phản hồi RSVP.'}

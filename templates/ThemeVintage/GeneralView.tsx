@@ -147,6 +147,14 @@ export default function VintageGeneralView({
   const groomName = mergedContent.groom_name || 'Hoàng Nam'
   const brideName = mergedContent.bride_name || 'Thanh Tú'
 
+  const groomImage =
+    mergedContent.groom_image ||
+    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face'
+
+  const brideImage =
+    mergedContent.bride_image ||
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face'
+
   const groomRole = mergedContent.groom_role || 'Chú rể'
   const brideRole = mergedContent.bride_role || 'Cô dâu'
 
@@ -263,7 +271,9 @@ export default function VintageGeneralView({
   const headingFontFamily = mergedContent.heading_font_family || "'Great Vibes', cursive"
   const sectionFontFamily = mergedContent.section_font_family || "'Playfair Display', serif"
 
-  const displayedGuestWishes = guestWishes.length > 0 ? guestWishes : mockGuestbook
+  const displayedGuestWishes = (guestWishes.length > 0 ? guestWishes : mockGuestbook).filter(
+    (w) => w.wishes && w.wishes.trim() !== ''
+  )
 
   const bankName = mergedContent.bank_name || ''
   const accountNumber = mergedContent.account_number || ''
@@ -450,31 +460,35 @@ export default function VintageGeneralView({
           }
           .vintage-ornament-left {
             left: 1%;
-            top: -132px;
-            height: clamp(180px, 26vw, 290px);
-            opacity: 0.88;
+            top: -160px;
+            height: clamp(240px, 32vw, 380px);
+            opacity: 1;
             z-index: 1;
             transform-origin: bottom center;
-            animation: ornamentSwayLeft 5s ease-in-out infinite;
+            animation: ornamentSwayLeft 2.5s ease-in-out infinite;
           }
           .vintage-ornament-right {
             right: 1%;
-            top: -132px;
-            height: clamp(180px, 26vw, 290px);
-            opacity: 0.88;
+            top: -160px;
+            height: clamp(240px, 32vw, 380px);
+            opacity: 1;
             z-index: 1;
             transform-origin: bottom center;
-            animation: ornamentSwayRight 5.8s ease-in-out 0.7s infinite;
+            animation: ornamentSwayRight 2.8s ease-in-out 0.7s infinite;
           }
           @keyframes ornamentSwayLeft {
-            0%, 100% { transform: rotate(0deg); }
-            30% { transform: rotate(-3deg); }
-            70% { transform: rotate(2deg); }
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            20% { transform: translateY(-2px) rotate(-3.5deg); }
+            40% { transform: translateY(0) rotate(2.5deg); }
+            60% { transform: translateY(-1px) rotate(-2deg); }
+            80% { transform: translateY(0) rotate(1.5deg); }
           }
           @keyframes ornamentSwayRight {
-            0%, 100% { transform: rotate(0deg) scaleX(-1); }
-            30% { transform: rotate(3deg) scaleX(-1); }
-            70% { transform: rotate(-2deg) scaleX(-1); }
+            0%, 100% { transform: translateY(0) scaleX(-1) rotate(0deg); }
+            20% { transform: translateY(-2px) scaleX(-1) rotate(3.5deg); }
+            40% { transform: translateY(0) scaleX(-1) rotate(-2.5deg); }
+            60% { transform: translateY(-1px) scaleX(-1) rotate(2deg); }
+            80% { transform: translateY(0) scaleX(-1) rotate(-1.5deg); }
           }
           @keyframes avatarSway {
             0%, 100% { transform: rotate(0deg); }
@@ -484,6 +498,21 @@ export default function VintageGeneralView({
           .vintage-avatar {
             transform-origin: bottom center;
             animation: avatarSway 5.5s ease-in-out infinite;
+          }
+          .vintage-avatar-peach {
+            width: 150px;
+            height: 150px;
+            object-fit: contain;
+            margin-top: -40px;
+            pointer-events: none;
+            z-index: 1;
+          }
+          .vintage-avatar-pair-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 28px;
+            margin-bottom: 12px;
           }
           .card-petal-wrap {
             position: absolute;
@@ -633,6 +662,8 @@ export default function VintageGeneralView({
             .vintage-card { width: 100% !important; max-width: 100% !important; }
             .vintage-card { overflow-x: hidden !important; }
             .vintage-avatar { width: 120px !important; height: 120px !important; }
+            .vintage-avatar-peach { display: none !important; }
+            .vintage-avatar-pair-wrap { gap: 12px !important; }
             .vintage-couple-name { font-size: 1.8rem !important; }
             .vintage-couple-name-lg { font-size: 2rem !important; }
             .vintage-section-padding { padding-left: 16px !important; padding-right: 16px !important; }
@@ -726,6 +757,8 @@ export default function VintageGeneralView({
               width: 184px !important;
               height: 128px !important;
             }
+            .vintage-avatar-peach { display: none !important; }
+            .vintage-avatar-pair-wrap { gap: 8px !important; }
             .vintage-rsvp-form {
               max-width: 340px !important;
               padding: 12px !important;
@@ -770,6 +803,8 @@ export default function VintageGeneralView({
             .vintage-side-panel { display: none !important; }
             .vintage-card { width: 100% !important; max-width: 100% !important; border: none !important; border-radius: 0 !important; }
             .vintage-avatar { width: 120px !important; height: 120px !important; }
+            .vintage-avatar-peach { display: none !important; }
+            .vintage-avatar-pair-wrap { gap: 0 !important; }
             .vintage-ornament {
               display: block !important;
               top: -96px !important;
@@ -821,6 +856,9 @@ export default function VintageGeneralView({
             }
             .vintage-ornament-left { left: 2% !important; }
             .vintage-ornament-right { right: 2% !important; }
+            .vintage-avatar { width: 100px !important; height: 100px !important; }
+            .vintage-avatar-peach { display: none !important; }
+            .vintage-avatar-pair-wrap { gap: 0 !important; }
             .vintage-vuquy-badge {
               top: 75px !important;
               min-width: 218px !important;
@@ -1187,28 +1225,43 @@ export default function VintageGeneralView({
               />
 
               <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
-                <div
-                  className='vintage-avatar'
-                  style={{
-                    width: 240,
-                    height: 240,
-                    margin: '0 auto 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
+                <div className='vintage-avatar-pair-wrap'>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={peachDecorUrl}
-                    alt='Hoa dao trang tri chu re'
+                    className='vintage-avatar-peach'
                     style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.22))'
+                      animation: 'ornamentSwayRight 2.8s ease-in-out 0.7s infinite'
                     }}
+                    alt=''
                   />
+                  <div
+                    className='vintage-avatar'
+                    style={{
+                      width: 140,
+                      height: 140,
+                      borderRadius: '50%',
+                      border: `4px solid ${red}33`,
+                      overflow: 'hidden',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                      position: 'relative',
+                      zIndex: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={groomImage}
+                      alt='Groom'
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.groom_image_position, viewport))
+                      }}
+                    />
+                  </div>
                 </div>
                 <p
                   style={{
@@ -1279,28 +1332,42 @@ export default function VintageGeneralView({
               </div>
 
               <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
-                <div
-                  className='vintage-avatar'
-                  style={{
-                    width: 240,
-                    height: 240,
-                    margin: '0 auto 12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
+                <div className='vintage-avatar-pair-wrap'>
+                  <div
+                    className='vintage-avatar'
+                    style={{
+                      width: 140,
+                      height: 140,
+                      borderRadius: '50%',
+                      border: `4px solid ${red}33`,
+                      overflow: 'hidden',
+                      boxShadow: '0 8px 14px rgba(0,0,0,0.12)',
+                      position: 'relative',
+                      zIndex: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={brideImage}
+                      alt='Bride'
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.bride_image_position, viewport))
+                      }}
+                    />
+                  </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={peachDecorUrl}
-                    alt='Hoa dao trang tri co dau'
+                    className='vintage-avatar-peach'
                     style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'contain',
-                      transform: 'scaleX(-1)',
-                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.22))'
+                      animation: 'ornamentSwayLeft 2.5s ease-in-out infinite'
                     }}
+                    alt=''
                   />
                 </div>
                 <p
@@ -1837,10 +1904,7 @@ export default function VintageGeneralView({
                   letterSpacing: 1
                 }}
               >
-                RSVP Demo
-              </p>
-              <p style={{ color: `${red}cc`, fontSize: '0.75rem', marginBottom: 12 }}>
-                Form này chỉ để xem giao diện, submit sẽ hiện thông báo demo.
+                RSVP
               </p>
 
               <div style={{ display: 'grid', gap: 10 }}>
@@ -1880,14 +1944,11 @@ export default function VintageGeneralView({
                     <option value='no'>Không tham dự</option>
                   </select>
 
-                  <input
+                  <select
                     className='vintage-rsvp-control'
-                    type='number'
-                    min={1}
                     value={demoPartySize}
-                    onChange={(e) => setDemoPartySize(Number(e.target.value) || 1)}
+                    onChange={(e) => setDemoPartySize(Number(e.target.value))}
                     disabled={demoAttend !== 'yes'}
-                    placeholder='Số người'
                     style={{
                       backgroundColor: demoAttend === 'yes' ? '#fdf7f8' : '#f3f3f3',
                       color: textDark,
@@ -1896,7 +1957,13 @@ export default function VintageGeneralView({
                       padding: '10px 12px',
                       fontSize: '0.84rem'
                     }}
-                  />
+                  >
+                    {[1, 2, 3, 4, 5].map((num) => (
+                      <option key={num} value={num}>
+                        {num} người
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <textarea
@@ -1932,7 +1999,7 @@ export default function VintageGeneralView({
                     cursor: 'pointer'
                   }}
                 >
-                  Gửi RSVP (Demo)
+                  Gửi xác nhận
                 </button>
               </div>
             </form>
@@ -1975,51 +2042,6 @@ export default function VintageGeneralView({
                     <span style={{ fontWeight: 700, color: red, fontSize: '0.95rem' }}>
                       {comment.guest_name || 'Khách mời'}
                     </span>
-                    <span style={{ fontSize: '0.7rem', color: `${textDark}bb`, fontFamily: fontFamily }}>
-                      {typeof comment.created_at === 'string' && comment.created_at.includes(':')
-                        ? comment.created_at
-                        : new Date(comment.created_at).toLocaleDateString('vi-VN')}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-                    <span
-                      style={{
-                        border: `1px solid ${red}66`,
-                        color: red,
-                        borderRadius: 999,
-                        padding: '3px 10px',
-                        fontSize: '0.72rem',
-                        fontWeight: 600
-                      }}
-                    >
-                      {comment.is_attending ? 'Sẽ tham dự' : 'Không tham dự'}
-                    </span>
-                    {comment.is_attending && (
-                      <span
-                        style={{
-                          border: `1px solid ${red}55`,
-                          color: `${red}dd`,
-                          borderRadius: 999,
-                          padding: '3px 10px',
-                          fontSize: '0.72rem'
-                        }}
-                      >
-                        {`Số người: ${comment.party_size || 1}`}
-                      </span>
-                    )}
-                    {comment.phone && (
-                      <span
-                        style={{
-                          border: `1px solid ${red}55`,
-                          color: `${red}dd`,
-                          borderRadius: 999,
-                          padding: '3px 10px',
-                          fontSize: '0.72rem'
-                        }}
-                      >
-                        {`SĐT: ${comment.phone}`}
-                      </span>
-                    )}
                   </div>
                   <p style={{ fontSize: '0.95rem', color: textDark, lineHeight: 1.6, fontStyle: 'italic' }}>
                     {comment.wishes ? `"${comment.wishes}"` : 'Đã gửi phản hồi RSVP.'}

@@ -1081,52 +1081,6 @@ export default function BohoGeneralView({ wedding, disableSplash, musicUrl }: Te
                       >
                         {w.guest_name || 'Khách mời'}
                       </span>
-                      <span style={{ fontSize: '0.7rem', color: `${textDark}88`, fontStyle: 'italic' }}>
-                        {typeof w.created_at === 'string' && w.created_at.includes(':')
-                          ? w.created_at
-                          : new Date(w.created_at).toLocaleDateString('vi-VN')}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                      <span
-                        style={{
-                          backgroundColor: `${terra}22`,
-                          color: terra,
-                          borderRadius: 999,
-                          padding: '2px 10px',
-                          fontSize: '0.65rem',
-                          fontWeight: 600
-                        }}
-                      >
-                        {w.is_attending ? 'Sẽ tham dự' : 'Không tham dự'}
-                      </span>
-                      {w.is_attending && (
-                        <span
-                          style={{
-                            backgroundColor: `${sand}44`,
-                            color: textDark,
-                            borderRadius: 999,
-                            padding: '2px 10px',
-                            fontSize: '0.65rem'
-                          }}
-                        >
-                          Số người: {w.party_size || 1}
-                        </span>
-                      )}
-                      {w.phone && (
-                        <span
-                          style={{
-                            backgroundColor: `${sand}44`,
-                            color: textDark,
-                            borderRadius: 999,
-                            padding: '2px 10px',
-                            fontSize: '0.65rem'
-                          }}
-                        >
-                          SĐT: {w.phone}
-                        </span>
-                      )}
                     </div>
 
                     <p
