@@ -4,7 +4,6 @@ import { TemplateProps } from '../TemplateRegistry'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
 
-
 export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
     days: number
@@ -14,13 +13,10 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
   } | null>(null)
   const viewport = useTemplateViewport()
 
-
   const { content, template } = wedding || {}
-
 
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
-
 
   const pink = mergedContent.primary_color || '#d4507a'
   const pinkDeep = '#a83258'
@@ -768,8 +764,6 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
                   </div>
                 ))}
             </div>
-
-
           </div>
         </section>
 
@@ -845,10 +839,6 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
             </div>
           </section>
         )}
-
-
-
-
 
         {/* ══ Footer ══ */}
         <footer
