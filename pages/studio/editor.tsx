@@ -639,9 +639,9 @@ const Editor = () => {
       )}
 
       <div
-        className={`grid gap-8 ${isAdminMode && !adminSelectedWedding ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px]'}`}
+        className={`grid gap-8 ${isAdminMode && !adminSelectedWedding ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start'}`}
       >
-        <div className='bg-white rounded-3xl shadow-sm border border-pink-100 overflow-hidden min-h-[600px]'>
+        <div className='bg-white rounded-3xl shadow-sm border border-pink-100 overflow-hidden min-h-[600px] lg:min-h-0 lg:h-[calc(100vh-40px)] lg:flex lg:flex-col'>
           {/* Tab bar - ẩn khi ở chế độ admin thuần, hiện khi đang sửa thiệp cụ thể hoặc chế độ thường */}
           {(!isAdminMode || adminSelectedWedding) && (
             <div className='flex border-b border-gray-100 overflow-x-auto'>
@@ -709,7 +709,7 @@ const Editor = () => {
           )}
 
           {/* Tab Content */}
-          <div className='p-4 md:p-8'>
+          <div className='p-4 md:p-8 lg:flex-1 lg:overflow-y-auto'>
             {isAdminMode && adminSelectedWedding ? (
               /* Admin đang sửa thiệp của người dùng */
               <div>
@@ -1250,17 +1250,19 @@ const Editor = () => {
         </div>
 
         {(!isAdminMode || adminSelectedWedding) && (
-          <LivePreview
-            wedding={isAdminMode && adminSelectedWedding ? (adminSelectedWedding as any) : wedding}
-            isDirty={isAdminMode ? false : isDirty}
-            onUnsavedWarning={() => error('Vui lòng lưu thay đổi trước khi xem thiệp.')}
-            onOpen={() => {
-              if (previewAudioRef.current) {
-                previewAudioRef.current.pause()
-              }
-              setPlayingMusicId(null)
-            }}
-          />
+          <div className='lg:sticky lg:top-6 lg:self-start'>
+            <LivePreview
+              wedding={isAdminMode && adminSelectedWedding ? (adminSelectedWedding as any) : wedding}
+              isDirty={isAdminMode ? false : isDirty}
+              onUnsavedWarning={() => error('Vui lòng lưu thay đổi trước khi xem thiệp.')}
+              onOpen={() => {
+                if (previewAudioRef.current) {
+                  previewAudioRef.current.pause()
+                }
+                setPlayingMusicId(null)
+              }}
+            />
+          </div>
         )}
       </div>
     </StudioLayout>

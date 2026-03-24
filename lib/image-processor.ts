@@ -92,18 +92,21 @@ export async function processImages(
 
   // Upload all base64 images in parallel with progress tracking
   if (imagesToUpload.length > 0) {
-    const uploadPromises = imagesToUpload.map(async ({ index, base64 }, arrayIndex) => {
+    let completedUploads = 0
+    const uploadPromises = imagesToUpload.map(async ({ index, base64 }) => {
       try {
         const url = await uploadImageDirectly(base64, slug)
         // Report progress after each upload completes
         if (onProgress) {
-          onProgress(arrayIndex + 1, imagesToUpload.length)
+          completedUploads += 1
+          onProgress(completedUploads, imagesToUpload.length)
         }
         return { index, url, success: url !== null }
       } catch (error) {
         console.error('Error uploading base64 image:', error)
         if (onProgress) {
-          onProgress(arrayIndex + 1, imagesToUpload.length)
+          completedUploads += 1
+          onProgress(completedUploads, imagesToUpload.length)
         }
         return { index, url: null, success: false }
       }
