@@ -1718,6 +1718,7 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
                 fontFamily={fontFamily}
                 sectionFontFamily={sectionFontFamily}
                 isDark={false}
+                cardBackground='#eed7db'
               />
             </div>
           </div>

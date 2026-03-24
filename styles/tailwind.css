@@ -52,3 +52,14 @@ h1 {
     background-position: 400px 0;
   }
 }
+
+/* Shimmer slide — inline-style animation for LazyIframePreview */
+@keyframes shimmer-slide {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
