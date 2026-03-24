@@ -889,7 +889,7 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
                     fontSize: '0.6rem',
                     letterSpacing: '0.45em',
                     color: red,
-                    textTransform: 'uppercase', 
+                    textTransform: 'uppercase',
                     fontWeight: 600,
                     marginBottom: 20
                   }}
@@ -1706,7 +1706,7 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
             >
               Sổ Lưu Bút
             </p>
-          </div>  
+          </div>
 
           <div style={{ padding: '24px 20px 40px' }}>
             <div style={{ maxWidth: 620, margin: '0 auto' }}>

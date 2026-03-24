@@ -108,11 +108,7 @@ const LoginPage = () => {
       // Tạo order trải nghiệm cho gói id=50 (sở hữu ngay, không cần thanh toán)
       try {
         // Lấy thông tin gói 50 để tính expires_at
-        const { data: pkg50 } = await supabase
-          .from('packages')
-          .select('duration_months')
-          .eq('id', 50)
-          .single()
+        const { data: pkg50 } = await supabase.from('packages').select('duration_months').eq('id', 50).single()
 
         // Lấy wedding vừa tạo
         const { data: newWedding } = await supabase
