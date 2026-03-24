@@ -563,28 +563,40 @@ const Guests = () => {
               </button>
             </div>
             {/* Filter tabs */}
-            <div className='flex gap-2'>
+            <div className='grid grid-cols-3 gap-2 sm:flex sm:flex-wrap'>
               {(
                 [
-                  { key: 'all', label: 'Tất cả', count: rsvps.length },
-                  { key: 'attending', label: '✅ Tham dự', count: rsvps.filter((r) => r.is_attending === true).length },
+                  { key: 'all', label: 'Tất cả', mobileLabel: 'Tất cả', count: rsvps.length },
+                  {
+                    key: 'attending',
+                    label: 'Tham dự',
+                    mobileLabel: 'Tham dự',
+                    count: rsvps.filter((r) => r.is_attending === true).length
+                  },
                   {
                     key: 'not_attending',
-                    label: '❌ Không tham dự',
+                    label: 'Không tham dự',
+                    mobileLabel: 'Không dự',
                     count: rsvps.filter((r) => r.is_attending === false || r.is_attending === null).length
                   }
                 ] as const
-              ).map(({ key, label, count }) => (
+              ).map(({ key, label, mobileLabel, count }) => (
                 <button
                   key={key}
                   onClick={() => setAttendanceFilter(key)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-semibold border transition-all ${
+                  className={`min-w-0 h-14 sm:h-auto sm:px-4 sm:py-1.5 rounded-2xl sm:rounded-full border transition-all ${
                     attendanceFilter === key
                       ? 'bg-pink-600 text-white border-pink-600 shadow-sm'
                       : 'bg-white text-gray-600 border-gray-200 hover:border-pink-300 hover:text-pink-600'
                   }`}
                 >
-                  {label} <span className='ml-1 opacity-70'>({count})</span>
+                  <span className='flex flex-col items-center justify-center leading-tight'>
+                    <span className='text-xs sm:text-sm font-semibold whitespace-nowrap'>
+                      <span className='sm:hidden'>{mobileLabel}</span>
+                      <span className='hidden sm:inline'>{label}</span>
+                    </span>
+                    <span className='text-[11px] sm:text-xs opacity-75 mt-0.5'>({count})</span>
+                  </span>
                 </button>
               ))}
             </div>

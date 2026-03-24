@@ -63,18 +63,18 @@ export default function Hero() {
             </div>
 
             {/* Hero Content Inside Mockup */}
-            <div className='relative overflow-hidden rounded-2xl bg-[#FAFAFA] aspect-[16/9] md:aspect-[21/9] flex items-center justify-center group'>
+            <div className='relative overflow-hidden rounded-2xl bg-[#FAFAFA] aspect-[4/5] sm:aspect-[16/9] md:aspect-[21/9] flex items-center justify-center group'>
               {/* Decorative Background inside Card */}
               <div className='absolute inset-0'>
                 <div className='absolute top-0 right-0 w-64 h-64 bg-rose-100 rounded-full mix-blend-multiply blur-3xl opacity-50'></div>
                 <div className='absolute bottom-0 left-0 w-64 h-64 bg-pink-100 rounded-full mix-blend-multiply blur-3xl opacity-50'></div>
               </div>
 
-              <div className='relative z-10 text-center p-8'>
-                <div className='mb-4 font-serif text-2xl md:text-5xl font-bold text-gray-800'>
+              <div className='relative z-10 text-center px-4 py-8 sm:p-8 max-w-[92%]'>
+                <div className='mb-3 font-serif text-[2rem] leading-tight sm:text-4xl md:text-5xl font-bold text-gray-800'>
                   Minh Nhật <span className='text-pink-500'>&</span> Thanh Hằng
                 </div>
-                <p className='text-sm md:text-lg text-gray-500 uppercase tracking-[0.2em] mb-6'>
+                <p className='text-xs sm:text-sm md:text-lg text-gray-500 uppercase tracking-[0.14em] sm:tracking-[0.2em] mb-5 sm:mb-6'>
                   Save the Date • 20.12.2026
                 </p>
                 <div className='inline-flex items-center justify-center w-12 h-12 md:w-16 md:h-16 bg-white rounded-full shadow-lg text-pink-500 animate-bounce cursor-pointer hover:bg-pink-50 transition-colors'>
@@ -83,7 +83,7 @@ export default function Hero() {
               </div>
 
               {/* Checkmark Badge */}
-              <div className='absolute bottom-6 right-6 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg border border-white/50 flex items-center gap-3 transform translate-y-2 opacity-100 transition-all'>
+              <div className='absolute bottom-4 left-1/2 -translate-x-1/2 sm:bottom-6 sm:right-6 sm:left-auto sm:translate-x-0 bg-white/90 backdrop-blur-md px-3 sm:px-4 py-2 rounded-xl shadow-lg border border-white/50 flex items-center gap-2 sm:gap-3 transform translate-y-2 opacity-100 transition-all'>
                 <div className='w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600'>
                   <Sparkles size={14} />
                 </div>
