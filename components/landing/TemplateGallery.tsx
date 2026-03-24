@@ -172,7 +172,7 @@ export default function TemplateGallery({ initialTemplates }: Props) {
   return (
     <section id='templates' className='py-20 bg-white'>
       <div className='w-full'>
-          <div className='mb-12 px-4 text-center'>
+        <div className='mb-12 px-4 text-center'>
           <h2 className='mb-4 text-3xl font-bold'>Kho Giao Diện Đa Dạng</h2>
           <p className='text-gray-600'>Hơn 50+ mẫu thiệp được thiết kế tỉ mỉ, phù hợp mọi phong cách.</p>
         </div>
