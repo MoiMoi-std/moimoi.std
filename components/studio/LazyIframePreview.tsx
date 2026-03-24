@@ -17,7 +17,6 @@ export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: 
   const [shouldLoad, setShouldLoad] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const [frameSize, setFrameSize] = useState({ width: 0, height: 0 })
-
   useEffect(() => {
     const el = wrapperRef.current
     if (!el) return

@@ -336,6 +336,7 @@ export default function TemplatePreviewPage({ branch }: Props) {
         {phoneMode && isDesktop ? (
           <TemplateViewportContext.Provider value='phone'>
             <div
+              className='template-phone-preview-shell'
               style={{
                 minHeight: '100vh',
                 display: 'flex',
@@ -365,6 +366,46 @@ export default function TemplatePreviewPage({ branch }: Props) {
           </TemplateViewportContext.Provider>
         )}
       </div>
+
+      {/* Fix riêng cho chế độ phone preview trên desktop (không ảnh hưởng template gốc) */}
+      {phoneMode && isDesktop && branch.toLowerCase().includes('vintage') && (
+        <style>{`
+          .template-phone-preview-shell .vintage-side-panel { display: none !important; }
+          .template-phone-preview-shell .vintage-card {
+            width: 100% !important;
+            max-width: 100% !important;
+            border: none !important;
+            border-radius: 0 !important;
+            overflow-x: hidden !important;
+          }
+          .template-phone-preview-shell .vintage-ornament {
+            top: -34px !important;
+            height: clamp(96px, 26vw, 134px) !important;
+            opacity: 1 !important;
+            z-index: 2 !important;
+          }
+          .template-phone-preview-shell .vintage-ornament-left {
+            left: 3% !important;
+            right: auto !important;
+            transform: none !important;
+            animation: none !important;
+          }
+          .template-phone-preview-shell .vintage-ornament-right {
+            right: 3% !important;
+            left: auto !important;
+            transform: scaleX(-1) !important;
+            animation: none !important;
+          }
+          .template-phone-preview-shell .gift-card-ornament {
+            width: 126px !important;
+            opacity: 0.96 !important;
+            z-index: 3 !important;
+            display: block !important;
+          }
+          .template-phone-preview-shell .gift-card-ornament-left { left: -84px !important; }
+          .template-phone-preview-shell .gift-card-ornament-right { right: -84px !important; }
+        `}</style>
+      )}
 
       {/* Music player cho các template không tự quản lý nhạc (trừ những template tự nhúng MusicPlayer) */}
       {!['theme-vintage', 'theme-boho', 'theme-royal', 'theme-modern', 'theme-luxury', 'theme-nature'].includes(

@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { AlertTriangle, Check, Info, X } from 'lucide-react'
 import React, { createContext, ReactNode, useCallback, useContext, useState } from 'react'
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning'
+export type ToastType = 'success' | 'error' | 'info' | 'warning' | 'pink'
 
 interface Toast {
   id: string
@@ -14,6 +14,7 @@ interface ToastContextType {
   toast: (message: string, type?: ToastType) => void
   success: (message: string) => void
   error: (message: string) => void
+  pink: (message: string) => void
 }
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined)
@@ -38,11 +39,12 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const success = (message: string) => addToast(message, 'success')
   const error = (message: string) => addToast(message, 'error')
+  const pink = (message: string) => addToast(message, 'pink')
 
   return (
-    <ToastContext.Provider value={{ toast: addToast, success, error }}>
+    <ToastContext.Provider value={{ toast: addToast, success, error, pink }}>
       {children}
-      <div className='fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none'>
+      <div className='fixed top-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none'>
         <AnimatePresence>
           {toasts.map((toast) => (
             <ToastItem key={toast.id} toast={toast} onClose={() => removeToast(toast.id)} />
@@ -58,14 +60,16 @@ const ToastItem: React.FC<{ toast: Toast; onClose: () => void }> = ({ toast, onC
     success: <Check size={18} className='text-green-600' />,
     error: <X size={18} className='text-red-600' />,
     info: <Info size={18} className='text-blue-600' />,
-    warning: <AlertTriangle size={18} className='text-yellow-600' />
+    warning: <AlertTriangle size={18} className='text-yellow-600' />,
+    pink: <Info size={18} className='text-pink-600' />
   }
 
   const styles = {
     success: 'bg-green-50 border-green-200 text-green-800',
     error: 'bg-red-50 border-red-200 text-red-800',
     info: 'bg-blue-50 border-blue-200 text-blue-800',
-    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800'
+    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+    pink: 'bg-pink-50 border-pink-200 text-pink-800'
   }
 
   return (

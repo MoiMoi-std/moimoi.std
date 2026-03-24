@@ -1,7 +1,7 @@
 import MusicPlayer from '@/components/MusicPlayer'
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useMapEmbed } from '../../lib/useMapEmbed'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
@@ -132,6 +132,9 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
   const [demoAttend, setDemoAttend] = useState<'yes' | 'no' | ''>('')
   const [demoPartySize, setDemoPartySize] = useState(1)
   const [demoRsvpMessage, setDemoRsvpMessage] = useState('')
+  const [toastMessage, setToastMessage] = useState('')
+  const [showToast, setShowToast] = useState(false)
+  const toastTimerRef = useRef<number | null>(null)
 
   const viewport = useTemplateViewport()
 
@@ -277,12 +280,12 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
 
     const trimmedName = demoRsvpName.trim()
     if (!trimmedName) {
-      alert('Vui lòng nhập tên khách mời.')
+      showThemeToast('Vui lòng nhập tên khách mời.')
       return
     }
 
     if (!demoAttend) {
-      alert('Vui lòng chọn tình trạng tham dự.')
+      showThemeToast('Vui lòng chọn tình trạng tham dự.')
       return
     }
 
@@ -290,9 +293,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
     const attendText = demoAttend === 'yes' ? 'Sẽ tham dự' : 'Không tham dự'
     const note = demoRsvpMessage.trim() || 'Không có lời nhắn'
 
-    alert(
-      `Demo RSVP\n\nKhách mời: ${trimmedName}\nTrạng thái: ${attendText}\nSố lượng: ${partyCount}\nLời nhắn: ${note}\n\nĐây chỉ là giao diện demo, chưa gửi dữ liệu thật.`
-    )
+    showThemeToast(`Demo RSVP: ${trimmedName} | ${attendText} | SL: ${partyCount} | ${note}`)
   }
 
   const formatParents = (text: string) => {
@@ -349,6 +350,19 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
     backgroundColor: creamLight,
     backgroundImage: `repeating-radial-gradient(circle at 0 0, transparent 0, ${creamLight} 10px), repeating-linear-gradient(rgba(200,100,100,0.03), rgba(200,100,100,0.03))`
   }
+
+  const showThemeToast = (message: string) => {
+    setToastMessage(message)
+    setShowToast(true)
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = window.setTimeout(() => setShowToast(false), 3200)
+  }
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current)
+    }
+  }, [])
 
   if (!wedding) {
     return (
@@ -2537,6 +2551,35 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
               </p>
             </div>
           </div>
+        </div>
+      )}
+
+      {showToast && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 18,
+            right: 18,
+            zIndex: 10001,
+            maxWidth: 460,
+            background: `linear-gradient(145deg, ${rose}f2 0%, #7a1a1af2 100%)`,
+            color: textDark,
+            border: `1px solid ${textDark}55`,
+            borderRadius: 12,
+            padding: '12px 14px',
+            boxShadow: '0 14px 34px rgba(0,0,0,0.35)',
+            backdropFilter: 'blur(4px)',
+            fontFamily: sectionFontFamily,
+            fontSize: '0.88rem',
+            lineHeight: 1.45,
+            letterSpacing: 0.15,
+            cursor: 'pointer'
+          }}
+          onClick={() => setShowToast(false)}
+          role='status'
+          aria-live='polite'
+        >
+          {toastMessage}
         </div>
       )}
     </>
