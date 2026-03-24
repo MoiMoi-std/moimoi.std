@@ -104,6 +104,46 @@ const LoginPage = () => {
         setLoading(false)
         return
       }
+
+      // Tạo order trải nghiệm cho gói id=50 (sở hữu ngay, không cần thanh toán)
+      try {
+        // Lấy thông tin gói 50 để tính expires_at
+        const { data: pkg50 } = await supabase
+          .from('packages')
+          .select('duration_months')
+          .eq('id', 50)
+          .single()
+
+        // Lấy wedding vừa tạo
+        const { data: newWedding } = await supabase
+          .from('weddings')
+          .select('id')
+          .eq('host_id', authData.user.id)
+          .single()
+
+        if (newWedding && pkg50) {
+          const expiresAt = new Date()
+          expiresAt.setMonth(expiresAt.getMonth() + pkg50.duration_months)
+
+          const { error: orderError } = await supabase.from('orders').insert({
+            order_code: `FREE-${Date.now()}`,
+            wedding_id: newWedding.id,
+            package_id: 50,
+            amount: 0,
+            payment_method: 'free_trial',
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+            expires_at: expiresAt.toISOString(),
+            payment_info: { note: 'Gói trải nghiệm khi đăng ký mới' }
+          })
+
+          if (orderError) {
+            console.error('Không thể tạo order trải nghiệm:', orderError)
+          }
+        }
+      } catch (orderErr) {
+        console.error('Lỗi khi tạo order trải nghiệm:', orderErr)
+      }
     }
 
     setMessage({ type: 'success', text: 'Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản.' })
