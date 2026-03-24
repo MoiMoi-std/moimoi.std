@@ -149,6 +149,7 @@ export default function TemplatePreviewPage({ branch }: Props) {
 
   const [phoneMode, setPhoneMode] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     const check = () => setIsDesktop(window.innerWidth >= 768)
@@ -156,6 +157,29 @@ export default function TemplatePreviewPage({ branch }: Props) {
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f8fafc',
+          color: '#64748b',
+          fontSize: 14,
+          fontFamily: 'system-ui, sans-serif'
+        }}
+      >
+        Đang tải xem trước...
+      </div>
+    )
+  }
 
   // Lọc lấy các trường có dữ liệu thật của user
   const userContent = wedding?.content || {}
@@ -165,6 +189,7 @@ export default function TemplatePreviewPage({ branch }: Props) {
   })
 
   const isIframe = typeof window !== 'undefined' && window.self !== window.top
+  const showPreviewBanner = !isIframe
 
   // Pass demo data with the correct branch on the template object
   const demoWedding = {
@@ -183,65 +208,53 @@ export default function TemplatePreviewPage({ branch }: Props) {
   return (
     <>
       {/* Preview banner */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 9999,
-          background: bannerTheme.background,
-          backdropFilter: 'blur(10px)',
-          color: bannerTheme.textColor,
-          padding: '8px 24px',
-          borderRadius: '0 0 16px 16px',
-          fontSize: 13,
-          fontWeight: 600,
-          fontFamily: bannerTheme.fontFamily,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 10,
-          boxShadow: bannerTheme.boxShadow,
-          border: `1px solid ${bannerTheme.borderColor}`,
-          borderTop: 'none'
-        }}
-      >
-        <span style={{ fontSize: 16 }}>👁</span>
-        <span style={{ color: bannerTheme.subTextColor }}>Đang xem trước:</span>
-        <span style={{ color: bannerTheme.branchColor, fontWeight: 700 }}>{branch}</span>
-        <span
+      {showPreviewBanner && (
+        <div
           style={{
-            marginLeft: 8,
-            padding: '3px 10px',
-            background: bannerTheme.badgeBackground,
-            borderRadius: 20,
-            fontSize: 11,
-            color: bannerTheme.branchColor,
-            border: `1px solid ${bannerTheme.badgeBorder}`
-          }}
-        >
-          DỮ LIỆU DEMO
-        </span>
-        <button
-          onClick={() => window.close()}
-          style={{
-            marginLeft: 8,
-            padding: '4px 14px',
-            background: bannerTheme.buttonBackground,
-            border: `1px solid ${bannerTheme.buttonBorder}`,
-            borderRadius: 8,
-            color: bannerTheme.branchColor,
-            cursor: 'pointer',
-            fontSize: 12,
+            position: 'fixed',
+            top: 0,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 9999,
+            background: bannerTheme.background,
+            backdropFilter: 'blur(10px)',
+            color: bannerTheme.textColor,
+            padding: '12px 20px',
+            borderRadius: '0 0 12px 12px',
+            fontSize: 13,
             fontWeight: 600,
-            transition: 'background 0.2s'
+            fontFamily: bannerTheme.fontFamily,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            boxShadow: bannerTheme.boxShadow,
+            border: `1px solid ${bannerTheme.borderColor}`,
+            borderTop: 'none',
+            maxWidth: '90vw'
           }}
-          onMouseOver={(e) => (e.currentTarget.style.background = bannerTheme.buttonBackgroundHover)}
-          onMouseOut={(e) => (e.currentTarget.style.background = bannerTheme.buttonBackground)}
         >
-          Đóng
-        </button>
-      </div>
+          <span style={{ color: bannerTheme.branchColor, fontWeight: 700, fontSize: 14 }}>{branch}</span>
+          <button
+            onClick={() => window.close()}
+            style={{
+              padding: '6px 16px',
+              background: bannerTheme.buttonBackground,
+              border: `1px solid ${bannerTheme.buttonBorder}`,
+              borderRadius: 6,
+              color: bannerTheme.branchColor,
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 600,
+              transition: 'background 0.2s'
+            }}
+            onMouseOver={(e) => (e.currentTarget.style.background = bannerTheme.buttonBackgroundHover)}
+            onMouseOut={(e) => (e.currentTarget.style.background = bannerTheme.buttonBackground)}
+          >
+            Đóng
+          </button>
+        </div>
+      )}
 
       {/* Toggle button — chỉ hiện trên desktop */}
       {isDesktop && (
@@ -323,6 +336,7 @@ export default function TemplatePreviewPage({ branch }: Props) {
         {phoneMode && isDesktop ? (
           <TemplateViewportContext.Provider value='phone'>
             <div
+              className='template-phone-preview-shell'
               style={{
                 minHeight: '100vh',
                 display: 'flex',
@@ -352,6 +366,46 @@ export default function TemplatePreviewPage({ branch }: Props) {
           </TemplateViewportContext.Provider>
         )}
       </div>
+
+      {/* Fix riêng cho chế độ phone preview trên desktop (không ảnh hưởng template gốc) */}
+      {phoneMode && isDesktop && branch.toLowerCase().includes('vintage') && (
+        <style>{`
+          .template-phone-preview-shell .vintage-side-panel { display: none !important; }
+          .template-phone-preview-shell .vintage-card {
+            width: 100% !important;
+            max-width: 100% !important;
+            border: none !important;
+            border-radius: 0 !important;
+            overflow-x: hidden !important;
+          }
+          .template-phone-preview-shell .vintage-ornament {
+            top: -34px !important;
+            height: clamp(96px, 26vw, 134px) !important;
+            opacity: 1 !important;
+            z-index: 2 !important;
+          }
+          .template-phone-preview-shell .vintage-ornament-left {
+            left: 3% !important;
+            right: auto !important;
+            transform: none !important;
+            animation: none !important;
+          }
+          .template-phone-preview-shell .vintage-ornament-right {
+            right: 3% !important;
+            left: auto !important;
+            transform: scaleX(-1) !important;
+            animation: none !important;
+          }
+          .template-phone-preview-shell .gift-card-ornament {
+            width: 126px !important;
+            opacity: 0.96 !important;
+            z-index: 3 !important;
+            display: block !important;
+          }
+          .template-phone-preview-shell .gift-card-ornament-left { left: -84px !important; }
+          .template-phone-preview-shell .gift-card-ornament-right { right: -84px !important; }
+        `}</style>
+      )}
 
       {/* Music player cho các template không tự quản lý nhạc (trừ những template tự nhúng MusicPlayer) */}
       {!['theme-vintage', 'theme-boho', 'theme-royal', 'theme-modern', 'theme-luxury', 'theme-nature', 'theme-cherry-blossom'].includes(

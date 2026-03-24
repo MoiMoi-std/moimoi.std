@@ -1,4 +1,5 @@
 import MusicPlayer from '@/components/MusicPlayer'
+import { useToast } from '@/components/ui/ToastProvider'
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
 import { useEffect, useMemo, useState } from 'react'
@@ -122,6 +123,7 @@ export default function VintageGeneralView({
   guestName = '',
   rsvpId
 }: TemplateProps) {
+  const { pink } = useToast()
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showGiftQr, setShowGiftQr] = useState(false)
   const [showSplash, setShowSplash] = useState(!disableSplash)
@@ -144,13 +146,6 @@ export default function VintageGeneralView({
 
   const groomName = mergedContent.groom_name || 'Hoàng Nam'
   const brideName = mergedContent.bride_name || 'Thanh Tú'
-
-  const groomImage =
-    mergedContent.groom_image ||
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face'
-  const brideImage =
-    mergedContent.bride_image ||
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&h=300&fit=crop&crop=face'
 
   const groomRole = mergedContent.groom_role || 'Chú rể'
   const brideRole = mergedContent.bride_role || 'Cô dâu'
@@ -231,12 +226,12 @@ export default function VintageGeneralView({
 
     const trimmedName = demoRsvpName.trim()
     if (!trimmedName) {
-      alert('Vui lòng nhập tên khách mời.')
+      pink('Vui lòng nhập tên khách mời.')
       return
     }
 
     if (!demoAttend) {
-      alert('Vui lòng chọn tình trạng tham dự.')
+      pink('Vui lòng chọn tình trạng tham dự.')
       return
     }
 
@@ -244,9 +239,7 @@ export default function VintageGeneralView({
     const attendText = demoAttend === 'yes' ? 'Sẽ tham dự' : 'Không tham dự'
     const note = demoRsvpMessage.trim() || 'Không có lời nhắn'
 
-    alert(
-      `Demo RSVP\n\nKhách mời: ${trimmedName}\nTrạng thái: ${attendText}\nSố lượng: ${partyCount}\nLời nhắn: ${note}\n\nĐây chỉ là giao diện demo, chưa gửi dữ liệu thật.`
-    )
+    pink(`Demo RSVP: ${trimmedName} | ${attendText} | SL: ${partyCount} | ${note}`)
   }
 
   const formatParents = (text: string) => {
@@ -1136,25 +1129,18 @@ export default function VintageGeneralView({
           }}
         >
           <div className='card-petal-wrap'>
-            {[
-              { left: '3%', size: 9, dur: 7.2, delay: 0 },
-              { left: '10%', size: 7, dur: 6.5, delay: 1.4 },
-              { left: '18%', size: 11, dur: 8.1, delay: 0.6 },
-              { left: '26%', size: 8, dur: 6.9, delay: 2.3 },
-              { left: '34%', size: 10, dur: 7.6, delay: 0.9 },
-              { left: '42%', size: 7, dur: 5.8, delay: 3.1 },
-              { left: '50%', size: 12, dur: 7.3, delay: 1.7 },
-              { left: '58%', size: 8, dur: 8.4, delay: 0.3 },
-              { left: '66%', size: 10, dur: 6.7, delay: 2.8 },
-              { left: '74%', size: 7, dur: 7.9, delay: 1.1 },
-              { left: '82%', size: 11, dur: 6.2, delay: 3.6 },
-              { left: '90%', size: 9, dur: 8.0, delay: 0.5 }
-            ].map((p, i) => (
+            {Array.from({ length: 40 }, (_, i) => {
+              const left = ((i * 7 + (i % 3) * 11) % 96) + 2
+              const size = 7 + (i % 6)
+              const dur = 5.6 + (i % 8) * 0.45
+              const delay = (i % 12) * 0.55
+              return { left, size, dur, delay }
+            }).map((p, i) => (
               <div
                 key={i}
                 className='petal'
                 style={{
-                  left: p.left,
+                  left: `${p.left}%`,
                   width: p.size,
                   height: p.size * 0.7,
                   animationDuration: `${p.dur}s, ${p.dur * 0.6}s`,
@@ -1206,20 +1192,21 @@ export default function VintageGeneralView({
                   style={{
                     width: 240,
                     height: 240,
-                    borderRadius: '50%',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                    overflow: 'hidden',
-                    margin: '0 auto 12px'
+                    margin: '0 auto 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={groomImage}
-                    alt={groomName}
+                    src={peachDecorUrl}
+                    alt='Hoa dao trang tri chu re'
                     style={{
                       width: '100%',
                       height: '100%',
-                      ...getImageStyle(resolveImageAdjust(mergedContent.groom_image_position, viewport))
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.22))'
                     }}
                   />
                 </div>
@@ -1297,20 +1284,22 @@ export default function VintageGeneralView({
                   style={{
                     width: 240,
                     height: 240,
-                    borderRadius: '50%',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                    overflow: 'hidden',
-                    margin: '0 auto 12px'
+                    margin: '0 auto 12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                   }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={brideImage}
-                    alt={brideName}
+                    src={peachDecorUrl}
+                    alt='Hoa dao trang tri co dau'
                     style={{
                       width: '100%',
                       height: '100%',
-                      ...getImageStyle(resolveImageAdjust(mergedContent.bride_image_position, viewport))
+                      objectFit: 'contain',
+                      transform: 'scaleX(-1)',
+                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.22))'
                     }}
                   />
                 </div>
@@ -2047,22 +2036,48 @@ export default function VintageGeneralView({
                 padding: '30px 18px 44px',
                 textAlign: 'center',
                 backgroundColor: '#fdf6f7',
-                backgroundImage: `radial-gradient(circle at 12% 18%, ${red}1a 0, transparent 130px), radial-gradient(circle at 78% 20%, ${red}14 0, transparent 170px), radial-gradient(circle at 84% 75%, ${red}10 0, transparent 210px)`
+                backgroundImage: `radial-gradient(circle at 12% 18%, ${red}1a 0, transparent 130px), radial-gradient(circle at 78% 20%, ${red}14 0, transparent 170px), radial-gradient(circle at 84% 75%, ${red}10 0, transparent 210px)`,
+                position: 'relative',
+                overflow: 'hidden'
               }}
             >
+              <div className='gift-petal-wrap'>
+                {Array.from({ length: 24 }, (_, i) => {
+                  const left = ((i * 9 + (i % 4) * 7) % 96) + 2
+                  const size = 7 + (i % 5)
+                  const dur = 4.8 + (i % 7) * 0.42
+                  const delay = (i % 10) * 0.4
+                  return { left, size, dur, delay }
+                }).map((p, i) => (
+                  <div
+                    key={`gift-petal-${i}`}
+                    className='gift-petal'
+                    style={{
+                      left: `${p.left}%`,
+                      width: p.size,
+                      height: p.size * 0.72,
+                      animationDuration: `${p.dur}s, ${p.dur * 0.62}s`,
+                      animationDelay: `${p.delay}s, ${p.delay}s`
+                    }}
+                  />
+                ))}
+              </div>
+
               <p
                 style={{
                   color: red,
                   fontSize: '1.9rem',
                   fontFamily: sectionFontFamily,
                   marginBottom: 18,
-                  letterSpacing: 1
+                  letterSpacing: 1,
+                  position: 'relative',
+                  zIndex: 1
                 }}
               >
                 Hộp Mừng Cưới
               </p>
 
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', justifyContent: 'center', position: 'relative', zIndex: 1 }}>
                 <div className='gift-card-wrap'>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img className='gift-card-ornament gift-card-ornament-left' src={peachDecorUrl} alt='' />
@@ -2145,7 +2160,16 @@ export default function VintageGeneralView({
                 </div>
               </div>
 
-              <p style={{ marginTop: 16, color: red, fontSize: '0.85rem', fontFamily: fontFamily }}>
+              <p
+                style={{
+                  marginTop: 16,
+                  color: red,
+                  fontSize: '0.85rem',
+                  fontFamily: fontFamily,
+                  position: 'relative',
+                  zIndex: 1
+                }}
+              >
                 Nhấn vào tấm thiệp nhỏ để mở mã QR
               </p>
             </div>

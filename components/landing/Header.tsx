@@ -97,10 +97,10 @@ export default function Header() {
             </Link>
           </div>
 
-          <div className='mt-auto space-y-4 pb-8'>
+          <div className='mt-auto pb-8'>
             {session ? (
               <Link href='/studio' onClick={() => setMobileMenuOpen(false)}>
-                <button className='w-full py-3 bg-pink-50 text-pink-600 rounded-xl font-bold flex items-center justify-center gap-2'>
+                <button className='w-full py-3 bg-pink-50 text-pink-600 rounded-xl font-bold flex items-center justify-center gap-2 mb-6'>
                   <span className='w-6 h-6 rounded-full bg-pink-200 flex items-center justify-center text-xs'>
                     {session.user.email?.[0].toUpperCase()}
                   </span>
@@ -109,7 +109,7 @@ export default function Header() {
               </Link>
             ) : (
               <Link href='/studio/login' onClick={() => setMobileMenuOpen(false)}>
-                <button className='w-full py-3 border border-pink-200 text-pink-600 rounded-xl font-bold mb-3'>
+                <button className='w-full py-3 border border-pink-200 text-pink-600 rounded-xl font-bold mb-6'>
                   Đăng Nhập
                 </button>
               </Link>

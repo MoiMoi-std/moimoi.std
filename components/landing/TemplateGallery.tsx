@@ -79,7 +79,7 @@ function TemplatePreviewFrame({ branch, name, eager }: { branch: string; name: s
         )}
         {shouldLoad && (
           <iframe
-            src={`/studio/templates/preview/${encodeURIComponent(branch)}`}
+            src={`/studio/templates/preview/${encodeURIComponent(branch)}?embed=1`}
             title={`Preview ${name}`}
             scrolling='no'
             loading='lazy'
@@ -171,14 +171,13 @@ export default function TemplateGallery({ initialTemplates }: Props) {
 
   return (
     <section id='templates' className='py-20 bg-white'>
-      <div className='container px-4 mx-auto'>
-        <div className='mb-12 text-center'>
+      <div className='w-full'>
+        <div className='mb-12 px-4 text-center'>
           <h2 className='mb-4 text-3xl font-bold'>Kho Giao Diện Đa Dạng</h2>
           <p className='text-gray-600'>Hơn 50+ mẫu thiệp được thiết kế tỉ mỉ, phù hợp mọi phong cách.</p>
         </div>
 
-        {/* Filter Tabs */}
-        <div className='mb-10 overflow-x-auto'>
+        <div className='mb-10 px-4 overflow-x-auto'>
           <div className='flex w-max min-w-full justify-center gap-2 px-1'>
             {categories.map((cat) => (
               <button
@@ -209,7 +208,7 @@ export default function TemplateGallery({ initialTemplates }: Props) {
         {loading ? (
           <div className='text-center text-gray-400 py-16'>Đang tải kho mẫu...</div>
         ) : (
-          <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3'>
+          <div className='grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 px-4'>
             {visibleTemplates.map((template, index) => (
               <div
                 key={template.id}

@@ -16,7 +16,7 @@ export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: 
   const wrapperRef = useRef<HTMLDivElement>(null)
   const [shouldLoad, setShouldLoad] = useState(false)
   const [loaded, setLoaded] = useState(false)
-
+  const [frameSize, setFrameSize] = useState({ width: 0, height: 0 })
   useEffect(() => {
     const el = wrapperRef.current
     if (!el) return
@@ -33,6 +33,31 @@ export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: 
     observer.observe(el)
     return () => observer.disconnect()
   }, [])
+
+  useEffect(() => {
+    const el = wrapperRef.current
+    if (!el) return
+
+    const updateSize = () => {
+      setFrameSize({ width: el.clientWidth, height: el.clientHeight })
+    }
+
+    updateSize()
+    const resizeObserver = new ResizeObserver(updateSize)
+    resizeObserver.observe(el)
+
+    return () => resizeObserver.disconnect()
+  }, [])
+
+  const isMobilePreview = viewMode === 'mobile'
+  const desktopBase = { width: 1280, height: 960 }
+  const mobileBase = { width: 375, height: 812 }
+
+  const desktopScale = frameSize.width > 0 ? frameSize.width / desktopBase.width : 0.25
+  const mobileScale =
+    frameSize.width > 0 && frameSize.height > 0
+      ? Math.min((frameSize.width - 24) / (mobileBase.width + 24), (frameSize.height - 24) / (mobileBase.height + 24))
+      : 0.32
 
   return (
     <div ref={wrapperRef} className='relative aspect-[4/3] bg-gray-100 overflow-hidden rounded-t-3xl'>
@@ -51,18 +76,18 @@ export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: 
             importance='low'
             onLoad={() => setLoaded(true)}
             style={{
-              width: viewMode === 'mobile' ? '375px' : '1280px',
-              height: viewMode === 'mobile' ? '812px' : '960px',
-              transform: viewMode === 'mobile' ? 'scale(0.32)' : 'scale(0.25)',
+              width: `${isMobilePreview ? mobileBase.width : desktopBase.width}px`,
+              height: `${isMobilePreview ? mobileBase.height : desktopBase.height}px`,
+              transform: isMobilePreview ? `translate(-50%, -50%) scale(${mobileScale})` : `scale(${desktopScale})`,
               transformOrigin: 'top left',
-              border: viewMode === 'mobile' ? '12px solid #222' : 'none',
-              borderRadius: viewMode === 'mobile' ? '36px' : '0',
+              border: isMobilePreview ? '12px solid #222' : 'none',
+              borderRadius: isMobilePreview ? '36px' : '0',
               pointerEvents: 'none',
               position: 'absolute',
-              top: viewMode === 'mobile' ? '50%' : 0,
-              left: viewMode === 'mobile' ? '50%' : 0,
-              marginLeft: viewMode === 'mobile' ? '-60px' : 0, // 375 * 0.32 / 2
-              marginTop: viewMode === 'mobile' ? '-130px' : 0, // 812 * 0.32 / 2
+              top: isMobilePreview ? '50%' : 0,
+              left: isMobilePreview ? '50%' : 0,
+              marginLeft: 0,
+              marginTop: 0,
               backgroundColor: '#fff',
               opacity: loaded ? 1 : 0,
               transition: 'opacity 0.3s ease'
