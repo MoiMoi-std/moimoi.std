@@ -46,11 +46,25 @@ export default function PlanCard({
 
   const buttonLabel = (() => {
     if (actionLabel) return actionLabel
-    if (isCurrentPlan) return <><Check size={20} /> Đang sử dụng</>
+    if (isCurrentPlan)
+      return (
+        <>
+          <Check size={20} /> Đang sử dụng
+        </>
+      )
     if (isLowerThanCurrent) return 'Bạn đã sở hữu gói cao hơn'
     if (paying) return 'Đang chuyển đến VNPay...'
-    if (displayPrice === 0) return <><Check size={20} /> Đã sở hữu</>
-    return <><CreditCard size={20} /> {showUpgradePrice ? 'Nâng cấp' : 'Thanh Toán qua VNPay'}</>
+    if (displayPrice === 0)
+      return (
+        <>
+          <Check size={20} /> Đã sở hữu
+        </>
+      )
+    return (
+      <>
+        <CreditCard size={20} /> {showUpgradePrice ? 'Nâng cấp' : 'Thanh Toán qua VNPay'}
+      </>
+    )
   })()
 
   return (
@@ -81,18 +95,14 @@ export default function PlanCard({
         <div className='mt-4 flex items-baseline gap-3 flex-wrap'>
           {showUpgradePrice ? (
             <>
-              <span className='text-4xl font-extrabold tracking-tight text-pink-600'>
-                {formatVnd(upgradePrice)}
-              </span>
+              <span className='text-4xl font-extrabold tracking-tight text-pink-600'>{formatVnd(upgradePrice)}</span>
               <span className='text-sm font-semibold text-gray-400 line-through opacity-70'>
                 {formatVnd(displayPrice)}
               </span>
             </>
           ) : (
             <>
-              <span className='text-4xl font-extrabold tracking-tight text-pink-600'>
-                {formatVnd(displayPrice)}
-              </span>
+              <span className='text-4xl font-extrabold tracking-tight text-pink-600'>{formatVnd(displayPrice)}</span>
               {discountActive && (
                 <span className='text-sm font-semibold text-gray-400 line-through opacity-70'>
                   {formatVnd(plan.price)}
@@ -110,9 +120,7 @@ export default function PlanCard({
         )}
 
         {/* Thời gian sử dụng */}
-        {plan.duration && (
-          <div className='mt-2 text-sm font-semibold text-gray-500'>Thời gian: {plan.duration}</div>
-        )}
+        {plan.duration && <div className='mt-2 text-sm font-semibold text-gray-500'>Thời gian: {plan.duration}</div>}
 
         {/* Ưu đãi có thời hạn */}
         {discountActive && plan.discountEndsAt && (

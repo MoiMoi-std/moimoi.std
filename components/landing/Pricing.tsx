@@ -55,7 +55,8 @@ export default function Pricing() {
         <div className='mb-16 text-center'>
           <h2 className='mb-4 text-3xl font-bold text-gray-900 md:text-4xl'>Bảng Giá Dịch Vụ</h2>
           <p className='max-w-2xl mx-auto text-gray-600'>
-            MoiMoi giúp bạn thong dong<br />
+            MoiMoi giúp bạn thong dong
+            <br />
             Giá mềm như bún, hài lòng khách qua
           </p>
         </div>
@@ -76,11 +77,7 @@ export default function Pricing() {
                 isLowerThanCurrent={isLowerThanCurrent}
                 onAction={() => router.push('/studio/upgrade')}
                 actionLabel={
-                  isCurrentPlan
-                    ? undefined
-                    : isLowerThanCurrent
-                    ? 'Bạn đã sở hữu gói hiện tại hoặc cao hơn'
-                    : undefined
+                  isCurrentPlan ? undefined : isLowerThanCurrent ? 'Bạn đã sở hữu gói hiện tại hoặc cao hơn' : undefined
                 }
               />
             )
