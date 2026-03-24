@@ -90,7 +90,7 @@ const LoginPage = () => {
       const { error: weddingError } = await supabase.from('weddings').insert({
         host_id: authData.user.id,
         slug: slug.toLowerCase().trim(),
-        package_id: 5,
+        package_id: 50,
         content: {}
       })
 
@@ -160,11 +160,10 @@ const LoginPage = () => {
         {/* Message Display */}
         {message && (
           <div
-            className={`mb-4 p-3 rounded-lg text-sm ${
-              message.type === 'error'
+            className={`mb-4 p-3 rounded-lg text-sm ${message.type === 'error'
                 ? 'bg-red-50 text-red-700 border border-red-200'
                 : 'bg-green-50 text-green-700 border border-green-200'
-            }`}
+              }`}
           >
             {message.text}
           </div>

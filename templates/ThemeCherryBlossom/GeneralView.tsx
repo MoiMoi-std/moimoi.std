@@ -1,15 +1,9 @@
 import Head from 'next/head'
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 import { TemplateProps } from '../TemplateRegistry'
 import { getImageStyle, resolveImageAdjust } from '../../lib/imageUtils'
 import { useTemplateViewport } from '../../lib/TemplateViewportContext'
-import { useMapEmbed } from '../../lib/useMapEmbed'
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-)
 
 export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
   const [timeRemaining, setTimeRemaining] = useState<{
@@ -19,26 +13,14 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
     seconds: number
   } | null>(null)
   const viewport = useTemplateViewport()
-  const [wishesList, setWishesList] = useState<any[]>([])
+
 
   const { content, template } = wedding || {}
 
-  useEffect(() => {
-    if (wedding?.id) {
-      supabase
-        .from('rsvps')
-        .select('guest_name, wishes')
-        .eq('wedding_id', wedding.id)
-        .not('wishes', 'is', null)
-        .neq('wishes', '')
-        .then(({ data }) => {
-          if (data) setWishesList(data)
-        })
-    }
-  }, [wedding?.id])
+
   const templateData = template as any
   const mergedContent = { ...(templateData?.default_content || {}), ...content }
-  const mapEmbedSrc = useMapEmbed(mergedContent.map_url, mergedContent.address)
+
 
   const pink = mergedContent.primary_color || '#d4507a'
   const pinkDeep = '#a83258'
@@ -787,30 +769,7 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
                 ))}
             </div>
 
-            {mergedContent.address && (
-              <div
-                style={{
-                  marginTop: 28,
-                  width: '100%',
-                  height: 250,
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  position: 'relative',
-                  border: `1px solid ${pink}20`,
-                  boxShadow: `0 8px 28px ${pink}1a`
-                }}
-              >
-                <iframe
-                  width='100%'
-                  height='100%'
-                  style={{ border: 0 }}
-                  loading='lazy'
-                  allowFullScreen
-                  referrerPolicy='no-referrer-when-downgrade'
-                  src={mapEmbedSrc}
-                />
-              </div>
-            )}
+
           </div>
         </section>
 
@@ -887,183 +846,9 @@ export default function CherryBlossomGeneralView({ wedding }: TemplateProps) {
           </section>
         )}
 
-        {/* ══ Gift / Bank ══ */}
-        {(mergedContent.account_number || mergedContent.qr_image) && (
-          <section style={{ padding: '90px 20px', background: pinkBg }}>
-            <div style={{ maxWidth: 560, margin: '0 auto' }}>
-              <div style={{ textAlign: 'center', marginBottom: 48 }}>
-                <p
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 700,
-                    letterSpacing: '0.5em',
-                    textTransform: 'uppercase',
-                    color: pink,
-                    marginBottom: 12
-                  }}
-                >
-                  MỪNG CƯỚI
-                </p>
-                <h2
-                  style={{
-                    fontFamily: "'Noto Serif JP', serif",
-                    fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
-                    fontWeight: 700,
-                    color: textDark,
-                    marginBottom: 16
-                  }}
-                >
-                  Tấm lòng thơm thảo
-                </h2>
-                <p
-                  style={{
-                    color: textMid,
-                    fontSize: 15,
-                    lineHeight: 1.85,
-                    fontStyle: 'italic',
-                    fontFamily: "'Noto Serif JP', serif"
-                  }}
-                >
-                  Sự hiện diện của bạn là món quà quý giá nhất.
-                  <br />
-                  Nếu muốn gửi tặng thêm, xin trân trọng cảm ơn!
-                </p>
-              </div>
-              <div className='cb-card' style={{ padding: '36px 32px' }}>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 12,
-                    marginBottom: 24,
-                    paddingBottom: 20,
-                    borderBottom: `1px solid ${pink}15`
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      background: `${pink}10`,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    <svg
-                      width='20'
-                      height='20'
-                      viewBox='0 0 24 24'
-                      fill='none'
-                      stroke={pink}
-                      strokeWidth='1.5'
-                      strokeLinecap='round'
-                    >
-                      <rect x='2' y='5' width='20' height='14' rx='2' />
-                      <path d='M2 10h20' />
-                    </svg>
-                  </div>
-                  <p
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: textMid,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase'
-                    }}
-                  >
-                    Thông tin tài khoản
-                  </p>
-                </div>
-                {mergedContent.qr_image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={mergedContent.qr_image}
-                    alt='QR Tiền Mừng'
-                    style={{ width: 180, height: 180, objectFit: 'contain', margin: '12px auto 0', display: 'block' }}
-                  />
-                ) : (
-                  mergedContent.account_number && (
-                    <p
-                      style={{
-                        fontFamily: "'Noto Serif JP', serif",
-                        fontSize: 'clamp(1.5rem, 5vw, 2.1rem)',
-                        fontWeight: 700,
-                        color: pinkDeep,
-                        letterSpacing: '0.06em',
-                        marginBottom: 8
-                      }}
-                    >
-                      {mergedContent.account_number}
-                    </p>
-                  )
-                )}
-              </div>
-            </div>
-          </section>
-        )}
 
-        {/* ══ GUESTBOOK ══ */}
-        <section style={{ padding: '90px 20px', background: `linear-gradient(135deg, ${pinkBg} 0%, ${blush} 100%)` }}>
-          <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center' }}>
-            <p
-              style={{
-                fontSize: 10,
-                fontWeight: 700,
-                letterSpacing: '0.5em',
-                textTransform: 'uppercase',
-                color: pink,
-                marginBottom: 12
-              }}
-            >
-              SỔ LƯU BÚT
-            </p>
-            <h2
-              style={{
-                fontFamily: "'Noto Serif JP', serif",
-                fontSize: 'clamp(1.6rem, 5vw, 2.5rem)',
-                fontWeight: 700,
-                color: textDark,
-                marginBottom: 32
-              }}
-            >
-              Lời Chúc Trân Trọng
-            </h2>
-            <div className='cb-card' style={{ padding: '36px 32px' }}>
-              {wishesList.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {wishesList.map((w, idx) => (
-                    <div
-                      key={idx}
-                      style={{ padding: '16px', textAlign: 'left', background: `${pink}10`, borderRadius: 12 }}
-                    >
-                      <p
-                        style={{ fontStyle: 'italic', color: textMid, marginBottom: 8, fontSize: 14, lineHeight: 1.6 }}
-                      >
-                        "{w.wishes}"
-                      </p>
-                      <p
-                        style={{
-                          fontFamily: "'Quicksand', sans-serif",
-                          color: textDark,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          letterSpacing: '0.05em',
-                          textTransform: 'uppercase'
-                        }}
-                      >
-                        - {w.guest_name}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p style={{ color: textMid, fontStyle: 'italic' }}>Chưa có lời chúc nào.</p>
-              )}
-            </div>
-          </div>
-        </section>
+
+
 
         {/* ══ Footer ══ */}
         <footer

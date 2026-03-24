@@ -227,7 +227,7 @@ export default function UpgradePage() {
 
   return (
     <StudioLayout>
-      <div className='max-w-5xl mx-auto py-10'>
+      <div className='max-w-7xl mx-auto py-10'>
         <div className='text-center mb-16'>
           <h1 className='text-4xl font-serif font-bold text-gray-900 mb-4'>Nâng Cấp Gói Dịch Vụ</h1>
           <p className='text-gray-500 text-lg'>Mở khóa toàn bộ tính năng cao cấp cho đám cưới của bạn</p>
@@ -251,14 +251,12 @@ export default function UpgradePage() {
                 <button
                   type='button'
                   onClick={() => setIsAdminMode((prev) => !prev)}
-                  className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${
-                    isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
-                  }`}
+                  className={`relative inline-flex h-7 w-14 items-center rounded-full transition-colors ${isAdminMode ? 'bg-pink-500' : 'bg-gray-200'
+                    }`}
                 >
                   <span
-                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${
-                      isAdminMode ? 'translate-x-7' : 'translate-x-1'
-                    }`}
+                    className={`inline-block h-6 w-6 transform rounded-full bg-white shadow transition-transform ${isAdminMode ? 'translate-x-7' : 'translate-x-1'
+                      }`}
                   />
                 </button>
               </label>
@@ -289,7 +287,7 @@ export default function UpgradePage() {
           </div>
         )}
 
-        <div className='grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8'>
+        <div className='grid md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-8'>
           {(isAdminMode ? plans : visiblePlans).map((plan) => {
             const discountActive = isDiscountActive(plan)
             let displayPrice = discountActive && plan.discountPrice ? plan.discountPrice : plan.price
@@ -311,9 +309,8 @@ export default function UpgradePage() {
             return (
               <div
                 key={plan.id}
-                className={`bg-white p-8 rounded-3xl border shadow-sm relative flex flex-col ${
-                  plan.highlight ? 'border-pink-500 shadow-xl' : 'border-gray-100'
-                } ${plan.isActive === false ? 'opacity-60' : ''} ${isExpiredPlan ? 'border-amber-300' : ''}`}
+                className={`bg-white p-8 rounded-3xl border shadow-sm relative flex flex-col ${plan.highlight ? 'border-pink-500 shadow-xl' : 'border-gray-100'
+                  } ${plan.isActive === false ? 'opacity-60' : ''} ${isExpiredPlan ? 'border-amber-300' : ''}`}
               >
                 {plan.highlight && (
                   <div className='absolute top-0 right-0 bg-gradient-to-l from-pink-500 to-rose-500 text-white text-sm font-bold px-4 py-1 rounded-bl-xl uppercase tracking-wider'>

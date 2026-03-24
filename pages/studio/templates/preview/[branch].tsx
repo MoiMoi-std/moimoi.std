@@ -354,7 +354,7 @@ export default function TemplatePreviewPage({ branch }: Props) {
       </div>
 
       {/* Music player cho các template không tự quản lý nhạc (trừ những template tự nhúng MusicPlayer) */}
-      {!['theme-vintage', 'theme-boho', 'theme-royal', 'theme-modern', 'theme-luxury', 'theme-nature'].includes(
+      {!['theme-vintage', 'theme-boho', 'theme-royal', 'theme-modern', 'theme-luxury', 'theme-nature', 'theme-cherry-blossom'].includes(
         branch
       ) && <MusicPlayer musicUrl={demoWedding.content?.music_url} />}
     </>
