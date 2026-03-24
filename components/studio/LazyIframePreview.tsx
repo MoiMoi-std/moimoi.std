@@ -63,7 +63,14 @@ export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: 
     <div ref={wrapperRef} className='relative aspect-[4/3] bg-gray-100 overflow-hidden rounded-t-3xl'>
       {/* Shimmer skeleton — visible until iframe fires onLoad */}
       {!loaded && (
-        <div className='absolute inset-0 bg-gradient-to-r from-gray-100 via-gray-200 to-gray-100 animate-[shimmer_1.4s_infinite]' />
+        <div
+          className='absolute inset-0'
+          style={{
+            background: 'linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%)',
+            backgroundSize: '200% 100%',
+            animation: 'shimmer-slide 1.4s infinite linear'
+          }}
+        />
       )}
 
       {shouldLoad && (
@@ -79,15 +86,16 @@ export default function LazyIframePreview({ src, title, viewMode = 'desktop' }: 
               width: `${isMobilePreview ? mobileBase.width : desktopBase.width}px`,
               height: `${isMobilePreview ? mobileBase.height : desktopBase.height}px`,
               transform: isMobilePreview ? `translate(-50%, -50%) scale(${mobileScale})` : `scale(${desktopScale})`,
-              transformOrigin: 'top left',
-              border: isMobilePreview ? '12px solid #222' : 'none',
-              borderRadius: isMobilePreview ? '36px' : '0',
+              // Mobile: scale từ tâm để căn giữa đúng với translate(-50%,-50%)
+              // Desktop: scale từ top-left (vì top=0, left=0)
+              transformOrigin: isMobilePreview ? 'center' : 'top left',
+              border: isMobilePreview ? '12px solid #1a1a1a' : 'none',
+              borderRadius: isMobilePreview ? '40px' : '0',
+              boxShadow: isMobilePreview ? '0 0 0 2px #333' : 'none',
               pointerEvents: 'none',
               position: 'absolute',
               top: isMobilePreview ? '50%' : 0,
               left: isMobilePreview ? '50%' : 0,
-              marginLeft: 0,
-              marginTop: 0,
               backgroundColor: '#fff',
               opacity: loaded ? 1 : 0,
               transition: 'opacity 0.3s ease'
