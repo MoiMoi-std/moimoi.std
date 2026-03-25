@@ -101,16 +101,19 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   const guestName = rsvpData.guest_name
 
-  // Single query with join — lấy wedding + template trong 1 lần
+  // Single query with join — lấy wedding + template + music trong 1 lần
   const { data: weddingData, error: weddingError } = await supabaseServer
     .from('weddings')
-    .select('*, template:templates(*)')
+    .select('*, template:templates(*), music:musics(url)')
     .eq('slug', slug)
     .single()
 
   if (weddingError || !weddingData) {
     return { notFound: true }
   }
+
+  // Lấy music url từ bảng musics nếu có, fallback về content.music_url (legacy)
+  const musicUrl = (weddingData as any).music?.url || weddingData.content?.music_url || null
 
   // Lấy package data nếu có
   let packageData = null
@@ -126,7 +129,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       rsvpId,
       wedding: {
         ...weddingData,
-        content: weddingData.content || {},
+        content: {
+          ...(weddingData.content || {}),
+          music_url: musicUrl
+        },
         package: packageData
       }
     }

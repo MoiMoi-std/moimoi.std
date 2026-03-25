@@ -18,7 +18,7 @@ import LivePreview from '../../components/studio/LivePreview'
 import StudioLayout from '../../components/studio/StudioLayout'
 import StudioLoading from '../../components/studio/StudioLoading'
 import TabAlbum from '../../components/studio/TabAlbum'
-import TabBank from '../../components/studio/TabBank'
+import TabQR from '../../components/studio/TabQR'
 import TabInfo from '../../components/studio/TabInfo'
 import TabStyle from '../../components/studio/TabStyle'
 import { useToast } from '../../components/ui/ToastProvider'
@@ -210,6 +210,23 @@ const Editor = () => {
     setOriginalQrImage((prev) => (prev === url ? null : prev))
     setOriginalGroomImage((prev) => (prev === url ? null : prev))
     setOriginalBrideImage((prev) => (prev === url ? null : prev))
+  }
+
+  const handleToggleMusic = (music: any) => {
+    if (playingMusicId === music.id) {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause()
+        previewAudioRef.current = null
+      }
+      setPlayingMusicId(null)
+    } else {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause()
+      }
+      previewAudioRef.current = new Audio(music.url)
+      previewAudioRef.current.play()
+      setPlayingMusicId(music.id)
+    }
   }
 
   const handleSave = async () => {
@@ -815,10 +832,13 @@ const Editor = () => {
                   />
                 </div>
                 <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
-                  <TabBank
-                    content={adminSelectedWedding.content}
-                    onChange={handleAdminContentChange}
-                    isLocked={false}
+                  <TabQR
+                    qrImage={adminSelectedWedding.content?.qr_image}
+                    onQrImageChange={(qrImage) =>
+                      setAdminSelectedWedding((prev) =>
+                        prev ? { ...prev, content: { ...prev.content, qr_image: qrImage } } : prev
+                      )
+                    }
                   />
                 </div>
                 <div className={activeTab === 'style' ? 'relative block' : 'hidden'}>
@@ -882,7 +902,10 @@ const Editor = () => {
                   />
                 </div>
                 <div className={activeTab === 'bank' ? 'relative block' : 'hidden'}>
-                  <TabBank content={wedding.content} onChange={handleInfoChange} isLocked={isBankLocked} />
+                  <TabQR qrImage={wedding.content.qr_image} onQrImageChange={handleQrImageChange} />
+                  {isBankLocked && (
+                    <LockedOverlay message='Tính năng quản lý tiền mừng và QR Code yêu cầu nâng cấp gói.' />
+                  )}
                 </div>
                 <div className={activeTab === 'style' ? 'relative block' : 'hidden'}>
                   <TabStyle
@@ -896,46 +919,81 @@ const Editor = () => {
                 <div className={activeTab === 'music' ? 'relative block' : 'hidden'}>
                   <div className='bg-white p-6 rounded-lg shadow-sm space-y-6'>
                     <h3 className='text-lg font-medium text-gray-900 border-b pb-2 font-serif font-bold'>
-                      Kho Nhạc Của Bạn
+                      Chọn nhạc nền
                     </h3>
                     {loadingMusics ? (
                       <div className='py-12 text-center text-gray-400 text-sm'>Đang tải danh sách nhạc...</div>
                     ) : (
-                      <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                      <div className='grid gap-3'>
+                        {/* Option: Không chọn */}
+                        <button
+                          onClick={() => {
+                            setWedding({ ...wedding, music_id: null })
+                            setIsDirty(true)
+                            if (previewAudioRef.current) {
+                              previewAudioRef.current.pause()
+                              setPlayingMusicId(null)
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                            wedding.music_id === null
+                              ? 'bg-pink-50 border-pink-500 shadow-sm'
+                              : 'bg-gray-50 border-transparent hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className='flex items-center gap-4'>
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                                wedding.music_id === null ? 'bg-pink-500 text-white' : 'bg-gray-200 text-gray-400'
+                              }`}
+                            >
+                              <Music size={20} />
+                            </div>
+                            <div className='text-left'>
+                              <div
+                                className={`font-bold transition-colors ${
+                                  wedding.music_id === null ? 'text-pink-600' : 'text-gray-700'
+                                }`}
+                              >
+                                Không chọn
+                              </div>
+                            </div>
+                          </div>
+                          {wedding.music_id === null && (
+                            <span className='text-pink-500 font-bold text-sm'>Đang chọn</span>
+                          )}
+                        </button>
+
                         {allMusics.map((music) => (
-                          <div
+                          <button
                             key={music.id}
-                            className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                              wedding.music_id === music.id
-                                ? 'border-pink-500 bg-pink-50'
-                                : 'border-gray-100 hover:border-pink-200 hover:bg-pink-50/30'
-                            }`}
                             onClick={() => {
                               if (isMusicLocked) return
-                              setWedding({ ...wedding, music_id: music.id })
+
+                              if (wedding.music_id === music.id) {
+                                // Clicked the currently selected song -> Deselect and stop
+                                setWedding({ ...wedding, music_id: null })
+                                if (previewAudioRef.current) {
+                                  previewAudioRef.current.pause()
+                                  setPlayingMusicId(null)
+                                }
+                              } else {
+                                // Clicked a new song -> Select and play
+                                setWedding({ ...wedding, music_id: music.id })
+                                handleToggleMusic(music)
+                              }
                               setIsDirty(true)
                             }}
+                            className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                              wedding.music_id === music.id
+                                ? 'bg-pink-50 border-pink-500 shadow-sm'
+                                : 'bg-gray-50 border-transparent hover:bg-gray-100'
+                            }`}
                           >
-                            <div className='flex items-center justify-between gap-3'>
-                              <div className='flex-1 min-w-0'>
-                                <h4 className='font-semibold text-gray-900 truncate'>{music.title}</h4>
-                                <p className='text-xs text-gray-500 truncate'>{music.artist || 'Không rõ nghệ sĩ'}</p>
-                              </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation()
-                                  if (playingMusicId === music.id) {
-                                    if (previewAudioRef.current) previewAudioRef.current.pause()
-                                    setPlayingMusicId(null)
-                                  } else {
-                                    if (previewAudioRef.current) previewAudioRef.current.pause()
-                                    previewAudioRef.current = new Audio(music.url)
-                                    previewAudioRef.current.play()
-                                    setPlayingMusicId(music.id)
-                                  }
-                                }}
-                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                                  playingMusicId === music.id ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-600'
+                            <div className='flex items-center gap-4 text-left'>
+                              <div
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0 ${
+                                  wedding.music_id === music.id ? 'bg-pink-500 text-white' : 'bg-gray-200 text-gray-400'
                                 }`}
                               >
                                 {playingMusicId === music.id ? (
@@ -945,11 +1003,24 @@ const Editor = () => {
                                     <span className='w-1 h-3 bg-white animate-bounce [animation-delay:0.4s]' />
                                   </div>
                                 ) : (
-                                  <Music size={18} />
+                                  <Music size={20} />
                                 )}
-                              </button>
+                              </div>
+                              <div className='min-w-0'>
+                                <div
+                                  className={`font-bold truncate transition-colors ${
+                                    wedding.music_id === music.id ? 'text-pink-600' : 'text-gray-700'
+                                  }`}
+                                >
+                                  {music.title}
+                                </div>
+                                {music.artist && <div className='text-xs text-gray-500 truncate'>{music.artist}</div>}
+                              </div>
                             </div>
-                          </div>
+                            {wedding.music_id === music.id && (
+                              <span className='text-pink-500 font-bold text-sm shrink-0 ml-2'>Đang chọn</span>
+                            )}
+                          </button>
                         ))}
                       </div>
                     )}
@@ -1205,6 +1276,11 @@ const Editor = () => {
           <div className='lg:sticky lg:top-6 lg:self-start'>
             <LivePreview
               wedding={isAdminMode && adminSelectedWedding ? (adminSelectedWedding as any) : wedding}
+              musicUrl={
+                allMusics.find(
+                  (m) => m.id === (isAdminMode ? (adminSelectedWedding as any)?.music_id : wedding?.music_id)
+                )?.url
+              }
               isDirty={isAdminMode ? false : isDirty}
               onUnsavedWarning={() => error('Vui lòng lưu thay đổi trước khi xem thiệp.')}
               onOpen={() => {

@@ -462,11 +462,11 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
           }
           .vintage-splash-dao-left {
             left: max(0px, calc(50% - 680px));
-            animation: splashDaoSwayLeft 5s ease-in-out infinite;
+            animation: splashDaoSwayLeft 8s ease-in-out infinite;
           }
           .vintage-splash-dao-right {
             right: max(0px, calc(50% - 680px));
-            animation: splashDaoSwayRight 5.8s ease-in-out 0.6s infinite;
+            animation: splashDaoSwayRight 9s ease-in-out 0.6s infinite;
           }
           .vintage-splash-hy-wrap {
             position: relative;
@@ -511,7 +511,7 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
             opacity: 1;
             z-index: 1;
             transform-origin: bottom center;
-            animation: ornamentSwayLeft 2.5s ease-in-out infinite;
+            animation: ornamentSwayLeft 7s ease-in-out infinite;
           }
           .vintage-ornament-right {
             right: 1%;
@@ -520,7 +520,7 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
             opacity: 1;
             z-index: 1;
             transform-origin: bottom center;
-            animation: ornamentSwayRight 2.8s ease-in-out 0.7s infinite;
+            animation: ornamentSwayRight 8.5s ease-in-out 0.7s infinite;
           }
           @keyframes ornamentSwayLeft {
             0%, 100% { transform: translateY(0) rotate(0deg); }
@@ -618,13 +618,13 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
           .gift-card-ornament-left {
             left: -278px;
             transform: translateY(-55%) rotate(-4deg);
-            animation: giftOrnamentSwayLeft 4.8s ease-in-out infinite;
+            animation: giftOrnamentSwayLeft 8s ease-in-out infinite;
             transform-origin: bottom center;
           }
           .gift-card-ornament-right {
             right: -278px;
             transform: translateY(-55%) rotate(4deg) scaleX(-1);
-            animation: giftOrnamentSwayRight 5.2s ease-in-out 0.35s infinite;
+            animation: giftOrnamentSwayRight 9.2s ease-in-out 0.35s infinite;
             transform-origin: bottom center;
           }
           @keyframes splashBannerPetalFall {
