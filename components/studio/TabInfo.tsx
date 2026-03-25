@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { Wedding } from '../../lib/data-service'
 import { Solar, Lunar } from 'lunar-javascript'
+import LockedOverlay from './LockedOverlay'
 
 interface TabInfoProps {
   content?: Wedding['content']
   onChange: (key: string, value: string) => void
+  isMapLocked?: boolean
 }
 
-const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
+const TabInfo: React.FC<TabInfoProps> = ({ content, onChange, isMapLocked }) => {
   const [formData, setFormData] = useState({
     groom_name: content?.groom_name || '',
     groom_role: content?.groom_role || '',
@@ -314,7 +316,7 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
         />
       </div>
 
-      <div>
+      <div className='relative'>
         <label className='block text-sm font-medium text-gray-700 mb-1'>Google Maps Embed</label>
         <textarea
           name='map_url'
@@ -327,6 +329,8 @@ const TabInfo: React.FC<TabInfoProps> = ({ content, onChange }) => {
         <p className='text-xs text-gray-400 mt-1'>
           Vào Google Maps → Chia sẻ → Nhúng bản đồ → Sao chép thẻ &lt;iframe&gt; và dán vào đây
         </p>
+
+        {isMapLocked && <LockedOverlay message='Tính năng nhúng bản đồ Google Maps yêu cầu nâng cấp gói.' />}
       </div>
     </div>
   )

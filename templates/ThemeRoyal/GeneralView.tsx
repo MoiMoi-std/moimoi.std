@@ -1123,54 +1123,6 @@ export default function RoyalGeneralView({ wedding, disableSplash, musicUrl }: T
                       >
                         {w.guest_name || 'Khách mời'}
                       </span>
-                      <span style={{ fontSize: '0.7rem', color: `${textDark}88`, fontStyle: 'italic' }}>
-                        {typeof w.created_at === 'string' && w.created_at.includes(':')
-                          ? w.created_at
-                          : new Date(w.created_at).toLocaleDateString('vi-VN')}
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                      <span
-                        style={{
-                          border: `1px solid ${gold}44`,
-                          color: gold,
-                          borderRadius: 2,
-                          padding: '2px 8px',
-                          fontSize: '0.65rem',
-                          fontWeight: 600,
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.05em'
-                        }}
-                      >
-                        {w.is_attending ? 'Sẽ tham dự' : 'Không tham dự'}
-                      </span>
-                      {w.is_attending && (
-                        <span
-                          style={{
-                            border: `1px solid ${textMid}33`,
-                            color: textMid,
-                            borderRadius: 2,
-                            padding: '2px 8px',
-                            fontSize: '0.65rem'
-                          }}
-                        >
-                          Số người: {w.party_size || 1}
-                        </span>
-                      )}
-                      {w.phone && (
-                        <span
-                          style={{
-                            border: `1px solid ${textMid}33`,
-                            color: textMid,
-                            borderRadius: 2,
-                            padding: '2px 8px',
-                            fontSize: '0.65rem'
-                          }}
-                        >
-                          SĐT: {w.phone}
-                        </span>
-                      )}
                     </div>
 
                     <p

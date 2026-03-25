@@ -27,6 +27,14 @@ import { processImages, processSingleImage } from '../../lib/image-processor'
 import type { ImagePosition } from '../../lib/imageUtils'
 import { useWedding } from '../../lib/useWedding'
 import { useAdmin } from '../../lib/useAdmin'
+import LockedOverlay from '../../components/studio/LockedOverlay'
+
+const PACKAGE_IDS = {
+  EXPERIENCE: 50,
+  KET_DUYEN: 5,
+  TRON_VEN: 6,
+  TRAN_NAM: 7
+}
 
 const Editor = () => {
   const { wedding, setWedding, loading } = useWedding()
@@ -85,6 +93,14 @@ const Editor = () => {
   const [isDirty, setIsDirty] = useState(false)
   const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null)
   const { success, error } = useToast()
+
+  const packageId = wedding?.package?.id
+  const isMapLocked = !isAdminMode && (packageId === PACKAGE_IDS.EXPERIENCE || packageId === PACKAGE_IDS.KET_DUYEN)
+  const isBankLocked = !isAdminMode && (packageId === PACKAGE_IDS.EXPERIENCE || packageId === PACKAGE_IDS.KET_DUYEN)
+  const isMusicLocked = !isAdminMode && (packageId === PACKAGE_IDS.EXPERIENCE || packageId === PACKAGE_IDS.KET_DUYEN)
+  const isStyleLocked =
+    !isAdminMode &&
+    (packageId === PACKAGE_IDS.EXPERIENCE || packageId === PACKAGE_IDS.KET_DUYEN || packageId === PACKAGE_IDS.TRON_VEN)
 
   // Store original images when wedding loads
   useEffect(() => {
@@ -194,6 +210,23 @@ const Editor = () => {
     setOriginalQrImage((prev) => (prev === url ? null : prev))
     setOriginalGroomImage((prev) => (prev === url ? null : prev))
     setOriginalBrideImage((prev) => (prev === url ? null : prev))
+  }
+
+  const handleToggleMusic = (music: any) => {
+    if (playingMusicId === music.id) {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause()
+        previewAudioRef.current = null
+      }
+      setPlayingMusicId(null)
+    } else {
+      if (previewAudioRef.current) {
+        previewAudioRef.current.pause()
+      }
+      previewAudioRef.current = new Audio(music.url)
+      previewAudioRef.current.play()
+      setPlayingMusicId(music.id)
+    }
   }
 
   const handleSave = async () => {
@@ -737,7 +770,11 @@ const Editor = () => {
                   </div>
                 </div>
                 <div className={activeTab === 'info' ? 'block' : 'hidden'}>
-                  <TabInfo content={adminSelectedWedding.content} onChange={handleAdminContentChange} />
+                  <TabInfo
+                    content={adminSelectedWedding.content}
+                    onChange={handleAdminContentChange}
+                    isMapLocked={false}
+                  />
                 </div>
                 <div className={activeTab === 'album' ? 'block' : 'hidden'}>
                   <TabAlbum
@@ -796,26 +833,201 @@ const Editor = () => {
                 </div>
                 <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
                   <TabQR
-                    qrImage={adminSelectedWedding.content?.qr_image ?? null}
-                    onQrImageChange={(qr) =>
+                    qrImage={adminSelectedWedding.content?.qr_image}
+                    onQrImageChange={(qrImage) =>
                       setAdminSelectedWedding((prev) =>
-                        prev ? { ...prev, content: { ...prev.content, qr_image: qr } } : prev
+                        prev ? { ...prev, content: { ...prev.content, qr_image: qrImage } } : prev
                       )
                     }
                   />
                 </div>
-                <div className={activeTab === 'style' ? 'block' : 'hidden'}>
+                <div className={activeTab === 'style' ? 'relative block' : 'hidden'}>
                   <TabStyle
                     content={adminSelectedWedding.content}
                     onChange={handleAdminContentChange}
-                    onBatchChange={(changes) =>
+                    onBatchChange={(changes) => {
+                      if (!adminSelectedWedding) return
                       setAdminSelectedWedding((prev) =>
                         prev ? { ...prev, content: { ...prev.content, ...changes } } : prev
                       )
-                    }
+                    }}
+                    isLocked={false}
                   />
                 </div>
+                <div className={activeTab === 'music' ? 'relative block' : 'hidden'}>
+                  <div className='p-6 text-center text-gray-400 font-medium'>
+                    Vui lòng sử dụng tài khoản người dùng để đổi nhạc cho thiệp này.
+                  </div>
+                </div>
               </div>
+            ) : wedding ? (
+              /* Chế độ thường: tabs của người dùng hiện tại */
+              <>
+                <div className={activeTab === 'info' ? 'block' : 'hidden'}>
+                  <TabInfo content={wedding.content} onChange={handleInfoChange} isMapLocked={isMapLocked} />
+                </div>
+                <div className={activeTab === 'album' ? 'block' : 'hidden'}>
+                  <TabAlbum
+                    images={wedding.content.images || []}
+                    onChange={handleImagesChange}
+                    coverImage={wedding.content.cover_image || undefined}
+                    onCoverImageChange={handleCoverImageChange}
+                    groomImage={wedding.content.groom_image || undefined}
+                    onGroomImageChange={(ci) => {
+                      setWedding({ ...wedding, content: { ...wedding.content, groom_image: ci || undefined } })
+                      setIsDirty(true)
+                    }}
+                    brideImage={wedding.content.bride_image || undefined}
+                    onBrideImageChange={(ci) => {
+                      setWedding({ ...wedding, content: { ...wedding.content, bride_image: ci || undefined } })
+                      setIsDirty(true)
+                    }}
+                    groomName={wedding.content.groom_name || ''}
+                    brideName={wedding.content.bride_name || ''}
+                    imagePositions={wedding.content.image_positions || []}
+                    onImagePositionsChange={handleImagePositionsChange}
+                    coverImagePosition={wedding.content.cover_image_position || undefined}
+                    onCoverImagePositionChange={handleCoverImagePositionChange}
+                    groomImagePosition={wedding.content.groom_image_position || undefined}
+                    onGroomImagePositionChange={(gp) => {
+                      setWedding({ ...wedding, content: { ...wedding.content, groom_image_position: gp } })
+                      setIsDirty(true)
+                    }}
+                    brideImagePosition={wedding.content.bride_image_position || undefined}
+                    onBrideImagePositionChange={(bp) => {
+                      setWedding({ ...wedding, content: { ...wedding.content, bride_image_position: bp } })
+                      setIsDirty(true)
+                    }}
+                    onImageDeleted={handleImageDeleted}
+                  />
+                </div>
+                <div className={activeTab === 'bank' ? 'relative block' : 'hidden'}>
+                  <TabQR qrImage={wedding.content.qr_image} onQrImageChange={handleQrImageChange} />
+                  {isBankLocked && (
+                    <LockedOverlay message='Tính năng quản lý tiền mừng và QR Code yêu cầu nâng cấp gói.' />
+                  )}
+                </div>
+                <div className={activeTab === 'style' ? 'relative block' : 'hidden'}>
+                  <TabStyle
+                    content={wedding.content}
+                    onChange={handleInfoChange}
+                    onBatchChange={handleBatchChange}
+                    onReset={handleStyleReset}
+                    isLocked={isStyleLocked}
+                  />
+                </div>
+                <div className={activeTab === 'music' ? 'relative block' : 'hidden'}>
+                  <div className='bg-white p-6 rounded-lg shadow-sm space-y-6'>
+                    <h3 className='text-lg font-medium text-gray-900 border-b pb-2 font-serif font-bold'>
+                      Chọn nhạc nền
+                    </h3>
+                    {loadingMusics ? (
+                      <div className='py-12 text-center text-gray-400 text-sm'>Đang tải danh sách nhạc...</div>
+                    ) : (
+                      <div className='grid gap-3'>
+                        {/* Option: Không chọn */}
+                        <button
+                          onClick={() => {
+                            setWedding({ ...wedding, music_id: null })
+                            setIsDirty(true)
+                            if (previewAudioRef.current) {
+                              previewAudioRef.current.pause()
+                              setPlayingMusicId(null)
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                            wedding.music_id === null
+                              ? 'bg-pink-50 border-pink-500 shadow-sm'
+                              : 'bg-gray-50 border-transparent hover:bg-gray-100'
+                          }`}
+                        >
+                          <div className='flex items-center gap-4'>
+                            <div
+                              className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                                wedding.music_id === null ? 'bg-pink-500 text-white' : 'bg-gray-200 text-gray-400'
+                              }`}
+                            >
+                              <Music size={20} />
+                            </div>
+                            <div className='text-left'>
+                              <div
+                                className={`font-bold transition-colors ${
+                                  wedding.music_id === null ? 'text-pink-600' : 'text-gray-700'
+                                }`}
+                              >
+                                Không chọn
+                              </div>
+                            </div>
+                          </div>
+                          {wedding.music_id === null && (
+                            <span className='text-pink-500 font-bold text-sm'>Đang chọn</span>
+                          )}
+                        </button>
+
+                        {allMusics.map((music) => (
+                          <button
+                            key={music.id}
+                            onClick={() => {
+                              if (isMusicLocked) return
+
+                              if (wedding.music_id === music.id) {
+                                // Clicked the currently selected song -> Deselect and stop
+                                setWedding({ ...wedding, music_id: null })
+                                if (previewAudioRef.current) {
+                                  previewAudioRef.current.pause()
+                                  setPlayingMusicId(null)
+                                }
+                              } else {
+                                // Clicked a new song -> Select and play
+                                setWedding({ ...wedding, music_id: music.id })
+                                handleToggleMusic(music)
+                              }
+                              setIsDirty(true)
+                            }}
+                            className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                              wedding.music_id === music.id
+                                ? 'bg-pink-50 border-pink-500 shadow-sm'
+                                : 'bg-gray-50 border-transparent hover:bg-gray-100'
+                            }`}
+                          >
+                            <div className='flex items-center gap-4 text-left'>
+                              <div
+                                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors shrink-0 ${
+                                  wedding.music_id === music.id ? 'bg-pink-500 text-white' : 'bg-gray-200 text-gray-400'
+                                }`}
+                              >
+                                {playingMusicId === music.id ? (
+                                  <div className='flex gap-0.5'>
+                                    <span className='w-1 h-3 bg-white animate-bounce' />
+                                    <span className='w-1 h-3 bg-white animate-bounce [animation-delay:0.2s]' />
+                                    <span className='w-1 h-3 bg-white animate-bounce [animation-delay:0.4s]' />
+                                  </div>
+                                ) : (
+                                  <Music size={20} />
+                                )}
+                              </div>
+                              <div className='min-w-0'>
+                                <div
+                                  className={`font-bold truncate transition-colors ${
+                                    wedding.music_id === music.id ? 'text-pink-600' : 'text-gray-700'
+                                  }`}
+                                >
+                                  {music.title}
+                                </div>
+                                {music.artist && <div className='text-xs text-gray-500 truncate'>{music.artist}</div>}
+                              </div>
+                            </div>
+                            {wedding.music_id === music.id && (
+                              <span className='text-pink-500 font-bold text-sm shrink-0 ml-2'>Đang chọn</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  {isMusicLocked && <LockedOverlay message='Tính năng tùy chọn nhạc nền yêu cầu nâng cấp gói.' />}
+                </div>
+              </>
             ) : isAdminMode ? (
               /* Chế độ admin thuần: quản lý thiệp + nhạc */
               <div className='space-y-6'>
@@ -1055,196 +1267,7 @@ const Editor = () => {
                 )}
               </div>
             ) : (
-              /* Chế độ thường: tabs của người dùng hiện tại */
-              <>
-                <div className={activeTab === 'info' ? 'block' : 'hidden'}>
-                  <TabInfo content={wedding?.content} onChange={handleInfoChange} />
-                </div>
-                <div className={activeTab === 'album' ? 'block' : 'hidden'}>
-                  <TabAlbum
-                    images={wedding?.content?.images || []}
-                    onChange={handleImagesChange}
-                    coverImage={wedding?.content?.cover_image || undefined}
-                    onCoverImageChange={handleCoverImageChange}
-                    groomImage={wedding?.content?.groom_image || undefined}
-                    onGroomImageChange={(ci) => {
-                      if (!wedding) return
-                      setWedding({ ...wedding, content: { ...wedding.content, groom_image: ci || undefined } })
-                      setIsDirty(true)
-                    }}
-                    brideImage={wedding?.content?.bride_image || undefined}
-                    onBrideImageChange={(ci) => {
-                      if (!wedding) return
-                      setWedding({ ...wedding, content: { ...wedding.content, bride_image: ci || undefined } })
-                      setIsDirty(true)
-                    }}
-                    groomName={wedding?.content?.groom_name || ''}
-                    brideName={wedding?.content?.bride_name || ''}
-                    imagePositions={wedding?.content?.image_positions || []}
-                    onImagePositionsChange={handleImagePositionsChange}
-                    coverImagePosition={wedding?.content?.cover_image_position || undefined}
-                    onCoverImagePositionChange={handleCoverImagePositionChange}
-                    groomImagePosition={wedding?.content?.groom_image_position || undefined}
-                    onGroomImagePositionChange={(gp) => {
-                      if (!wedding) return
-                      setWedding({ ...wedding, content: { ...wedding.content, groom_image_position: gp } })
-                      setIsDirty(true)
-                    }}
-                    brideImagePosition={wedding?.content?.bride_image_position || undefined}
-                    onBrideImagePositionChange={(bp) => {
-                      if (!wedding) return
-                      setWedding({ ...wedding, content: { ...wedding.content, bride_image_position: bp } })
-                      setIsDirty(true)
-                    }}
-                    onImageDeleted={handleImageDeleted}
-                  />
-                </div>
-                <div className={activeTab === 'bank' ? 'block' : 'hidden'}>
-                  <TabQR qrImage={wedding?.content?.qr_image ?? null} onQrImageChange={handleQrImageChange} />
-                </div>
-                <div className={activeTab === 'style' ? 'block' : 'hidden'}>
-                  <TabStyle
-                    content={wedding?.content}
-                    onChange={handleInfoChange}
-                    onBatchChange={handleBatchChange}
-                    onReset={handleStyleReset}
-                  />
-                </div>
-                <div className={activeTab === 'music' ? 'block' : 'hidden'}>
-                  <div>
-                    <h3 className='font-bold text-gray-900 text-lg mb-1'>Chọn nhạc nền</h3>
-                    <p className='text-sm text-gray-400 mb-5'>Nhạc sẽ tự động phát khi khách mở thiệp của bạn.</p>
-                    {loadingMusics ? (
-                      <div className='text-center py-12 text-gray-400 text-sm'>Đang tải...</div>
-                    ) : (
-                      <div className='space-y-2'>
-                        {/* Không chọn */}
-                        <button
-                          type='button'
-                          onClick={() => {
-                            if (previewAudioRef.current) {
-                              previewAudioRef.current.pause()
-                              previewAudioRef.current = null
-                            }
-                            setPlayingMusicId(null)
-                            if (!wedding) return
-                            setWedding((prev) =>
-                              prev ? { ...prev, music_id: null, content: { ...prev.content, music_url: '' } } : prev
-                            )
-                            // Only mark dirty if different from original
-                            if (originalMusicId !== null) {
-                              setIsDirty(true)
-                            }
-                          }}
-                          className={`w-full flex items-center justify-between px-5 py-3 rounded-2xl border transition-all text-left ${
-                            !wedding?.music_id
-                              ? 'border-pink-400 bg-pink-50 shadow-sm shadow-pink-100'
-                              : 'border-gray-100 bg-white hover:border-pink-200'
-                          }`}
-                        >
-                          <div className='flex items-center gap-3'>
-                            <div
-                              className={`flex items-center justify-center w-9 h-9 rounded-full ${!wedding?.music_id ? 'bg-pink-500' : 'bg-gray-100'}`}
-                            >
-                              <Music size={16} className={!wedding?.music_id ? 'text-white' : 'text-gray-400'} />
-                            </div>
-                            <p
-                              className={`font-medium text-sm ${!wedding?.music_id ? 'text-pink-700' : 'text-gray-800'}`}
-                            >
-                              Không chọn
-                            </p>
-                          </div>
-                          {!wedding?.music_id && (
-                            <span className='text-xs font-semibold text-pink-500 bg-pink-100 px-2.5 py-1 rounded-full'>
-                              Đang chọn
-                            </span>
-                          )}
-                        </button>
-                        {allMusics.length === 0 ? (
-                          <div className='text-center py-8 text-gray-400 text-sm'>Chưa có bài nhạc nào.</div>
-                        ) : (
-                          allMusics.map((m) => {
-                            const isSelected = wedding?.music_id === m.id
-                            const isPlaying = playingMusicId === m.id
-                            return (
-                              <button
-                                key={m.id}
-                                type='button'
-                                onClick={() => {
-                                  if (!isSelected) {
-                                    // Lần 1: chọn bài mới và phát
-                                    if (previewAudioRef.current) {
-                                      previewAudioRef.current.pause()
-                                      previewAudioRef.current = null
-                                    }
-                                    const audio = new Audio(m.url)
-                                    audio.loop = true
-                                    audio.play().catch(() => {})
-                                    previewAudioRef.current = audio
-                                    setPlayingMusicId(m.id)
-                                    if (!wedding) return
-                                    setWedding((prev) =>
-                                      prev
-                                        ? { ...prev, music_id: m.id, content: { ...prev.content, music_url: m.url } }
-                                        : prev
-                                    )
-                                    // Only mark dirty if different from original
-                                    if (m.id !== originalMusicId) {
-                                      setIsDirty(true)
-                                    }
-                                  } else if (isPlaying) {
-                                    // Lần 2: đang phát → pause, giữ nguyên chọn
-                                    if (previewAudioRef.current) {
-                                      previewAudioRef.current.pause()
-                                    }
-                                    setPlayingMusicId(null)
-                                  } else {
-                                    // Lần 3: đang pause → tiếp tục phát
-                                    if (previewAudioRef.current) {
-                                      previewAudioRef.current.play().catch(() => {})
-                                      setPlayingMusicId(m.id)
-                                    }
-                                  }
-                                }}
-                                className={`w-full flex items-center justify-between px-5 py-3 rounded-2xl border transition-all text-left ${
-                                  isSelected
-                                    ? 'border-pink-400 bg-pink-50 shadow-sm shadow-pink-100'
-                                    : 'border-gray-100 bg-white hover:border-pink-200'
-                                }`}
-                              >
-                                <div className='flex items-center gap-3'>
-                                  <div
-                                    className={`flex items-center justify-center w-9 h-9 rounded-full ${isSelected ? 'bg-pink-500' : 'bg-gray-100'}`}
-                                  >
-                                    <Music
-                                      size={16}
-                                      className={`${isSelected ? 'text-white' : 'text-gray-400'} ${isPlaying ? 'animate-spin' : ''}`}
-                                      style={isPlaying ? { animationDuration: '3s' } : {}}
-                                    />
-                                  </div>
-                                  <div>
-                                    <p
-                                      className={`font-medium text-sm ${isSelected ? 'text-pink-700' : 'text-gray-800'}`}
-                                    >
-                                      {m.title}
-                                    </p>
-                                    {m.artist && <p className='text-xs text-gray-400'>{m.artist}</p>}
-                                  </div>
-                                </div>
-                                {isSelected && (
-                                  <span className='text-xs font-semibold text-pink-500 bg-pink-100 px-2.5 py-1 rounded-full'>
-                                    {isPlaying ? 'Đang phát' : 'Đang chọn'}
-                                  </span>
-                                )}
-                              </button>
-                            )
-                          })
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </>
+              <StudioEmptyState />
             )}
           </div>
         </div>
@@ -1253,6 +1276,11 @@ const Editor = () => {
           <div className='lg:sticky lg:top-6 lg:self-start'>
             <LivePreview
               wedding={isAdminMode && adminSelectedWedding ? (adminSelectedWedding as any) : wedding}
+              musicUrl={
+                allMusics.find(
+                  (m) => m.id === (isAdminMode ? (adminSelectedWedding as any)?.music_id : wedding?.music_id)
+                )?.url
+              }
               isDirty={isAdminMode ? false : isDirty}
               onUnsavedWarning={() => error('Vui lòng lưu thay đổi trước khi xem thiệp.')}
               onOpen={() => {

@@ -1,4 +1,4 @@
-import RSVPForm from '@/components/guest/RSVPForm'
+import { useToast } from '@/components/ui/ToastProvider'
 import MusicPlayer from '@/components/MusicPlayer'
 import { createClient } from '@supabase/supabase-js'
 import Head from 'next/head'
@@ -117,11 +117,19 @@ function parseWeddingDate(rawDate: string) {
 }
 
 export default function VintageGuestView({ wedding, disableSplash, musicUrl, guestName = '', rsvpId }: TemplateProps) {
+  const { pink } = useToast()
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [showGiftQr, setShowGiftQr] = useState(false)
   const [showSplash, setShowSplash] = useState(!disableSplash)
   const [splashFading, setSplashFading] = useState(false)
   const [guestWishes, setGuestWishes] = useState<any[]>([])
+
+  const [rsvpName, setRsvpName] = useState(guestName || '')
+  const [rsvpAttend, setRsvpAttend] = useState<'yes' | 'no' | ''>('')
+  const [rsvpPartySize, setRsvpPartySize] = useState(1)
+  const [rsvpMessage, setRsvpMessage] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
   const viewport = useTemplateViewport()
 
@@ -216,6 +224,78 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
       )
   }, [wedding?.id])
 
+  useEffect(() => {
+    if (!rsvpId) return
+
+    supabase
+      .from('rsvps')
+      .select('guest_name, wishes, is_attending, party_size')
+      .eq('id', rsvpId)
+      .single()
+      .then(({ data }) => {
+        if (!data) return
+        if (data.guest_name) setRsvpName(data.guest_name)
+        if (data.wishes) setRsvpMessage(data.wishes)
+        if (data.is_attending != null) setRsvpAttend(data.is_attending ? 'yes' : 'no')
+        if (data.party_size) setRsvpPartySize(data.party_size)
+      })
+  }, [rsvpId])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    const trimmedName = rsvpName.trim()
+    if (!trimmedName) {
+      pink('Vui lòng nhập tên khách mời.')
+      return
+    }
+
+    if (!rsvpAttend) {
+      pink('Vui lòng chọn tình trạng tham dự.')
+      return
+    }
+
+    setLoading(true)
+
+    try {
+      const partyCount = rsvpAttend === 'yes' ? Math.max(1, rsvpPartySize) : 0
+      const payload = {
+        wedding_id: wedding.id,
+        guest_name: trimmedName,
+        is_attending: rsvpAttend === 'yes',
+        party_size: partyCount,
+        wishes: rsvpMessage.trim() || null
+      }
+
+      let error
+      if (rsvpId) {
+        const { error: updateError } = await supabase.from('rsvps').update(payload).eq('id', rsvpId)
+        error = updateError
+      } else {
+        const { error: insertError } = await supabase.from('rsvps').insert([payload])
+        error = insertError
+      }
+
+      if (error) throw error
+
+      setSubmitted(true)
+      pink('Gửi xác nhận thành công. Cảm ơn bạn!')
+
+      // Refresh guestbook
+      const { data } = await supabase
+        .from('rsvps')
+        .select('guest_name, wishes, created_at, is_attending, party_size, phone')
+        .eq('wedding_id', wedding.id)
+        .order('created_at', { ascending: false })
+      if (data) setGuestWishes(data)
+    } catch (err: any) {
+      console.error('RSVP error:', err)
+      pink('Có lỗi xảy ra, vui lòng thử lại!')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const formatParents = (text: string) => {
     const lines = text.split('\n').filter(Boolean)
     if (lines.length === 2) {
@@ -237,7 +317,9 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
   const headingFontFamily = mergedContent.heading_font_family || "'Great Vibes', cursive"
   const sectionFontFamily = mergedContent.section_font_family || "'Playfair Display', serif"
 
-  const displayedGuestWishes = guestWishes.length > 0 ? guestWishes : mockGuestbook
+  const displayedGuestWishes = (guestWishes.length > 0 ? guestWishes : mockGuestbook).filter(
+    (w) => w.wishes && w.wishes.trim() !== ''
+  )
 
   const bankName = mergedContent.bank_name || ''
   const accountNumber = mergedContent.account_number || ''
@@ -380,11 +462,11 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
           }
           .vintage-splash-dao-left {
             left: max(0px, calc(50% - 680px));
-            animation: splashDaoSwayLeft 5s ease-in-out infinite;
+            animation: splashDaoSwayLeft 8s ease-in-out infinite;
           }
           .vintage-splash-dao-right {
             right: max(0px, calc(50% - 680px));
-            animation: splashDaoSwayRight 5.8s ease-in-out 0.6s infinite;
+            animation: splashDaoSwayRight 9s ease-in-out 0.6s infinite;
           }
           .vintage-splash-hy-wrap {
             position: relative;
@@ -424,31 +506,35 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
           }
           .vintage-ornament-left {
             left: 1%;
-            top: -132px;
-            height: clamp(180px, 26vw, 290px);
-            opacity: 0.88;
+            top: -160px;
+            height: clamp(240px, 32vw, 380px);
+            opacity: 1;
             z-index: 1;
             transform-origin: bottom center;
-            animation: ornamentSwayLeft 5s ease-in-out infinite;
+            animation: ornamentSwayLeft 7s ease-in-out infinite;
           }
           .vintage-ornament-right {
             right: 1%;
-            top: -132px;
-            height: clamp(180px, 26vw, 290px);
-            opacity: 0.88;
+            top: -160px;
+            height: clamp(240px, 32vw, 380px);
+            opacity: 1;
             z-index: 1;
             transform-origin: bottom center;
-            animation: ornamentSwayRight 5.8s ease-in-out 0.7s infinite;
+            animation: ornamentSwayRight 8.5s ease-in-out 0.7s infinite;
           }
           @keyframes ornamentSwayLeft {
-            0%, 100% { transform: rotate(0deg); }
-            30% { transform: rotate(-3deg); }
-            70% { transform: rotate(2deg); }
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            20% { transform: translateY(-2px) rotate(-3.5deg); }
+            40% { transform: translateY(0) rotate(2.5deg); }
+            60% { transform: translateY(-1px) rotate(-2deg); }
+            80% { transform: translateY(0) rotate(1.5deg); }
           }
           @keyframes ornamentSwayRight {
-            0%, 100% { transform: rotate(0deg) scaleX(-1); }
-            30% { transform: rotate(3deg) scaleX(-1); }
-            70% { transform: rotate(-2deg) scaleX(-1); }
+            0%, 100% { transform: translateY(0) scaleX(-1) rotate(0deg); }
+            20% { transform: translateY(-2px) scaleX(-1) rotate(3.5deg); }
+            40% { transform: translateY(0) scaleX(-1) rotate(-2.5deg); }
+            60% { transform: translateY(-1px) scaleX(-1) rotate(2deg); }
+            80% { transform: translateY(0) scaleX(-1) rotate(-1.5deg); }
           }
           @keyframes avatarSway {
             0%, 100% { transform: rotate(0deg); }
@@ -532,13 +618,13 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
           .gift-card-ornament-left {
             left: -278px;
             transform: translateY(-55%) rotate(-4deg);
-            animation: giftOrnamentSwayLeft 4.8s ease-in-out infinite;
+            animation: giftOrnamentSwayLeft 8s ease-in-out infinite;
             transform-origin: bottom center;
           }
           .gift-card-ornament-right {
             right: -278px;
             transform: translateY(-55%) rotate(4deg) scaleX(-1);
-            animation: giftOrnamentSwayRight 5.2s ease-in-out 0.35s infinite;
+            animation: giftOrnamentSwayRight 9.2s ease-in-out 0.35s infinite;
             transform-origin: bottom center;
           }
           @keyframes splashBannerPetalFall {
@@ -1085,25 +1171,45 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
 
               <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
                 <div
-                  className='vintage-avatar'
-                  style={{
-                    width: 240,
-                    height: 240,
-                    borderRadius: '50%',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                    overflow: 'hidden',
-                    margin: '0 auto 12px'
-                  }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 12 }}
                 >
+                  <div
+                    className='vintage-avatar'
+                    style={{
+                      width: 140,
+                      height: 140,
+                      borderRadius: '50%',
+                      border: `4px solid ${red}33`,
+                      overflow: 'hidden',
+                      boxShadow: '0 8px 18px rgba(0,0,0,0.12)',
+                      position: 'relative',
+                      zIndex: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={groomImage}
+                      alt={groomName}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.groom_image_position, viewport))
+                      }}
+                    />
+                  </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={groomImage}
-                    alt={groomName}
+                    src={peachDecorUrl}
                     style={{
-                      width: '100%',
-                      height: '100%',
-                      ...getImageStyle(resolveImageAdjust(mergedContent.groom_image_position, viewport))
+                      width: 60,
+                      height: 60,
+                      objectFit: 'contain',
+                      animation: 'ornamentSwayLeft 2.5s ease-in-out infinite'
                     }}
+                    alt=''
                   />
                 </div>
                 <p
@@ -1176,26 +1282,46 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
 
               <div style={{ textAlign: 'center', width: '40%', position: 'relative', zIndex: 3, marginTop: 150 }}>
                 <div
-                  className='vintage-avatar'
-                  style={{
-                    width: 240,
-                    height: 240,
-                    borderRadius: '50%',
-                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)',
-                    overflow: 'hidden',
-                    margin: '0 auto 12px'
-                  }}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 12 }}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={brideImage}
-                    alt={brideName}
+                    src={peachDecorUrl}
                     style={{
-                      width: '100%',
-                      height: '100%',
-                      ...getImageStyle(resolveImageAdjust(mergedContent.bride_image_position, viewport))
+                      width: 60,
+                      height: 60,
+                      objectFit: 'contain',
+                      animation: 'ornamentSwayRight 2.8s ease-in-out 0.7s infinite'
                     }}
+                    alt=''
                   />
+                  <div
+                    className='vintage-avatar'
+                    style={{
+                      width: 140,
+                      height: 140,
+                      borderRadius: '50%',
+                      border: `4px solid ${red}33`,
+                      overflow: 'hidden',
+                      boxShadow: '0 8px 18px rgba(0,0,0,0.12)',
+                      position: 'relative',
+                      zIndex: 2,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={brideImage}
+                      alt={brideName}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        ...getImageStyle(resolveImageAdjust(mergedContent.bride_image_position, viewport))
+                      }}
+                    />
+                  </div>
                 </div>
                 <p
                   style={{
@@ -1709,18 +1835,167 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
           </div>
 
           <div style={{ padding: '24px 20px 40px' }}>
-            <div style={{ maxWidth: 620, margin: '0 auto' }}>
-              <RSVPForm
-                weddingId={wedding?.id}
-                rsvpId={rsvpId}
-                guestName={guestName}
-                primaryColor={red}
-                fontFamily={fontFamily}
-                sectionFontFamily={sectionFontFamily}
-                isDark={false}
-                // cardBackground='#eed7db'
-              />
-            </div>
+            {submitted ? (
+              <div
+                style={{
+                  maxWidth: 620,
+                  margin: '0 auto',
+                  backgroundColor: '#eed7db',
+                  borderRadius: 12,
+                  padding: '32px 20px',
+                  textAlign: 'center',
+                  border: `1px solid ${red}44`,
+                  boxShadow: '0 6px 14px rgba(0,0,0,0.12)'
+                }}
+              >
+                <div style={{ fontSize: '3rem', marginBottom: 12 }}>✨</div>
+                <h3 style={{ color: red, fontFamily: sectionFontFamily, fontSize: '1.4rem', marginBottom: 8 }}>
+                  Cảm ơn bạn!
+                </h3>
+                <p style={{ color: textDark, fontSize: '0.9rem' }}>Bạn đã gửi xác nhận tham dự thành công.</p>
+                <button
+                  onClick={() => setSubmitted(false)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: `1px solid ${red}`,
+                    color: red,
+                    padding: '8px 20px',
+                    borderRadius: 20,
+                    marginTop: 20,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Gửi lại phản hồi
+                </button>
+              </div>
+            ) : (
+              <form
+                className='vintage-rsvp-form'
+                onSubmit={handleSubmit}
+                style={{
+                  maxWidth: 620,
+                  margin: '0 auto',
+                  backgroundColor: '#eed7db',
+                  borderRadius: 12,
+                  padding: '16px 20px',
+                  border: `1px solid ${red}44`,
+                  boxShadow: '0 6px 14px rgba(0,0,0,0.12)'
+                }}
+              >
+                <p
+                  style={{
+                    color: red,
+                    fontFamily: sectionFontFamily,
+                    fontSize: '1rem',
+                    marginBottom: 10,
+                    letterSpacing: 1
+                  }}
+                >
+                  RSVP
+                </p>
+
+                <div style={{ display: 'grid', gap: 10 }}>
+                  <input
+                    className='vintage-rsvp-control'
+                    type='text'
+                    value={rsvpName}
+                    onChange={(e) => setRsvpName(e.target.value)}
+                    placeholder='Tên khách mời'
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#fdf7f8',
+                      color: textDark,
+                      border: `1px solid ${red}55`,
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      fontSize: '0.86rem'
+                    }}
+                  />
+
+                  <div
+                    className='vintage-rsvp-grid'
+                    style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}
+                  >
+                    <select
+                      className='vintage-rsvp-control'
+                      value={rsvpAttend}
+                      onChange={(e) => setRsvpAttend(e.target.value as 'yes' | 'no' | '')}
+                      style={{
+                        backgroundColor: '#fdf7f8',
+                        color: textDark,
+                        border: `1px solid ${red}55`,
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        fontSize: '0.84rem'
+                      }}
+                    >
+                      <option value=''>Chọn tham dự</option>
+                      <option value='yes'>Sẽ tham dự</option>
+                      <option value='no'>Không tham dự</option>
+                    </select>
+
+                    <select
+                      className='vintage-rsvp-control'
+                      value={rsvpPartySize}
+                      onChange={(e) => setRsvpPartySize(Number(e.target.value))}
+                      disabled={rsvpAttend !== 'yes'}
+                      style={{
+                        backgroundColor: rsvpAttend === 'yes' ? '#fdf7f8' : '#f3f3f3',
+                        color: textDark,
+                        border: `1px solid ${red}55`,
+                        borderRadius: 8,
+                        padding: '10px 12px',
+                        fontSize: '0.84rem'
+                      }}
+                    >
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <option key={num} value={num}>
+                          {num} người
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <textarea
+                    className='vintage-rsvp-control'
+                    value={rsvpMessage}
+                    onChange={(e) => setRsvpMessage(e.target.value)}
+                    rows={3}
+                    placeholder='Lời nhắn gửi cô dâu chú rể (tuỳ chọn)'
+                    style={{
+                      width: '100%',
+                      resize: 'vertical',
+                      backgroundColor: '#fdf7f8',
+                      color: textDark,
+                      border: `1px solid ${red}55`,
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      fontSize: '0.85rem',
+                      fontFamily: fontFamily
+                    }}
+                  />
+
+                  <button
+                    className='vintage-rsvp-submit'
+                    type='submit'
+                    disabled={loading}
+                    style={{
+                      border: 'none',
+                      borderRadius: 999,
+                      background: loading ? '#ccc' : `linear-gradient(180deg, #cb8b92, #b97880)`,
+                      color: '#fff',
+                      fontWeight: 700,
+                      letterSpacing: 0.6,
+                      padding: '10px 14px',
+                      cursor: loading ? 'not-allowed' : 'pointer'
+                    }}
+                  >
+                    {loading ? 'Đang gửi...' : 'Gửi xác nhận'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
           <div style={{ padding: '24px 20px' }}>
@@ -1760,51 +2035,6 @@ export default function VintageGuestView({ wedding, disableSplash, musicUrl, gue
                     <span style={{ fontWeight: 700, color: red, fontSize: '0.95rem' }}>
                       {comment.guest_name || 'Khách mời'}
                     </span>
-                    <span style={{ fontSize: '0.7rem', color: `${textDark}bb`, fontFamily: fontFamily }}>
-                      {typeof comment.created_at === 'string' && comment.created_at.includes(':')
-                        ? comment.created_at
-                        : new Date(comment.created_at).toLocaleDateString('vi-VN')}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-                    <span
-                      style={{
-                        border: `1px solid ${red}66`,
-                        color: red,
-                        borderRadius: 999,
-                        padding: '3px 10px',
-                        fontSize: '0.72rem',
-                        fontWeight: 600
-                      }}
-                    >
-                      {comment.is_attending ? 'Sẽ tham dự' : 'Không tham dự'}
-                    </span>
-                    {comment.is_attending && (
-                      <span
-                        style={{
-                          border: `1px solid ${red}55`,
-                          color: `${red}dd`,
-                          borderRadius: 999,
-                          padding: '3px 10px',
-                          fontSize: '0.72rem'
-                        }}
-                      >
-                        {`Số người: ${comment.party_size || 1}`}
-                      </span>
-                    )}
-                    {comment.phone && (
-                      <span
-                        style={{
-                          border: `1px solid ${red}55`,
-                          color: `${red}dd`,
-                          borderRadius: 999,
-                          padding: '3px 10px',
-                          fontSize: '0.72rem'
-                        }}
-                      >
-                        {`SĐT: ${comment.phone}`}
-                      </span>
-                    )}
                   </div>
                   <p style={{ fontSize: '0.95rem', color: textDark, lineHeight: 1.6, fontStyle: 'italic' }}>
                     {comment.wishes ? `"${comment.wishes}"` : 'Đã gửi phản hồi RSVP.'}

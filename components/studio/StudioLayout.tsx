@@ -21,9 +21,10 @@ import React, { ReactNode, useEffect, useState } from 'react'
 
 interface StudioLayoutProps {
   children: ReactNode
+  fullWidth?: boolean
 }
 
-const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
+const StudioLayout: React.FC<StudioLayoutProps> = ({ children, fullWidth = false }) => {
   const router = useRouter()
   const session = useSession()
   const { isLoading, supabaseClient } = useSessionContext()
@@ -148,7 +149,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
       </aside>
 
       {/* Main Content */}
-      <main className='flex-1 p-6 md:p-10 overflow-y-auto w-full'>
+      <main className={`flex-1 overflow-y-auto w-full ${fullWidth ? '' : 'p-6 md:p-10'}`}>
         <AnimatePresence mode='wait' initial={false}>
           <motion.div
             key={router.pathname}
@@ -156,7 +157,7 @@ const StudioLayout: React.FC<StudioLayoutProps> = ({ children }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.3 }}
-            className='max-w-5xl mx-auto'
+            className={fullWidth ? 'w-full' : 'max-w-5xl mx-auto'}
           >
             {children}
           </motion.div>

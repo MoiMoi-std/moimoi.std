@@ -233,16 +233,19 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   )
 
-  // Single query with join — lấy wedding + template + package trong 1 lần
+  // Single query with join — lấy wedding + template + music trong 1 lần
   const { data: weddingData, error: weddingError } = await supabaseServer
     .from('weddings')
-    .select('*, template:templates(*)')
+    .select('*, template:templates(*), music:musics(url)')
     .eq('slug', slug)
     .single()
 
   if (weddingError || !weddingData) {
     return { notFound: true }
   }
+
+  // Lấy music url từ bảng musics nếu có, fallback về content.music_url (legacy)
+  const musicUrl = (weddingData as any).music?.url || weddingData.content?.music_url || null
 
   // Lấy package data nếu có
   let packageData = null
@@ -256,7 +259,10 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
       slug,
       wedding: {
         ...weddingData,
-        content: weddingData.content || {},
+        content: {
+          ...(weddingData.content || {}),
+          music_url: musicUrl
+        },
         package: packageData
       }
     }

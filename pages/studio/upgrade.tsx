@@ -138,8 +138,8 @@ export default function UpgradePage() {
   }
 
   return (
-    <StudioLayout>
-      <div className='max-w-7xl mx-auto py-10'>
+    <StudioLayout fullWidth={true}>
+      <div className='max-w-[1400px] mx-auto py-10 px-6 md:px-10 lg:px-16'>
         <div className='text-center mb-16'>
           <h1 className='text-4xl font-serif font-bold text-gray-900 mb-4'>Nâng Cấp Gói Dịch Vụ</h1>
           <p className='text-gray-500 text-lg'>Mở khóa toàn bộ tính năng cao cấp cho đám cưới của bạn</p>

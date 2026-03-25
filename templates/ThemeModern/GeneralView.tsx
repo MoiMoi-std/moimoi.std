@@ -316,7 +316,10 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
   const fontFamily = mergedContent.font_family || "'Lora', serif"
   const headingFontFamily = mergedContent.heading_font_family || "'Great Vibes', cursive"
   const sectionFontFamily = mergedContent.section_font_family || "'Playfair Display', serif"
-  const displayedGuestWishes = guestWishes.length > 0 ? guestWishes : mockGuestbook
+  const displayedGuestWishes = (guestWishes.length > 0 ? guestWishes : mockGuestbook).filter(
+    (w) => w.wishes && w.wishes.trim() !== ''
+  )
+
   const bankName = mergedContent.bank_name || ''
   const accountNumber = mergedContent.account_number || ''
   const accountName = mergedContent.account_name || ''
@@ -2040,10 +2043,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                     letterSpacing: 1
                   }}
                 >
-                  RSVP Demo
-                </p>
-                <p style={{ color: `${textDark}cc`, fontSize: '0.75rem', marginBottom: 12 }}>
-                  Form này chỉ để xem giao diện, submit sẽ hiện thông báo demo.
+                  RSVP
                 </p>
 
                 <div style={{ display: 'grid', gap: 10 }}>
@@ -2086,14 +2086,11 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                       <option value='no'>Không tham dự</option>
                     </select>
 
-                    <input
+                    <select
                       className='modern-rsvp-control'
-                      type='number'
-                      min={1}
                       value={demoPartySize}
-                      onChange={(e) => setDemoPartySize(Number(e.target.value) || 1)}
+                      onChange={(e) => setDemoPartySize(Number(e.target.value))}
                       disabled={demoAttend !== 'yes'}
-                      placeholder='Số người'
                       style={{
                         backgroundColor: demoAttend === 'yes' ? '#721515' : '#5b1010',
                         color: textDark,
@@ -2102,7 +2099,13 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                         padding: '10px 12px',
                         fontSize: '0.84rem'
                       }}
-                    />
+                    >
+                      {[1, 2, 3, 4, 5].map((num) => (
+                        <option key={num} value={num}>
+                          {num} người
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <textarea
@@ -2138,7 +2141,7 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                       cursor: 'pointer'
                     }}
                   >
-                    Gửi RSVP (Demo)
+                    Gửi xác nhận
                   </button>
                 </div>
               </form>
@@ -2181,51 +2184,6 @@ export default function ModernGeneralView({ wedding, disableSplash, musicUrl, gu
                       <span style={{ fontWeight: 700, color: textDark, fontSize: '0.95rem' }}>
                         {comment.guest_name || 'Khách mời'}
                       </span>
-                      <span style={{ fontSize: '0.7rem', color: `${textDark}bb`, fontFamily: "'Lora', serif" }}>
-                        {typeof comment.created_at === 'string' && comment.created_at.includes(':')
-                          ? comment.created_at
-                          : new Date(comment.created_at).toLocaleDateString('vi-VN')}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
-                      <span
-                        style={{
-                          border: `1px solid ${textDark}66`,
-                          color: textDark,
-                          borderRadius: 999,
-                          padding: '3px 10px',
-                          fontSize: '0.72rem',
-                          fontWeight: 600
-                        }}
-                      >
-                        {comment.is_attending ? 'Sẽ tham dự' : 'Không tham dự'}
-                      </span>
-                      {comment.is_attending && (
-                        <span
-                          style={{
-                            border: `1px solid ${textDark}55`,
-                            color: `${textDark}dd`,
-                            borderRadius: 999,
-                            padding: '3px 10px',
-                            fontSize: '0.72rem'
-                          }}
-                        >
-                          {`Số người: ${comment.party_size || 1}`}
-                        </span>
-                      )}
-                      {comment.phone && (
-                        <span
-                          style={{
-                            border: `1px solid ${textDark}55`,
-                            color: `${textDark}dd`,
-                            borderRadius: 999,
-                            padding: '3px 10px',
-                            fontSize: '0.72rem'
-                          }}
-                        >
-                          {`SĐT: ${comment.phone}`}
-                        </span>
-                      )}
                     </div>
                     <p style={{ fontSize: '0.95rem', color: textDark, lineHeight: 1.6, fontStyle: 'italic' }}>
                       {comment.wishes ? `"${comment.wishes}"` : 'Đã gửi phản hồi RSVP.'}

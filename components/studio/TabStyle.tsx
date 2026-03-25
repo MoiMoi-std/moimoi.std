@@ -1,11 +1,13 @@
 import { Check, ChevronDown, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import LockedOverlay from './LockedOverlay'
 
 interface TabStyleProps {
   content?: Record<string, any>
   onChange: (key: string, value: string) => void
   onBatchChange: (changes: Record<string, string>) => void
   onReset?: () => void
+  isLocked?: boolean
 }
 
 const COLOR_PRESETS = [
@@ -645,7 +647,7 @@ function ColorSelect({
 // ──────────────────────────────────────────────────────────────────────────────
 // Main export
 // ──────────────────────────────────────────────────────────────────────────────
-export default function TabStyle({ content, onChange, onBatchChange, onReset }: TabStyleProps) {
+export default function TabStyle({ content, onChange, onBatchChange, onReset, isLocked }: TabStyleProps) {
   const currentColor = content?.primary_color || '#d97706'
 
   const applyPreset = (preset: (typeof STYLE_PRESETS)[0]) => {
@@ -664,40 +666,44 @@ export default function TabStyle({ content, onChange, onBatchChange, onReset }: 
     content?.font_family === preset.font_family
 
   return (
-    <div className='space-y-6'>
-      {/* Header row: Phong cách nhanh + Màu chủ đạo + Khôi phục */}
-      <div>
-        <div className='flex items-center justify-between mb-1'>
-          <div className='grid grid-cols-2 gap-3 flex-1 mr-3'>
-            <h3 className='text-base font-semibold text-gray-900'>Phong Cách Nhanh</h3>
-            <h3 className='text-base font-semibold text-gray-900'>Màu Chủ Đạo</h3>
+    <div className='relative'>
+      <div className='space-y-6'>
+        {/* Header row: Phong cách nhanh + Màu chủ đạo + Khôi phục */}
+        <div>
+          <div className='flex items-center justify-between mb-1'>
+            <div className='grid grid-cols-2 gap-3 flex-1 mr-3'>
+              <h3 className='text-base font-semibold text-gray-900'>Phong Cách Nhanh</h3>
+              <h3 className='text-base font-semibold text-gray-900'>Màu Chủ Đạo</h3>
+            </div>
+            {onReset && (
+              <button
+                type='button'
+                onClick={onReset}
+                title='Khôi phục về mặc định'
+                className='flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 text-xs font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors shrink-0'
+              >
+                <RotateCcw size={13} />
+                Khôi phục
+              </button>
+            )}
           </div>
-          {onReset && (
-            <button
-              type='button'
-              onClick={onReset}
-              title='Khôi phục về mặc định'
-              className='flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 text-xs font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors shrink-0'
-            >
-              <RotateCcw size={13} />
-              Khôi phục
-            </button>
-          )}
+          <div className='grid grid-cols-2 gap-3'>
+            <StylePresetSelect presets={STYLE_PRESETS} isPresetActive={isPresetActive} onApply={applyPreset} />
+            <ColorSelect currentColor={currentColor} onChange={onChange} />
+          </div>
         </div>
-        <div className='grid grid-cols-2 gap-3'>
-          <StylePresetSelect presets={STYLE_PRESETS} isPresetActive={isPresetActive} onApply={applyPreset} />
-          <ColorSelect currentColor={currentColor} onChange={onChange} />
+
+        <div className='border-t border-gray-100' />
+
+        {/* Kiểu chữ */}
+        <div>
+          <h3 className='text-base font-semibold text-gray-900 mb-1'>Kiểu Chữ</h3>
+          <p className='text-sm text-gray-500 mb-3'>Chọn mục để thay đổi phông chữ tương ứng</p>
+          <FontTabsSelector content={content} onChange={onChange} />
         </div>
       </div>
 
-      <div className='border-t border-gray-100' />
-
-      {/* Kiểu chữ */}
-      <div>
-        <h3 className='text-base font-semibold text-gray-900 mb-1'>Kiểu Chữ</h3>
-        <p className='text-sm text-gray-500 mb-3'>Chọn mục để thay đổi phông chữ tương ứng</p>
-        <FontTabsSelector content={content} onChange={onChange} />
-      </div>
+      {isLocked && <LockedOverlay message='Tính năng tùy chỉnh kiểu dáng và phông chữ yêu cầu nâng cấp gói.' />}
     </div>
   )
 }
